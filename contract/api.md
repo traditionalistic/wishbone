@@ -48,6 +48,8 @@
 | `POST /admin/api/preview/{code}/play` | `{"timeline": "intro"}` → 204 |
 | `GET /admin/api/preview/{code}/ws?token=` | WebSocket, сервер → админка: `{"type": "devices", "list": [{"id", "platform", "device"}]}` при каждом изменении, `{"type": "log", "device", "level", "message"}` |
 
-`Diag` = `{"path": "root/children/2/props/text" | "script" | "timelines/0/tracks/1", "line": 1, "col": 5, "message": "…"}` — `line`/`col` относительно DSL-фрагмента по `path` (1-based), `0` если к фрагменту не относится.
+`Diag` = `{"path": "root/children/2/props/text" | "script" | "timelines/0/tracks/1", "line": 1, "col": 5, "message": "…"}` — `line`/`col` относительно DSL-фрагмента по `path` (1-based), `0` если к фрагменту не относится. Сегменты `path` — ключи исходного JSON (§3.1 спеки): `root/children/<i>/props/<prop>`, `…/on/<event>`, `…/when`, `…/repeat/over`, `…/repeat/key`, `…/animate/<prop>`, `…/transition/in`, `…/matchId`, `…/drag`, `…/a11y/label`, `…/id`, `script`, `timelines/<i>`, `timelines/<i>/tracks/<j>/keys/<k>`; узел целиком — путь самого узла (`root/children/2`).
+
+В `catalog`: `tokens.<group>` и `icons` — массивы строк-имён (без `@group.`).
 
 Статика админки — `GET /admin/*` (SPA, `index.html` для неизвестных путей).
