@@ -1,7 +1,7 @@
 {
  "id": "showcase.catalog",
  "title": "Каталог DS",
- "script": "// Every DS template (contract/templates) in its main states — compile check + on-device eyeballing.\nstate loading = false\nstate push = true\nstate plan = \"month\"\nstate tab = 0\nstate progress = 0.35\nstate page = 0\nstate email = \"\"\nstate promo = \"\"\nstate showBanner = true\nstate until = env.now + 90 * 60 * 1000\nstate expired = false\nlet plans = [{id: \"week\", title: \"Неделя\"}, {id: \"month\", title: \"Месяц\"}, {id: \"year\", title: \"Год\"}]\nlet tabs = [\"Все\", \"Активные\", \"Архив\"]\nlet emailError = email != \"\" && !email.contains(\"@\") ? \"Нужен e-mail\" : \"\"\nhandler buy() {\n  loading = true\n  wait(1500ms)\n  loading = false\n}",
+ "script": "// Every DS template (contract/templates) in its main states — compile check + on-device eyeballing.\nstate loading = false\nstate push = true\nstate plan = \"month\"\nstate tab = 0\nstate progress = 0.35\nstate page = 0\nstate email = \"\"\nstate promo = \"\"\nstate pin = \"\"\nstate showBanner = true\nstate until = env.now + 90 * 60 * 1000\nstate expired = false\nlet plans = [{id: \"week\", title: \"Неделя\"}, {id: \"month\", title: \"Месяц\"}, {id: \"year\", title: \"Год\"}]\nlet tabs = [\"Все\", \"Активные\", \"Архив\"]\nlet emailError = email != \"\" && !email.contains(\"@\") ? \"Нужен e-mail\" : \"\"\nhandler buy() {\n  loading = true\n  wait(1500ms)\n  loading = false\n}",
  "root": {"type": "scroll", "id": "page", "props": {"spacing": "@space.xl", "padding": "@space.lg", "background": "@color.bg1", "width": "fill", "height": "fill"}, "children": [
   {"type": "text", "id": "h1", "props": {"text": "Каталог DS", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
 
@@ -45,8 +45,8 @@
 
   {"type": "stack", "id": "toggles", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
    {"type": "text", "id": "togglesH", "props": {"text": "Toggle", "style": "@type.headingSmall"}},
-   {"type": "Toggle", "id": "tgPush", "props": {"title": "=push ? \"Уведомления включены\" : \"Уведомления выключены\"", "on": "=push", "width": "fill"}, "on": {"change": "push = !push"}},
-   {"type": "Toggle", "id": "tgLocal", "props": {"title": "Без привязки к стейту", "width": "fill"}},
+   {"type": "Toggle", "id": "tgPush", "props": {"title": "=push ? \"Уведомления включены\" : \"Уведомления выключены\"", "on": "=push", "width": "fill"}, "on": {"change": "push = event.value"}},
+   {"type": "Toggle", "id": "tgLocal", "props": {"title": "Без привязки к стейту", "width": "fill"}, "on": {"change": "track(\"catalog.toggle\", {value: event.value})"}},
    {"type": "Toggle", "id": "tgOff", "props": {"title": "Недоступно", "on": true, "enabled": false, "width": "fill"}}
   ]},
 
@@ -136,19 +136,14 @@
 
   {"type": "stack", "id": "inputs", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
    {"type": "text", "id": "inputsH", "props": {"text": "TextInput", "style": "@type.headingSmall"}},
-   {"type": "TextInput", "id": "emailInput", "props": {"label": "E-mail", "hint": "Пришлём чек", "error": "=emailError"}, "children": [
-    {"type": "textField", "id": "emailField", "props": {"bind": "email", "placeholder": "you@mail.com", "keyboard": "email", "width": "fill"}}
-   ]},
-   {"type": "TextInput", "id": "promoInput", "props": {"label": "Промокод"}, "children": [
-    {"type": "textField", "id": "promoField", "props": {"bind": "promo", "placeholder": "Необязательно", "width": "fill"}, "on": {"submit": "promo = event.value.trim().upper()"}}
-   ]}
+   {"type": "TextInput", "id": "emailInput", "props": {"label": "E-mail", "value": "=email", "placeholder": "you@mail.com", "keyboard": "email", "hint": "Пришлём чек", "error": "=emailError"}, "on": {"change": "email = event.value"}},
+   {"type": "TextInput", "id": "promoInput", "props": {"label": "Промокод", "value": "=promo", "placeholder": "Необязательно"}, "on": {"change": "promo = event.value", "submit": "promo = event.value.trim().upper()"}},
+   {"type": "TextInput", "id": "pinInput", "props": {"label": "PIN", "value": "=pin", "keyboard": "number", "secure": true}, "on": {"change": "pin = event.value.substring(0, 4)"}}
   ]},
 
   {"type": "stack", "id": "tabsBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
    {"type": "text", "id": "tabsH", "props": {"text": "=\"SegmentedTabs · \" + (tabs[tab] ?? \"\")", "style": "@type.headingSmall"}},
-   {"type": "SegmentedTabs", "id": "tabs", "children": [
-    {"type": "Segment", "id": "tabItem", "repeat": {"over": "tabs"}, "props": {"title": "=item", "selected": "=tab == index"}, "on": {"tap": "tab = index"}}
-   ]}
+   {"type": "SegmentedTabs", "id": "tabs", "props": {"items": "=tabs", "selected": "=tab"}, "on": {"change": "tab = event.index"}}
   ]},
 
   {"type": "stack", "id": "dotsBlock", "props": {"spacing": "@space.md"}, "children": [

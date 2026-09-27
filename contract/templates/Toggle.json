@@ -1,10 +1,10 @@
 {
  "id": "Toggle",
  "title": "Toggle",
- "script": "// Toggle (ds-metrics §5): title (body, el16 / el6 disabled) + switch, min height 44. The iOS DS wraps the system switch,\n// so the geometry is Android SwitchPrimary's: 36×20 track (bg4 → accentPrimary), 16pt white knob inset 2. Knob and\n// track animate implicitly (@motion.snappy / @motion.fast).\n// Value — template events carry no payload, so:\n//  • controlled: bind `on` to screen state and flip it in on.change (the new value is always the previous `!on`):\n//      {\"type\": \"Toggle\", \"props\": {\"title\": \"Push\", \"on\": \"=push\"}, \"on\": {\"change\": \"push = !push\"}}\n//  • uncontrolled: leave `on` unset — the toggle keeps instance state `local`; the screen only hears `change`.\nparam title: string = \"\"\nparam on: bool? = null\nparam enabled: bool = true\nevent change\nstate local = false\nlet isOn = on ?? local\n// knob: white in both schemes (no onAccent token)\nlet knob = env.colorScheme == \"dark\" ? @color.el16 : @color.el1",
+ "script": "// Toggle (ds-metrics §5): title (body, el16 / el6 disabled) + switch, min height 44. The iOS DS wraps the system switch,\n// so the geometry is Android SwitchPrimary's: 36×20 track (bg4 → accentPrimary), 16pt onAccent knob inset 2. Knob and\n// track animate implicitly (@motion.snappy / @motion.fast). `change` carries the new value.\n//  • controlled: bind `on` to screen state and assign it in on.change —\n//      {\"type\": \"Toggle\", \"props\": {\"title\": \"Push\", \"on\": \"=push\"}, \"on\": {\"change\": \"push = event.value\"}}\n//  • uncontrolled: leave `on` unset — the toggle keeps instance state `local` and reports it in `change`.\nparam title: string = \"\"\nparam on: bool? = null\nparam enabled: bool = true\nevent change(value: bool)\nstate local = false\nlet isOn = on ?? local",
  "root": {"type": "stack", "id": "root",
   "props": {"axis": "h", "align": "center", "minHeight": 44},
-  "on": {"tap": "if enabled {\n  local = !isOn\n  haptic(\"selection\")\n  emit change\n}"},
+  "on": {"tap": "if enabled {\n  local = !isOn\n  haptic(\"selection\")\n  emit change({value: local})\n}"},
   "a11y": {"label": "title", "role": "button"},
   "children": [
    {"type": "text", "id": "title", "when": "title != \"\"", "props": {"text": "=title", "style": "@type.body", "color": "=enabled ? @color.el16 : @color.el6"}},
@@ -14,7 +14,7 @@
      "background": "=isOn ? @color.accentPrimary : @color.bg4", "opacity": "=enabled ? 1 : 0.5"},
     "animate": {"background": "@motion.fast"},
     "children": [
-     {"type": "shape", "id": "knob", "props": {"kind": "circle", "width": 16, "height": 16, "fill": "=knob", "offsetX": "=isOn ? 16 : 0"}, "animate": {"offsetX": "@motion.snappy"}}
+     {"type": "shape", "id": "knob", "props": {"kind": "circle", "width": 16, "height": 16, "fill": "@color.onAccent", "offsetX": "=isOn ? 16 : 0"}, "animate": {"offsetX": "@motion.snappy"}}
     ]}
   ]}
 }

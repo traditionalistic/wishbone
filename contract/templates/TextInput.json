@@ -1,14 +1,18 @@
 {
  "id": "TextInput",
  "title": "TextInput",
- "script": "// TextInput (ds-metrics §16 — LabeledInputField + OTP error border): label (bodyStrong, el9) → 52pt field box (padding\n// h 16, radius card, bg1Elevated, 1pt border el3 ≈ controlBorder, error → error) → hint / error text (caption), gaps 8 / 2.\n// The textField itself is the child (slot): template events carry no payload, so a textField inside the template could\n// not hand its text to the screen — the screen binds its own field:\n//   {\"type\": \"TextInput\", \"id\": \"email\", \"props\": {\"label\": \"E-mail\", \"error\": \"=emailError\"}, \"children\": [\n//     {\"type\": \"textField\", \"id\": \"emailField\", \"props\": {\"bind\": \"email\", \"placeholder\": \"you@mail.com\", \"width\": \"fill\"}}]}\nparam label: string = \"\"\nparam hint: string = \"\"\nparam error: string = \"\"",
+ "script": "// TextInput (ds-metrics §16 — LabeledInputField + OTP error border): label (bodyStrong, el9) → 52pt field box (padding\n// h 16, radius card, bg1Elevated, 1pt border el3 ≈ controlBorder, error → error) → hint / error text (caption), gaps 8 / 2.\n// Controlled: bind `value` to screen state and assign it in on.change —\n//   {\"type\": \"TextInput\", \"id\": \"email\", \"props\": {\"label\": \"E-mail\", \"value\": \"=email\", \"error\": \"=emailError\"},\n//    \"on\": {\"change\": \"email = event.value\"}}\nparam label: string = \"\"\nparam value: string = \"\"\nparam placeholder: string = \"\"\nparam hint: string = \"\"\nparam error: string = \"\"\nparam keyboard: \"text\" | \"email\" | \"number\" | \"phone\" = \"text\"\nparam secure: bool = false\nevent change(value: string)\nevent submit(value: string)",
  "root": {"type": "stack", "id": "root", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
   {"type": "text", "id": "label", "when": "label != \"\"", "props": {"text": "=label", "style": "@type.bodyStrong", "color": "@color.el9"}},
   {"type": "stack", "id": "field", "props": {"spacing": 2, "width": "fill"}, "children": [
    {"type": "stack", "id": "box",
     "props": {"axis": "h", "align": "center", "width": "fill", "height": 52, "padding": "={h: 16}", "background": "@color.bg1Elevated", "corner": "@radius.card",
      "border": "={color: error != \"\" ? @color.error : @color.el3, width: 1}"},
-    "children": [{"type": "slot"}]},
+    "children": [
+     {"type": "textField", "id": "input", "props": {"value": "=value", "placeholder": "=placeholder", "keyboard": "=keyboard", "secure": "=secure", "width": "fill"},
+      "a11y": {"label": "label"},
+      "on": {"change": "emit change({value: event.value})", "submit": "emit submit({value: event.value})"}}
+    ]},
    {"type": "text", "id": "note", "when": "error != \"\" || hint != \"\"",
     "props": {"text": "=error != \"\" ? error : hint", "style": "@type.caption", "color": "=error != \"\" ? @color.error : @color.el9"},
     "transition": {"in": "fade", "out": "fade"}}
