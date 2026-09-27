@@ -74,7 +74,9 @@
 
     {"type": "Card", "id": "liveCard", "props": {"width": "fill"}, "on": {"tap": "toggleLive()"}, "a11y": {"label": "live ? \"Прямой эфир, идёт. Поставить на паузу\" : \"Прямой эфир. Смотреть\"", "role": "button"}, "children": [
      {"type": "stack", "id": "liveRow", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill"}, "children": [
-      {"type": "rive", "id": "liveButton", "props": {"url": "/assets/rive/play_pause.riv", "stateMachine": "State Machine 1", "inputs": "={Play: live}", "width": 56, "height": 56}},
+      {"type": "stack", "id": "liveTile", "props": {"axis": "z", "width": 64, "height": 64, "corner": "@radius.lg", "background": "=gradient([@color.accentPrimary, @color.accentSecondary], 135)"}, "children": [
+       {"type": "rive", "id": "liveButton", "props": {"url": "/assets/rive/play_pause.riv", "stateMachine": "State Machine 1", "inputs": "={Play: live}", "width": 52, "height": 52}}
+      ]},
       {"type": "stack", "id": "liveText", "props": {"spacing": 2, "width": "fill"}, "children": [
        {"type": "stack", "id": "liveHead", "props": {"axis": "h", "align": "center", "spacing": "@space.sm"}, "children": [
         {"type": "text", "id": "liveTitle", "props": {"text": "Прямой эфир", "style": "@type.bodyStrong"}},
