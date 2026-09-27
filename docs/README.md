@@ -1,0 +1,48 @@
+# Wishbone — BDUI (Backend-Driven UI)
+
+Выдача экранов с сервера декларативным Screen Document: один пейлоад рендерят iOS, Android и omniapp, бэкенд компонует закрытый каталог DS-компонентов. Проект вынесен из Stratoapp 2026-09-25: BDUI кросс-платформенный, а Stratoapp — только iOS-приложение.
+
+## Репозитории
+
+Все пути ниже — на одной машине, репозитории лежат рядом в `~/projects/`.
+
+| Репозиторий | Локально | Remote | Роль в BDUI |
+|---|---|---|---|
+| **wishbone** | `~/projects/wishbone` | — | этот проект: доки BDUI + `ios/`, `android/`, `backend/` |
+| **bdui-contracts** | `~/projects/bdui-contracts` (`main`, скелет 0.1.0); `~/projects/bdui-contracts-wave1` (ветка `wave1/contract`, контракт 0.2.0) | `ssh://git@git.korputeam.ru/shared/bdui-contracts.git` | контракт: JSON Schema, каталог токенов/узлов/иконок, профили, реестр операций, фикстуры, CI-гейт `tools/validate.py` |
+| **Stratoapp** | `~/projects/Stratoapp` (ветка `dev`) | `git@git.korputeam.ru:ios/stratoapp.git` | iOS-потребитель: Tuist-модули, `DesignSystem`/`ThemeKit`, Postbox, Apollo-codegen. Архитектурные правила — `docs/Architecture/*.md`, `CLAUDE.md` |
+| **most** | `~/projects/most` (ветка `develop`) | `ssh://git@git.korputeam.ru/android/most.git` | Android-потребитель: `:core:ui`, `feature/giveaway`, `graphql/`, `MviViewModel` |
+| **omniapp** (VYSOTA) | `~/projects/omniapp` | `git@github.com:TruerTrue/omniapp.git` | третий потребитель (iOS, dark-only DS, бэкенд Go + REST) |
+| **multiapp** | `~/projects/multiapp` | `git@git.korputeam.ru:ios/multiapp.git` | legacy iOS: исходный раффл `Korpu/Modules/Raffle`, `Korpu/API/GraphQL/Raffle` |
+| **NewBackend** | `~/projects/NewBackend` | группа `newbackend` | исходники текущего бэкенда (63 репо): основной граф, сабграфы, схема |
+
+## Соглашение о путях в доках
+
+Документы писались внутри Stratoapp, поэтому относительные пути в тексте привязаны к репозиторию по префиксу:
+
+| Префикс | Репозиторий |
+|---|---|
+| `Modules/`, `App/`, `Apps/`, `Tuist/`, `Scripts/`, `Tests/`, `.claude/`, `schema.graphqls:N` (= `Modules/PostboxGQL/Schema/schema.graphqls`) | Stratoapp |
+| `core/`, `feature/`, `graphql/`, `app/` | most |
+| `Korpu/` | multiapp |
+| `Omniapp/`, `back-artifacts/` | omniapp |
+| `schema/`, `catalog/`, `operations/`, `fixtures/`, `tools/`, `bindings/`, `contracts/…` | bdui-contracts |
+| `internal/bdui/…` | будущий Go-сервис → `backend/` этого репо |
+
+Ссылки на общие архитектурные заметки Stratoapp (Postbox, White-Label, DesignSystem-Catalog, Localization…) — обычные markdown-ссылки вида `../../Stratoapp/docs/Architecture/<Name>.md`.
+
+## Документы
+
+- **[Wishbone V1 — дизайн](superpowers/specs/2026-09-27-wishbone-v1-design.md)** — актуальная архитектура (DSL на клиенте, примитивы + шаблоны, фул моушен, админка, SDK). Пересматривает часть решений документов ниже — см. её §0.
+- [[BDUI]] — требования и модель Screen Document (⚠️ описывает грамматику v1; актуальная v2 — в Catalog/Backend/пилоте и в bdui-contracts)
+- [[BDUI-Catalog]] — реестр токенов, иконок и узлов, маппинг на iOS/Android/omniapp, пробелы платформ
+- [[BDUI-Backend]] — сервис на Go: хранение ревизий, таргетинг, резолв данных, `bduiCall`, валидация, админка, contracts-репо
+- [[BDUI-Raffle-Pilot]] — пилот на экране розыгрыша
+- [[BDUI-Plan]] — волны, разбивка iOS-среза на коммиты C1–C16, гейты, риски
+- [[BDUI-Backend-Questions]] — вопросы к бэкенду (P-9, P-10, P-3) и ответы
+
+## Где что остаётся в Stratoapp
+
+- Компоненты DS под BDUI уже в коде Stratoapp: `Modules/ThemeKit/Sources/BDUITokenRoles.swift`, `Modules/DesignSystem/Sources/Components+{CountdownLabel,Badge,Stepper}.swift` и др. (P-7).
+- Итог запросов к бэкенду — `Stratoapp/docs/Backend-Requests.md`.
+- iOS-рендерер (волна 2B) по-прежнему встраивается в Stratoapp как Tuist-модуль и подчиняется его правилам (`Stratoapp/CLAUDE.md`).
