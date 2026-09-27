@@ -1,7 +1,7 @@
 {
  "id": "showcase.promo",
  "title": "Промо недели",
- "script": "// Промо (spec §9.2): скролл-драйвер scroll.page.y — параллакс и схлопывание героя в верхнюю панель, заголовок\n// панели проявляется через interpolate; сетка офферов из data со stagger-таймлайном; свайп-карточки заданий (drag +\n// dragEnd убирают их из стейта tasks); countdown от env.now до until оффера; Rive-кнопка, вход state machine которой —\n// стейт live; «Забрать» → call demo.claimOffer, счётчик билетов из demo.profile обновляет refresh(me).\ndata me = demo.profile()\ndata offers = demo.offers()\nstate claimed: list<string> = []\nstate claiming = \"\"\nstate live = false\nstate tasks = seedTasks()\nfn seedTasks(): list<{id: string, title: string, text: string, icon: icon}> = [\n  {id: \"invite\", title: \"Пригласите друга\", text: \"+5 билетов за каждого нового участника\", icon: @icon.user},\n  {id: \"streak\", title: \"Заходите 7 дней подряд\", text: \"Серия приносит +10 билетов\", icon: @icon.star},\n  {id: \"share\", title: \"Поделитесь розыгрышем\", text: \"+1 билет за каждый репост\", icon: @icon.share},\n  {id: \"mail\", title: \"Подпишитесь на рассылку\", text: \"Узнавайте об акциях первыми\", icon: @icon.mail}\n]\nlet heroH = 300 + env.safeTop\nlet y = scroll.page.y\nlet featured = offers.first\nlet tickets = me.tickets ?? 0\nlet ticketsText = plural(tickets, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})\nhandler claim(id: string) {\n  claiming = id\n  let r = await call demo.claimOffer({id: id})\n  claiming = \"\"\n  if r.ok {\n    animate(@motion.bouncy) { claimed = claimed.append(id) }\n    haptic(\"success\")\n    refresh(me)\n    play(bump)\n  } else {\n    haptic(\"error\")\n  }\n}\nhandler dismissTask(id: string) {\n  haptic(\"light\")\n  animate(@motion.smooth) { tasks = tasks.filter(t => t.id != id) }\n}\nhandler toggleLive() {\n  haptic(\"selection\")\n  animate(@motion.snappy) { live = !live }\n}",
+ "script": "// Промо (spec §9.2): скролл-драйвер scroll.page.y — параллакс и схлопывание героя в верхнюю панель, заголовок\n// панели проявляется через interpolate; сетка офферов из data со stagger-таймлайном; свайп-карточки заданий (drag +\n// dragEnd убирают их из стейта tasks); countdown от env.now до until оффера; Rive-кнопка, вход state machine которой —\n// стейт live; «Забрать» → call demo.claimOffer, счётчик билетов берёт ответ claim (ticketsNow), затем refresh(me).\ndata me = demo.profile()\ndata offers = demo.offers()\nstate claimed: list<string> = []\nstate claiming: list<string> = []\nstate expired: list<string> = []\nstate ticketsNow: number? = null\nstate live = false\nstate tasks = seedTasks()\nstate gen = 0\nfn seedTasks(): list<{id: string, title: string, text: string, icon: icon}> = [\n  {id: \"invite\", title: \"Пригласите друга\", text: \"+5 билетов за каждого нового участника\", icon: @icon.user},\n  {id: \"streak\", title: \"Заходите 7 дней подряд\", text: \"Серия приносит +10 билетов\", icon: @icon.star},\n  {id: \"share\", title: \"Поделитесь розыгрышем\", text: \"+1 билет за каждый репост\", icon: @icon.share},\n  {id: \"mail\", title: \"Подпишитесь на рассылку\", text: \"Узнавайте об акциях первыми\", icon: @icon.mail}\n]\nlet heroH = 300 + env.safeTop\nlet y = scroll.page.y\nlet featured = offers.first\nlet tickets = ticketsNow ?? me.tickets ?? 0\nlet ticketsText = plural(tickets, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})\nfn rub(x: number): string = formatNumber(x, x == floor(x) ? 0 : 2).replace(\".\", \",\") + \" ₽\"\nhandler claim(id: string) {\n  claiming = claiming.append(id)\n  let r = await call demo.claimOffer({id: id})\n  claiming = claiming.filter(c => c != id)\n  if r.ok {\n    ticketsNow = r.value.tickets ?? ticketsNow\n    animate(@motion.bouncy) { claimed = claimed.append(id) }\n    haptic(\"success\")\n    refresh(me)\n    play(bump)\n  } else {\n    haptic(\"error\")\n  }\n}\nhandler dismissTask(id: string) {\n  haptic(\"light\")\n  animate(@motion.smooth) { tasks = tasks.filter(t => t.id != id) }\n}\nhandler restoreTasks() {\n  gen = gen + 1\n  animate(@motion.smooth) { tasks = seedTasks() }\n}\nhandler toggleLive() {\n  haptic(\"selection\")\n  animate(@motion.snappy) { live = !live }\n}",
  "timelines": [
   {"name": "offersIn", "autoplay": true, "tracks": [
    {"target": "offer", "prop": "opacity", "stagger": 80, "keys": [{"t": 0, "v": 0}, {"t": 360, "v": 1, "ease": "easeOut"}]},
@@ -55,7 +55,7 @@
        "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.sm", "background": "@color.bg1Elevated", "corner": "@radius.lg"}, "children": [
        {"type": "stack", "id": "offerMedia", "props": {"axis": "z", "align": "topStart", "width": "fill"}, "children": [
         {"type": "image", "id": "offerImg", "props": {"url": "=item.image", "width": "fill", "height": 108, "corner": "@radius.md"}, "a11y": {"hidden": true}},
-        {"type": "Badge", "id": "offerPrice", "props": {"title": "=str(item.price) + \" ₽\"", "size": "sm", "offsetX": 8, "offsetY": 8}}
+        {"type": "Badge", "id": "offerPrice", "props": {"title": "=rub(item.price)", "size": "sm", "offsetX": 8, "offsetY": 8}}
        ]},
        {"type": "stack", "id": "offerText", "props": {"spacing": 2, "width": "fill", "padding": "={h: @space.xs}"}, "children": [
         {"type": "text", "id": "offerTitle", "props": {"text": "=item.title", "style": "@type.bodySmallStrong", "maxLines": 1}},
@@ -63,10 +63,11 @@
        ]},
        {"type": "stack", "id": "offerTimer", "props": {"axis": "h", "align": "center", "spacing": "@space.xs", "padding": "={h: @space.xs}"}, "children": [
         {"type": "icon", "id": "offerClock", "props": {"name": "@icon.clock", "size": 14, "color": "@color.el9"}},
-        {"type": "Countdown", "id": "offerCountdown", "props": {"until": "=item.until", "font": "@type.captionStrong"}}
+        {"type": "Countdown", "id": "offerCountdown", "props": {"until": "=item.until", "font": "@type.captionStrong"},
+         "on": {"expire": "if !expired.contains(item.id) { expired = expired.append(item.id) }"}}
        ]},
-       {"type": "Button", "id": "claimBtn", "props": {"title": "=claimed.contains(item.id) ? \"Получено\" : \"Забрать\"", "size": "compact", "width": "fill",
-        "enabled": "=!claimed.contains(item.id)", "loading": "=claiming == item.id"}, "on": {"tap": "claim(item.id)"}}
+       {"type": "Button", "id": "claimBtn", "props": {"title": "=claimed.contains(item.id) ? \"Получено\" : expired.contains(item.id) ? \"Завершено\" : \"Забрать\"", "size": "compact", "width": "fill",
+        "enabled": "=!claimed.contains(item.id) && !expired.contains(item.id)", "loading": "=claiming.contains(item.id)"}, "on": {"tap": "claim(item.id)"}}
       ]}
      ]}
     ]},
@@ -90,8 +91,8 @@
       {"type": "text", "id": "tasksTitle", "props": {"text": "Задания", "style": "@type.headingSmall"}, "a11y": {"role": "header"}},
       {"type": "text", "id": "tasksHint", "props": {"text": "Смахните карточку в сторону, чтобы скрыть её", "style": "@type.caption", "color": "@color.el9"}}
      ]},
-     {"type": "Card", "id": "task", "repeat": {"over": "tasks", "key": "item.id"}, "drag": {"axis": "x", "snap": [-420, 0, 420]},
-      "transition": {"out": "fade + scale(0.9)"}, "props": {"width": "fill"},
+     {"type": "Card", "id": "task", "repeat": {"over": "tasks", "key": "item.id + str(gen)"}, "drag": {"axis": "x", "snap": [-420, 0, 420]},
+      "transition": {"in": "fade + scale(0.95)", "out": "fade + scale(0.9)"}, "props": {"width": "fill"},
       "on": {"dragEnd": "if abs(event.x) > 210 || abs(event.vx) > 1000 { dismissTask(item.id) }"}, "children": [
       {"type": "stack", "id": "taskRow", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill"}, "children": [
        {"type": "stack", "id": "taskIcon", "props": {"axis": "z", "width": 40, "height": 40, "corner": "@radius.pill", "background": "=alpha(@color.accentPrimary, 0.12)"}, "children": [
@@ -105,7 +106,7 @@
      ]},
      {"type": "EmptyState", "id": "tasksDone", "when": "tasks.isEmpty", "transition": {"in": "fade + scale(0.95)"},
       "props": {"icon": "@icon.gift", "title": "Все задания скрыты", "subtitle": "Новые появятся завтра утром", "actionTitle": "Вернуть задания", "width": "fill"},
-      "on": {"action": "animate(@motion.smooth) { tasks = seedTasks() }"}}
+      "on": {"action": "restoreTasks()"}}
     ]}
    ]}
   ]},

@@ -19,7 +19,7 @@ URLs for the images. The screens reference Lottie and Rive files by server-relat
 - **Source:** <https://github.com/rive-app/rive-ios/blob/main/Demo-App/RiveExampleSPM/Rive%20Files/play_pause.riv>
   (raw: `https://raw.githubusercontent.com/rive-app/rive-ios/main/Demo-App/RiveExampleSPM/Rive%20Files/play_pause.riv`).
 - **License:** MIT, the license of the rive-ios repository (<https://github.com/rive-app/rive-ios/blob/main/LICENSE>),
-  © Rive.
+  © 2020 Rive. The full text is in `rive/LICENSE`.
 - **Contents:**
   - artboard `Artboard` (the default one, so `artboard` can stay empty);
   - state machine `State Machine 1`;
