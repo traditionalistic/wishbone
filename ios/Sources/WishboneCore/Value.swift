@@ -17,6 +17,15 @@ public struct Lambda: Sendable {
 /// Runtime value. `record` key order is not observable (`str()` sorts keys by code point,
 /// equality is order-insensitive per contract/stdlib.json), so a plain dictionary suffices.
 /// All cases are immutable value types; assignment always produces a new `Value`.
+///
+/// ponytail: `[String: Value]` hashes/compares keys by Swift's native `String` semantics
+/// (canonical equivalence), not strict code points like DSL string *values* are required to
+/// (see `CodePoints`). A record built from two keys that are byte-different but canonically
+/// equivalent (e.g. "e"+combining-acute vs. precomposed "é") would collapse to one dictionary
+/// entry instead of two distinct fields. `map<T>` keys come from the backend's own JSON, where
+/// this is exotic but not impossible. Upgrade path if it ever bites: wrap `String` in a small
+/// `CodePointKey: Hashable` that hashes/compares `unicodeScalars`, and use
+/// `[CodePointKey: Value]` for `record`.
 public enum Value: Sendable {
     case null
     case bool(Bool)
@@ -127,8 +136,11 @@ extension Value {
             updated[key] = existing.settingPath(rest, to: newValue)
             return .record(updated)
         case let (.list(items), .number(indexValue)):
+            // Compare against `items.count` in Double space *before* converting to Int —
+            // `indexValue` may be e.g. 1e19 (passes the integrality check below), and
+            // `Int(indexValue)` alone would trap before the bounds check ever ran.
             guard indexValue.truncatingRemainder(dividingBy: 1) == 0,
-                  indexValue >= 0, Int(indexValue) < items.count else { return self }
+                  indexValue >= 0, indexValue < Double(items.count) else { return self }
             var updated = items
             let i = Int(indexValue)
             updated[i] = updated[i].settingPath(rest, to: newValue)

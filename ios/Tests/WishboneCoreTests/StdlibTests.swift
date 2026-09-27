@@ -19,6 +19,46 @@ import Testing
         #expect(Stdlib.interpolate(1, [0], [3]) == 3) // fewer than 2 stops -> output.first
     }
 
+    @Test func interpolateRequiresNonDecreasingStops() {
+        // math.interpolate.decreasing: a decreasing `input` is invalid -> output.first ?? 0
+        #expect(Stdlib.interpolate(5, [10, 0], [1, 2]) == 1)
+        // math.interpolate.dupstop: a duplicated (non-decreasing, not increasing) stop is
+        // valid; the segment starting at the *later* occurrence of the duplicate applies.
+        #expect(Stdlib.interpolate(5, [0, 5, 5, 10], [0, 1, 2, 3]) == 2)
+    }
+
+    @Test func minMaxAreSymmetricWithNaN() {
+        // Swift's generic min/max are asymmetric with NaN (`y < x ? y : x`); ours must not be.
+        #expect(Stdlib.min(.nan, 5).isNaN)
+        #expect(Stdlib.min(5, .nan).isNaN)
+        #expect(Stdlib.max(.nan, 5).isNaN)
+        #expect(Stdlib.max(5, .nan).isNaN)
+    }
+
+    @Test func clampWithInvertedBoundsAppliesLoThenHi() {
+        // math.clamp.inverted: clamp(x, lo, hi) = min(max(x, lo), hi) even when lo > hi.
+        #expect(Stdlib.clamp(5, 10, 0) == 0)
+    }
+
+    @Test func mathFunctionsDoNotTrapOnExtremeMagnitudes() {
+        #expect(Stdlib.clamp(1e19, 0, 10) == 10)
+        #expect(Stdlib.round(1e19) == 1e19)
+        #expect(Stdlib.round(.nan).isNaN)
+    }
+
+    @Test func upperUsesFullCaseMappingNotSimple() {
+        // str.upper.full: "ß" (U+00DF) full-uppercases to "SS" (two characters) — a naive
+        // simple 1:1 case mapping would leave it unchanged or map to a single "ẞ".
+        #expect(Stdlib.upper("Straße") == "STRASSE")
+    }
+
+    @Test func sortByTreatsNegativeAndPositiveZeroAsEqualStable() {
+        // list.sortBy.negzero: round(-0.4) == -0.0, and -0.0 < 0.0 is false either way, so a
+        // stable sort must preserve the original [a, b] order rather than reordering on sign.
+        #expect(Stdlib.round(-0.4) == 0) // == compares by value; -0.0 == 0.0
+        #expect(Stdlib.round(-0.4).sign == .minus) // but it really is negative zero
+    }
+
     // MARK: strings (code-point based)
 
     @Test func lengthCountsCodePointsNotGraphemes() {
@@ -56,6 +96,26 @@ import Testing
         #expect(Stdlib.matches("test@example.com", "[^@]+@[^@]+\\.[a-z]+"))
         #expect(!Stdlib.matches("test@", "[^@]+@[^@]+\\.[a-z]+"))
         #expect(!Stdlib.matches("abc", "b"))
+    }
+
+    @Test func matchesUsesAbsoluteAnchorsNotLineAnchors() {
+        // `$` (unlike `\z`) matches before a trailing newline — "abc\n" must NOT match "abc".
+        #expect(!Stdlib.matches("abc\n", "abc"))
+        #expect(Stdlib.matches("abc", "abc"))
+    }
+
+    @Test func combiningMarksAreNotEquivalentToPrecomposedCharacters() {
+        // "é" as precomposed U+00E9 vs. "e" + combining acute U+0301: canonically equivalent
+        // (Swift's own String ==/hasPrefix/contains would treat them the same) but NOT the
+        // same code-point sequence, so none of these should cross-match.
+        let precomposed = "caf\u{00E9}"
+        let combining = "cafe\u{0301}"
+        #expect(!Stdlib.startsWith(combining, precomposed))
+        #expect(!Stdlib.endsWith(combining, precomposed))
+        #expect(!Stdlib.containsString(combining, precomposed))
+        #expect(Stdlib.startsWith(precomposed, precomposed)) // sanity: identical does match
+        #expect(Stdlib.replace(combining, precomposed, "X") == combining) // no literal match -> unchanged
+        #expect(Stdlib.split(combining, precomposed) == [.string(combining)]) // no match -> whole string
     }
 
     // MARK: lists

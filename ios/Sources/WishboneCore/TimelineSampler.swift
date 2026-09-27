@@ -64,36 +64,40 @@ public enum TimelineSampler {
     private static func sampleTrack(
         _ track: TimelineTrack, duration D: Double, repeatCount: Int, autoreverse: Bool, tMs: Double, index: Int
     ) -> Double {
-        let keys = track.keys.sorted { $0.t < $1.t }
+        // `track.keys` is sorted once at decode time (Document.swift) — not re-sorted here.
+        let keys = track.keys
         guard let k0 = keys.first, let kn = keys.last else { return 0 }
         if D == 0 { return kn.v }
         let u = tMs - track.stagger * Double(index)
         if u < 0 { return k0.v }
         let c = (u / D).rounded(.down)
         var ph = u - c * D
-        let cInt = Int(c)
-        if repeatCount != -1, cInt >= repeatCount {
+        // Compare/parity-check `c` in Double space — `u`/`D` can make `c` far outside Int's
+        // range (e.g. a stale/extreme `tMs`), and `Int(c)` would trap.
+        if repeatCount != -1, c >= Double(repeatCount) {
             ph = (autoreverse && (repeatCount - 1) % 2 != 0) ? 0 : D
-        } else if autoreverse, !cInt.isMultiple(of: 2) {
+        } else if autoreverse, c.truncatingRemainder(dividingBy: 2) != 0 {
             ph = D - ph
         }
         return valueAt(ph, keys: keys)
     }
 
+    /// `ph`'s value: before the first key → its value; at/after the last key → its value
+    /// (this also covers a run of keys sharing the last time — "equal key times step to the
+    /// later key"); otherwise interpolated between `keys[j]` and `keys[j+1]`, where `j` is
+    /// the *last* index with `keys[j].t <= ph` — so an interior duplicate time resolves to
+    /// the later of the two keys too, not whichever segment a naive first-match scan hits.
     private static func valueAt(_ ph: Double, keys: [TimelineKey]) -> Double {
         guard let first = keys.first, let last = keys.last else { return 0 }
-        if ph <= first.t { return first.v }
+        if ph < first.t { return first.v }
         if ph >= last.t { return last.v }
-        for i in 0..<(keys.count - 1) {
-            let a = keys[i]
-            let b = keys[i + 1]
-            guard ph >= a.t, ph <= b.t else { continue }
-            if b.t == a.t { return b.v } // equal key times: a step to the later key
-            let frac = (ph - a.t) / (b.t - a.t)
-            let eased = ease(frac, curve: b.ease)
-            return a.v + (b.v - a.v) * eased
-        }
-        return last.v
+        var j = 0
+        for i in 0..<keys.count where keys[i].t <= ph { j = i }
+        let a = keys[j]
+        let b = keys[j + 1] // safe: ph < last.t guarantees j < keys.count - 1
+        if b.t == a.t { return b.v }
+        let frac = (ph - a.t) / (b.t - a.t)
+        return a.v + (b.v - a.v) * ease(frac, curve: b.ease)
     }
 
     private static func ease(_ t: Double, curve: [Double]?) -> Double {

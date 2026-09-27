@@ -23,14 +23,18 @@ public struct Handler: Sendable {
     }
 }
 
-/// `data[]` — a data source binding.
+/// `data[]` — a data source binding. `args` are plain JSON values, not DSL expressions: per
+/// spec, `data` arguments may only reference literals and params, and the compiler lowers a
+/// param reference to a `{"$param": name}` marker object rather than an `["p", name]` expr —
+/// so this decodes with `Value(wire:)`, not `Expr(wire:)`. The store resolves `$param` markers
+/// against the document's actual param values when it runs the operation.
 public struct DataDecl: Sendable {
     public let name: String
     public let op: String
-    public let args: [String: Expr]
+    public let args: [String: Value]
     public let required: Bool
 
-    public init(name: String, op: String, args: [String: Expr], required: Bool) {
+    public init(name: String, op: String, args: [String: Value], required: Bool) {
         self.name = name
         self.op = op
         self.args = args
@@ -67,19 +71,24 @@ public struct TimelineTrack: Sendable {
 }
 
 /// `timelines.<name>`. `duration` is `D` in the sampling algorithm (contract/README.md):
-/// the compiler pre-computes it as `max(key.t)` across all tracks.
+/// the compiler pre-computes it as `max(key.t)` across all tracks. `autoplay` (renderer
+/// concern, tasks 9/10): the timeline is considered running from the document's first render,
+/// without needing an explicit `play()` — carried through here even though `TimelineSampler`
+/// itself doesn't consult it.
 public struct Timeline: Sendable {
     public let name: String
     public let duration: Double
     public let repeatCount: Int // -1 = infinite
     public let autoreverse: Bool
+    public let autoplay: Bool
     public let tracks: [TimelineTrack]
 
-    public init(name: String, duration: Double, repeatCount: Int, autoreverse: Bool, tracks: [TimelineTrack]) {
+    public init(name: String, duration: Double, repeatCount: Int, autoreverse: Bool, autoplay: Bool = false, tracks: [TimelineTrack]) {
         self.name = name
         self.duration = duration
         self.repeatCount = repeatCount
         self.autoreverse = autoreverse
+        self.autoplay = autoplay
         self.tracks = tracks
     }
 }
@@ -125,8 +134,9 @@ extension Timeline {
     init(name: String, wire: JSONValue) throws {
         guard let obj = wire.asObject else { throw ASTDecodeError.malformed("timeline \(name): expected an object") }
         let duration = obj["duration"]?.asNumber ?? 0
-        let repeatCount = obj["repeat"].flatMap { $0.asNumber.map(Int.init) } ?? 1
+        let repeatCount = obj["repeat"].flatMap { $0.asNumber.map { SafeNumeric.int($0, fallback: 1) } } ?? 1
         let autoreverse = obj["autoreverse"]?.asBool ?? false
+        let autoplay = obj["autoplay"]?.asBool ?? false
         guard let tracksWire = obj["tracks"]?.asArray else { throw ASTDecodeError.malformed("timeline \(name): missing 'tracks'") }
         let tracks: [TimelineTrack] = try tracksWire.map { trackWire in
             guard let tObj = trackWire.asObject, let target = tObj["target"]?.asString, let prop = tObj["prop"]?.asString else {
@@ -141,9 +151,10 @@ extension Timeline {
                 let ease: [Double]? = kObj["ease"]?.asArray?.compactMap { $0.asNumber }
                 return TimelineKey(t: t, v: v, ease: ease)
             }
-            return TimelineTrack(target: target, prop: prop, stagger: stagger, keys: keys)
+            // Sorted once here — TimelineSampler assumes `keys` is already ascending by `t`.
+            return TimelineTrack(target: target, prop: prop, stagger: stagger, keys: keys.sorted { $0.t < $1.t })
         }
-        self.init(name: name, duration: duration, repeatCount: repeatCount, autoreverse: autoreverse, tracks: tracks)
+        self.init(name: name, duration: duration, repeatCount: repeatCount, autoreverse: autoreverse, autoplay: autoplay, tracks: tracks)
     }
 }
 
@@ -163,7 +174,7 @@ extension Document {
         guard let rootWire = obj["root"] else { throw ASTDecodeError.malformed("document: missing 'root'") }
         let root = try Node(wire: rootWire)
         let runtimeMin = obj["runtimeMin"]?.asString ?? "1.0.0"
-        let revision = obj["revision"].flatMap { $0.asNumber.map(Int.init) } ?? 0
+        let revision = obj["revision"].flatMap { $0.asNumber.map { SafeNumeric.int($0) } } ?? 0
 
         var params: [String: Expr] = [:]
         if let p = obj["params"]?.asObject { for (k, v) in p { params[k] = try Expr(wire: v) } }
@@ -209,8 +220,8 @@ extension Document {
                 guard let dObj = entry.asObject, let name = dObj["name"]?.asString, let op = dObj["op"]?.asString else {
                     throw ASTDecodeError.malformed("document.data: malformed entry")
                 }
-                var args: [String: Expr] = [:]
-                if let argsObj = dObj["args"]?.asObject { for (k, v) in argsObj { args[k] = try Expr(wire: v) } }
+                var args: [String: Value] = [:]
+                if let argsObj = dObj["args"]?.asObject { for (k, v) in argsObj { args[k] = Value(wire: v) } }
                 data.append(DataDecl(name: name, op: op, args: args, required: dObj["required"]?.asBool ?? false))
             }
         }
@@ -221,7 +232,7 @@ extension Document {
         }
 
         self.init(
-            format: Int(format), runtimeMin: runtimeMin, screen: screen, revision: revision,
+            format: SafeNumeric.int(format, fallback: 1), runtimeMin: runtimeMin, screen: screen, revision: revision,
             params: params, state: state, computed: computed, fns: fns, handlers: handlers,
             data: data, timelines: timelines, root: root
         )

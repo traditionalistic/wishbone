@@ -19,11 +19,11 @@ let project = Project(
             infoPlist: .extendingDefault(with: [
                 "UILaunchScreen": [:],
                 "NSAppTransportSecurity": [
-                    "NSAllowsArbitraryLoads": true,
                     "NSAllowsLocalNetworking": true
                 ]
             ]),
             sources: ["Playground/Sources/**"],
+            resources: [.folderReference(path: "Playground/Resources/Fixtures")],
             dependencies: [
                 .package(product: "WishboneUI"),
                 .package(product: "WishboneLottie"),

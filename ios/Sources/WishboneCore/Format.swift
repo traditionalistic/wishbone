@@ -97,7 +97,15 @@ enum Format {
 
     static func formatNumber(_ x: Double, _ decimalsRaw: Double) -> String {
         guard x.isFinite else { return numberToString(x) }
-        let d = max(0, min(10, Int(decimalsRaw.rounded(.down))))
+        // clamp(floor(d), 0, 10) — compared in Double space first: `decimalsRaw` may be
+        // NaN/±infinity/1e19, and `Int(decimalsRaw.rounded(.down))` alone would trap.
+        let d: Int
+        if decimalsRaw.isNaN {
+            d = 0
+        } else {
+            let floored = decimalsRaw.rounded(.down)
+            d = floored <= 0 ? 0 : (floored >= 10 ? 10 : Int(floored))
+        }
         let (sign, intPart, fracPart) = fixedPointComponents(x, d)
         let grouped = groupThousands(intPart)
         return d > 0 ? "\(sign)\(grouped).\(fracPart)" : "\(sign)\(grouped)"
@@ -118,7 +126,15 @@ enum Format {
     // MARK: formatDuration
 
     static func formatDuration(_ ms: Double, _ style: String) -> String {
-        let totalSeconds: Int = (ms.isFinite && ms >= 0) ? Int(ms.rounded(.down) / 1000) : 0
+        // `ms` may be finite but astronomically large (e.g. 1e19); clamp in Double space
+        // before ever converting to Int, same reasoning as `formatNumber`'s `d` above.
+        let totalSeconds: Int
+        if ms.isFinite, ms >= 0 {
+            let secondsFloor = (ms / 1000).rounded(.down)
+            totalSeconds = secondsFloor < 0x1p62 ? Int(secondsFloor) : Int.max
+        } else {
+            totalSeconds = 0
+        }
         func pad2(_ n: Int) -> String { n < 10 ? "0\(n)" : "\(n)" }
         switch style {
         case "hms":
@@ -171,12 +187,16 @@ enum Format {
         let lang = pluralLanguage(locale)
         switch lang {
         case "ru":
+            // `n` integral (checked below) doesn't mean "small" — every double beyond ~2^52
+            // is trivially its own truncation, so a huge finite `n` (e.g. 1e19) would still
+            // pass this guard and then trap converting to Int64. Compute the digits via
+            // `truncatingRemainder` instead, which never traps for any finite Double.
             guard n.isFinite, n == n.rounded(.towardZero) else { return "other" }
-            let i = Int64(abs(n))
-            let mod10 = i % 10
-            let mod100 = i % 100
+            let absN = Swift.abs(n)
+            let mod10 = absN.truncatingRemainder(dividingBy: 10)
+            let mod100 = absN.truncatingRemainder(dividingBy: 100)
             if mod10 == 1, mod100 != 11 { return "one" }
-            if (2...4).contains(mod10), !(12...14).contains(mod100) { return "few" }
+            if (2.0...4.0).contains(mod10), !(12.0...14.0).contains(mod100) { return "few" }
             return "many"
         case let l where enLikeLanguages.contains(l):
             return abs(n) == 1 ? "one" : "other"
@@ -189,6 +209,6 @@ enum Format {
         let category = pluralCategory(n, locale: locale)
         let chosen = forms[category] ?? forms["other"]
         guard case let .string(template)? = chosen else { return "" }
-        return template.replacingOccurrences(of: "#", with: numberToString(n))
+        return template.replacingOccurrences(of: "#", with: numberToString(n), options: .literal)
     }
 }

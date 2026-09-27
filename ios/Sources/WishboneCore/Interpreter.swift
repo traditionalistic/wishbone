@@ -47,10 +47,13 @@ private final class HandlerContext {
     }
 }
 
-/// Evaluates wire `Expr`/`Stmt` against a `Scope`. Stateless itself (only holds the
-/// document's `fns`/`handlers` for lookups), so a plain `final class` — not actor-isolated,
-/// which keeps it callable from `@MainActor` code (the future store) without extra hops,
-/// and just as usable from a background context or a test.
+/// Evaluates wire `Expr`/`Stmt` against a `Scope`. `Scope` is `@MainActor` (so a `@MainActor`
+/// store can conform to it directly, without hopping actors on every state/computed/env read),
+/// which means anything that calls through a `Scope` — `eval` included — must run on the main
+/// actor too; marking the whole class `@MainActor` keeps that consistent and lets `run`/
+/// `runStatements`/`runEvent` stay plain (non-isolated-async) `async` methods that are always
+/// on the main actor rather than hopping off it mid-run.
+@MainActor
 public final class Interpreter: Sendable {
     let fns: [String: Fn]
     let handlers: [String: Handler]
@@ -159,7 +162,9 @@ public final class Interpreter: Sendable {
     private func atIndex(_ obj: Value, _ key: Value) -> Value {
         switch (obj, key) {
         case let (.list(items), .number(n)):
-            guard n.truncatingRemainder(dividingBy: 1) == 0, n >= 0, Int(n) < items.count else { return .null }
+            // Compare against `items.count` in Double space before converting to Int — `n`
+            // may be e.g. 1e19 (integral per the check below), which would trap `Int(n)`.
+            guard n.truncatingRemainder(dividingBy: 1) == 0, n >= 0, n < Double(items.count) else { return .null }
             return items[Int(n)]
         case let (.record(fields), .string(k)):
             return fields[k] ?? .null
@@ -262,6 +267,12 @@ public final class Interpreter: Sendable {
             return .null
         }
 
+        // Raw `args[i]` indexing would crash (index out of range) on a malformed AST with too
+        // few arguments; every access goes through a throwing accessor instead.
+        func arg(_ i: Int) throws -> Value {
+            guard i < args.count else { throw InterpreterError.typeMismatch("\(name): missing arg \(i)") }
+            return args[i]
+        }
         func num(_ i: Int) throws -> Double {
             guard i < args.count, case let .number(n) = args[i] else { throw InterpreterError.typeMismatch("\(name): arg \(i) not a number") }
             return n
@@ -304,10 +315,10 @@ public final class Interpreter: Sendable {
         case "interpolate": return .number(Stdlib.interpolate(try num(0), try numList(1), try numList(2)))
 
         case "length":
-            guard case let .string(s) = args[0] else { throw InterpreterError.typeMismatch("length: not a string") }
+            guard case let .string(s) = try arg(0) else { throw InterpreterError.typeMismatch("length: not a string") }
             return .number(Stdlib.length(s))
         case "isEmpty":
-            switch args[0] {
+            switch try arg(0) {
             case let .string(s): return .bool(s.unicodeScalars.isEmpty)
             case let .list(l): return .bool(l.isEmpty)
             default: throw InterpreterError.typeMismatch("isEmpty: not a string or list")
@@ -316,12 +327,12 @@ public final class Interpreter: Sendable {
         case "lower": return .string(Stdlib.lower(try str(0)))
         case "trim": return .string(Stdlib.trim(try str(0)))
         case "contains":
-            switch args[0] {
+            switch try arg(0) {
             case let .string(s):
-                guard case let .string(t) = args[1] else { throw InterpreterError.typeMismatch("contains: not a string") }
+                guard case let .string(t) = try arg(1) else { throw InterpreterError.typeMismatch("contains: not a string") }
                 return .bool(Stdlib.containsString(s, t))
             case let .list(l):
-                return .bool(l.contains(args[1]))
+                return .bool(l.contains(try arg(1)))
             default:
                 throw InterpreterError.typeMismatch("contains: not a string or list")
             }
@@ -332,21 +343,21 @@ public final class Interpreter: Sendable {
         case "matches": return .bool(Stdlib.matches(try str(0), try str(1)))
         case "substring": return .string(Stdlib.substring(try str(0), try num(1), optNum(2)))
         case "num": return Stdlib.num(try str(0)).map(Value.number) ?? .null
-        case "str": return .string(Stdlib.str(args[0]))
+        case "str": return .string(Stdlib.str(try arg(0)))
 
         case "count": return .number(Stdlib.count(try list(0)))
         case "first": return Stdlib.first(try list(0))
         case "last": return Stdlib.last(try list(0))
         case "sum": return .number(Stdlib.sum(try list(0)))
         case "join": return .string(Stdlib.join(try list(0), try str(1)))
-        case "append": return .list(Stdlib.append(try list(0), args[1]))
+        case "append": return .list(Stdlib.append(try list(0), try arg(1)))
         case "removeAt": return .list(Stdlib.removeAt(try list(0), try num(1)))
-        case "set": return .list(Stdlib.set(try list(0), try num(1), args[2]))
+        case "set": return .list(Stdlib.set(try list(0), try num(1), try arg(2)))
         case "slice": return .list(Stdlib.slice(try list(0), try num(1), optNum(2)))
-        case "indexOf": return .number(Stdlib.indexOf(try list(0), args[1]))
+        case "indexOf": return .number(Stdlib.indexOf(try list(0), try arg(1)))
         case "reverse": return .list(Stdlib.reverse(try list(0)))
         case "range": return .list(Stdlib.range(try num(0)))
-        case "with": return Stdlib.with(args[0], args[1])
+        case "with": return Stdlib.with(try arg(0), try arg(1))
 
         case "formatNumber": return .string(Stdlib.formatNumber(try num(0), try num(1)))
         case "formatDuration": return .string(Stdlib.formatDuration(try num(0), try str(1)))
@@ -354,12 +365,12 @@ public final class Interpreter: Sendable {
             let tz: String = { if case let .string(s) = scope.env("timeZone") { return s } else { return "UTC" } }()
             return .string(Stdlib.formatDate(try num(0), try str(1), timeZone: tz))
         case "plural":
-            guard case let .record(forms) = args[1] else { throw InterpreterError.typeMismatch("plural: forms not a record") }
+            guard case let .record(forms) = try arg(1) else { throw InterpreterError.typeMismatch("plural: forms not a record") }
             let locale: String = { if case let .string(s) = scope.env("locale") { return s } else { return "ru" } }()
             return .string(Stdlib.plural(try num(0), forms, locale: locale))
 
         case "gradient": return Stdlib.gradient(try list(0), try num(1))
-        case "alpha": return Stdlib.alpha(args[0], try num(1))
+        case "alpha": return Stdlib.alpha(try arg(0), try num(1))
         case "spring": return Stdlib.spring(try num(0), try num(1))
         case "ease": return Stdlib.ease(try num(0))
         case "linear": return Stdlib.linear(try num(0))
@@ -411,7 +422,7 @@ public final class Interpreter: Sendable {
         case "reduce":
             let xs = try list(0)
             let f = try lambdaArg(2)
-            var acc = args[1]
+            var acc = try arg(1)
             for item in xs { acc = try callLambda(f, args: [acc, item], scope: scope, budget: budget) }
             return acc
         case "sortBy":
@@ -488,17 +499,16 @@ public final class Interpreter: Sendable {
             ctx.transaction = motion
             defer { ctx.transaction = previous }
             try await execList(body, scope: scope, ctx: ctx, effects: effects, budget: budget)
-        case let .call(op, argsExpr, resultName, _):
-            // `awaited` (wire `await`) only controls whether the *value* is bound — the call
-            // is always issued in statement order so it's recorded synchronously (harness
-            // rule 3, contract/conformance/compiled/handlers.json `h.call.fireforget`: even a
-            // bare, unbound `call` records its effect immediately). The grammar never binds a
-            // result without `await` anyway (`resultName` is null whenever `awaited` is
-            // false), so this loses no real "fire and forget" behavior for well-formed
-            // programs — a real networking EffectSink is free to return immediately from its
-            // own `call()` and finish the network round trip in the background internally.
+        case let .call(op, argsExpr, resultName, awaited):
+            // Controller ruling: the interpreter always calls the sink synchronously, in
+            // statement order (so the effect is recorded there, deterministically — harness
+            // rule 3 / `h.call.fireforget` expects even a bare, unawaited `call` to record its
+            // effect immediately). When `awaited == false` it's the *sink*'s job to start its
+            // own Task for the real work and return `.null` right away, not the interpreter's —
+            // the grammar never binds a result without `await` anyway (`resultName` is null
+            // whenever `awaited` is false), so nothing here depends on the returned value.
             let argsValue = try evalStep(argsExpr, scope: scope, locals: ctx.locals, budget: budget)
-            let result = await effects.call(op: op, args: argsValue)
+            let result = await effects.call(op: op, args: argsValue, awaited: awaited)
             if let resultName { ctx.locals = Locals(name: resultName, value: result, parent: ctx.locals) }
         case let .doEffect(effect, argExprs, awaited):
             let argVals = try argExprs.map { try evalStep($0, scope: scope, locals: ctx.locals, budget: budget) }

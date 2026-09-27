@@ -87,7 +87,13 @@ extension Expr {
         case "dr":
             self = .driver(kind: try str(1), id: try str(2), axis: try str(3))
         case "self":
-            self = .selfPressed
+            // Only `["self", "pressed"]` is defined (spec §3.8); any other second element is
+            // an unrecognized form of a known tag, not a crash — decode as `.unknown`.
+            if let sub = try? str(1), sub == "pressed" {
+                self = .selfPressed
+            } else {
+                self = .unknown("self")
+            }
         case "get":
             self = .get(try exprAt(1), field: try str(2))
         case "at":

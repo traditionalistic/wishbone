@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import WishboneCore
 
+@MainActor
 @Suite struct ExprDecodingTests {
     @Test func decodesLiteralAndReferenceForms() throws {
         #expect(try Expr(json: #"["v", 1]"#).isLiteral(1))
@@ -118,6 +119,35 @@ import Testing
         #expect(doc.computed["last"] != nil)
         #expect(doc.handlers["go"]?.body.count == 1)
         #expect(doc.root.id == "root")
+    }
+
+    @Test func decodesDataArgsAsPlainValuesNotExprs() throws {
+        // `data` args are plain JSON on the wire (a param reference lowers to a
+        // {"$param": name} marker object, not an ["p", name] expr array) — decoding them with
+        // Expr(wire:) would throw on the very first data-bearing document.
+        let json = #"""
+        {"format": 1, "screen": "s", "revision": 1,
+         "data": [{"name": "me", "op": "demo.profile", "required": false,
+                    "args": {"id": {"$param": "id"}, "limit": 5, "tags": ["a", "b"]}}],
+         "root": {"t": "stack", "id": "root"}}
+        """#
+        let doc = try Document(json: Data(json.utf8))
+        #expect(doc.data.count == 1)
+        let args = doc.data[0].args
+        #expect(args["id"] == .record(["$param": .string("id")]))
+        #expect(args["limit"] == .number(5))
+        #expect(args["tags"] == .list([.string("a"), .string("b")]))
+    }
+
+    @Test func selfTagOtherThanPressedIsUnknown() throws {
+        if case let .unknown(tag) = try Expr(json: #"["self", "hovered"]"#) { #expect(tag == "self") }
+        else { Issue.record("expected .unknown for a non-'pressed' self form") }
+    }
+
+    @Test func jsonParserRejectsExcessiveNesting() {
+        var json = "1"
+        for _ in 0..<600 { json = "[\(json)]" }
+        #expect(throws: (any Error).self) { try JSONValue.parse(json) }
     }
 }
 

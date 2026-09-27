@@ -48,6 +48,7 @@ func defaultEnv(overrides: [String: Value] = [:]) -> [String: Value] {
 
 /// `Scope` test double over plain dictionaries. `set` applies the same copy-on-write path
 /// update the real store will use, and records every call for assertions.
+@MainActor
 final class MapScope: Scope {
     let interpreter: Interpreter
     let theme: Theme
@@ -151,17 +152,26 @@ final class MapScope: Scope {
 /// `EffectSink` test double implementing contract/README.md harness rule 3: effects recorded
 /// as `{"effect": name, "args": [...]}`, calls as `{"effect": "call", "op": id, "args": ...}`,
 /// answered from `calls[op]` (or a `NETWORK`/`no mock` failure).
+///
+/// Controller ruling: recording happens synchronously here regardless of `awaited`; when
+/// `awaited` is `false`, this starts its own `Task` for the "real" work and returns `.null`
+/// immediately instead of returning the resolved response.
 final class RecordingEffectSink: EffectSink, @unchecked Sendable {
     private(set) var effects: [Value] = []
     private(set) var errors: [String] = []
     var calls: [String: Value] = [:]
 
-    func call(op: String, args: Value) async -> Value {
+    func call(op: String, args: Value, awaited: Bool) async -> Value {
         effects.append(.record(["effect": .string("call"), "op": .string(op), "args": args]))
-        return calls[op] ?? .record([
+        let response = calls[op] ?? .record([
             "ok": .bool(false),
             "error": .record(["code": .string("NETWORK"), "message": .string("no mock")]),
         ])
+        guard awaited else {
+            Task { _ = response } // fire-and-forget "real work"; the mock has none to do
+            return .null
+        }
+        return response
     }
 
     func perform(effect: String, args: [Value], awaited: Bool) async {

@@ -25,8 +25,12 @@ public final class Locals: Sendable {
 }
 
 /// The read/write surface the interpreter needs from whatever owns document state (a test
-/// double here; the real `@MainActor` store in a later task). Not constrained to `AnyObject`,
-/// but `set` has no `mutating` keyword, so a real implementation is a reference type.
+/// double here; the real store in a later task). `@MainActor` so a `@MainActor` store
+/// conforms directly (no per-read actor hop for every `state`/`computed`/`env` access on the
+/// render-hot path) — `Interpreter` is `@MainActor` too, to match. Not constrained to
+/// `AnyObject`, but `set` has no `mutating` keyword, so a real implementation is a reference
+/// type.
+@MainActor
 public protocol Scope {
     func state(_ name: String) -> Value
     func instanceState(_ name: String) -> Value

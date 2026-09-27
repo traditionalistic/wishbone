@@ -3,6 +3,7 @@ import Testing
 
 /// Hand-written wire AST covering the same semantics as contract/conformance/expr.json,
 /// since the compiled vectors don't exist yet (ConformanceTests picks those up once they do).
+@MainActor
 @Suite struct InterpreterEvalTests {
     let interpreter = Interpreter()
 
@@ -32,6 +33,19 @@ import Testing
 
     @Test func stringComparisonIsCodePointOrder() throws {
         #expect(try eval(#"["op", "<", ["v", "B"], ["v", "a"]]"#) == .bool(true))
+    }
+
+    @Test func nanComparisonsAreAlwaysFalse() throws {
+        // cmp.nan.le / cmp.nan.ge: NaN is neither <=, >=, <, nor > anything, including itself.
+        let nan = #"["op", "/", ["v", 0], ["v", 0]]"#
+        #expect(try eval("[\"op\", \"<=\", \(nan), [\"v\", 1]]") == .bool(false))
+        #expect(try eval("[\"op\", \">=\", \(nan), \(nan)]") == .bool(false))
+    }
+
+    @Test func indexingDoesNotTrapOnExtremeMagnitudes() throws {
+        // ["at", list, 1e19] must not crash converting a huge-but-"integral" Double to Int.
+        #expect(try eval(#"["at", ["v", [1,2,3]], ["v", 1e19]]"#) == .null)
+        #expect(try eval(#"["at", ["v", [1,2,3]], ["v", -1e19]]"#) == .null)
     }
 
     @Test func stringInterpolationConcatenatesStr() throws {

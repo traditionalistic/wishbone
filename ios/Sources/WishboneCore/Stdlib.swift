@@ -29,8 +29,11 @@ enum Stdlib {
 
     // MARK: Math
 
-    static func min(_ a: Double, _ b: Double) -> Double { Swift.min(a, b) }
-    static func max(_ a: Double, _ b: Double) -> Double { Swift.max(a, b) }
+    // Swift's generic `min`/`max` are asymmetric with NaN (`min(x, .nan) == x` but
+    // `min(.nan, x) == .nan`, since both are defined as `y < x ? y : x` and NaN comparisons
+    // are always false) — make them symmetric: NaN if either operand is NaN.
+    static func min(_ a: Double, _ b: Double) -> Double { (a.isNaN || b.isNaN) ? .nan : Swift.min(a, b) }
+    static func max(_ a: Double, _ b: Double) -> Double { (a.isNaN || b.isNaN) ? .nan : Swift.max(a, b) }
     static func abs(_ x: Double) -> Double { Swift.abs(x) }
     static func round(_ x: Double) -> Double { Format.roundHalfAwayFromZero(x) }
     static func floor(_ x: Double) -> Double { x.rounded(.down) }
@@ -43,6 +46,7 @@ enum Stdlib {
 
     static func interpolate(_ x: Double, _ input: [Double], _ output: [Double]) -> Double {
         guard input.count == output.count, input.count >= 2 else { return output.first ?? 0 }
+        guard isNonDecreasing(input) else { return output.first ?? 0 }
         let n = input.count
         if x <= input[0] { return output[0] }
         if x >= input[n - 1] { return output[n - 1] }
@@ -53,6 +57,11 @@ enum Stdlib {
         guard x1 != x0 else { return y1 }
         let t = (x - x0) / (x1 - x0)
         return y0 + (y1 - y0) * t
+    }
+
+    private static func isNonDecreasing(_ xs: [Double]) -> Bool {
+        for i in 1..<xs.count where xs[i] < xs[i - 1] { return false }
+        return true
     }
 
     // MARK: Strings
@@ -77,35 +86,51 @@ enum Stdlib {
 
     static func trim(_ s: String) -> String { CodePoints.trim(s) }
 
-    static func startsWith(_ s: String, _ p: String) -> Bool { s.hasPrefix(p) }
-    static func endsWith(_ s: String, _ p: String) -> Bool { s.hasSuffix(p) }
-    static func containsString(_ s: String, _ t: String) -> Bool { t.isEmpty || s.contains(t) }
+    // `hasPrefix`/`hasSuffix`/`contains`/`components(separatedBy:)` compare by extended
+    // grapheme cluster with (for `contains`) Unicode canonical-equivalence normalization by
+    // default — wrong for combining marks (e.g. "e" + combining-acute must NOT be treated as
+    // a prefix/suffix/substring match of anything using precomposed "é", or vice versa).
+    // Comparing/searching the raw `unicodeScalars` sequence, and using `.literal` for
+    // Foundation's own range search, keeps every one of these a plain code-point comparison.
+    static func startsWith(_ s: String, _ p: String) -> Bool { s.unicodeScalars.starts(with: p.unicodeScalars) }
+
+    static func endsWith(_ s: String, _ p: String) -> Bool {
+        Array(s.unicodeScalars).reversed().starts(with: Array(p.unicodeScalars).reversed())
+    }
+
+    static func containsString(_ s: String, _ t: String) -> Bool {
+        t.isEmpty || s.range(of: t, options: .literal) != nil
+    }
 
     static func split(_ s: String, _ sep: String) -> [Value] {
         if sep.isEmpty { return s.unicodeScalars.map { .string(String($0)) } }
-        return s.components(separatedBy: sep).map { .string($0) }
+        var parts: [String] = []
+        var remainder = Substring(s)
+        while let range = remainder.range(of: sep, options: .literal) {
+            parts.append(String(remainder[remainder.startIndex..<range.lowerBound]))
+            remainder = remainder[range.upperBound...]
+        }
+        parts.append(String(remainder))
+        return parts.map { .string($0) }
     }
 
     static func replace(_ s: String, _ a: String, _ b: String) -> String {
         guard !a.isEmpty else { return s }
-        return s.replacingOccurrences(of: a, with: b)
+        return s.replacingOccurrences(of: a, with: b, options: .literal)
     }
 
     static func matches(_ s: String, _ pattern: String) -> Bool {
-        guard let re = try? NSRegularExpression(pattern: "^(?:\(pattern))$") else { return false }
+        // `\A…\z` (absolute start/end), not `^…$` (line start/end — `$` matches before a
+        // trailing newline, so "abc\n" would wrongly match the pattern "abc").
+        guard let re = try? NSRegularExpression(pattern: "\\A(?:\(pattern))\\z") else { return false }
         let range = NSRange(s.startIndex..., in: s)
         return re.firstMatch(in: s, range: range) != nil
     }
 
-    private static func floorArgToInt(_ n: Double) -> Int {
-        guard n.isFinite else { return 0 }
-        return Int(n.rounded(.down))
-    }
-
     static func substring(_ s: String, _ start: Double, _ end: Double?) -> String {
         let length = CodePoints.length(s)
-        let startI = floorArgToInt(start)
-        let endI = end.map(floorArgToInt) ?? length
+        let startI = SafeNumeric.clampedIndex(start, length: length)
+        let endI = end.map { SafeNumeric.clampedIndex($0, length: length) } ?? length
         return CodePoints.substring(s, startI, endI)
     }
 
@@ -151,10 +176,8 @@ enum Stdlib {
     }
 
     static func slice(_ xs: [Value], _ start: Double, _ end: Double?) -> [Value] {
-        let startI = floorArgToInt(start)
-        let endI = end.map(floorArgToInt) ?? xs.count
-        let a = CodePoints.clampIndex(startI, length: xs.count)
-        let b = CodePoints.clampIndex(endI, length: xs.count)
+        let a = SafeNumeric.clampedIndex(start, length: xs.count)
+        let b = end.map { SafeNumeric.clampedIndex($0, length: xs.count) } ?? xs.count
         guard a < b else { return [] }
         return Array(xs[a..<b])
     }
@@ -167,7 +190,9 @@ enum Stdlib {
 
     static func range(_ n: Double) -> [Value] {
         guard n.isFinite, n > 0 else { return [] }
-        let count = Swift.min(Int(n.rounded(.down)), 10000)
+        // Compare against the cap in Double space first — `n` may be e.g. 1e19, and
+        // `Int(n.rounded(.down))` alone would trap before `Swift.min` ever runs.
+        let count = n >= 10000 ? 10000 : Int(n.rounded(.down))
         return (0..<count).map { .number(Double($0)) }
     }
 

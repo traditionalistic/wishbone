@@ -51,8 +51,15 @@ extension JSONValue {
 }
 
 private struct Parser {
+    /// Caps object/array nesting so a maliciously (or accidentally) deep document fails with a
+    /// clear parse error instead of a stack overflow — both here and in the `Expr`/`Stmt`/
+    /// `Node` decoders that recurse over the resulting tree, since their depth is bounded by
+    /// whatever depth this parser allowed through.
+    static let maxDepth = 500
+
     let scalars: [Unicode.Scalar]
     var index: Int = 0
+    var depth: Int = 0
 
     var isAtEnd: Bool { index >= scalars.count }
 
@@ -68,8 +75,13 @@ private struct Parser {
     mutating func parseValue() throws -> JSONValue {
         guard index < scalars.count else { throw JSONParseError.syntax("unexpected end", at: index) }
         switch scalars[index] {
-        case "{": return try parseObject()
-        case "[": return try parseArray()
+        case "{", "[":
+            depth += 1
+            defer { depth -= 1 }
+            guard depth <= Parser.maxDepth else {
+                throw JSONParseError.syntax("exceeded max nesting depth (\(Parser.maxDepth))", at: index)
+            }
+            return scalars[index] == "{" ? try parseObject() : try parseArray()
         case "\"": return .string(try parseString())
         case "t": try expectLiteral("true"); return .bool(true)
         case "f": try expectLiteral("false"); return .bool(false)

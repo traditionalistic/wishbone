@@ -131,6 +131,21 @@ import Testing
         #expect(TimelineSampler.sample(tl, at: 50, index: 0)["a.opacity"] == 5)
     }
 
+    @Test func interiorDuplicateKeyTimeStepsToTheLaterKey() {
+        // The duplicate pair (50, 1) / (50, 5) sits in the *interior* of the key list, not at
+        // the end — a naive first-matching-segment scan would land on [0,50]→1 (the earlier
+        // key), not the later duplicate's value.
+        let tl = timeline(duration: 100, [track("a", "opacity", [
+            TimelineKey(t: 0, v: 0, ease: nil),
+            TimelineKey(t: 50, v: 1, ease: nil),
+            TimelineKey(t: 50, v: 5, ease: nil),
+            TimelineKey(t: 100, v: 10, ease: nil),
+        ])])
+        #expect(TimelineSampler.sample(tl, at: 50, index: 0)["a.opacity"] == 5)
+        // And the segment leading out of the later duplicate still interpolates normally.
+        #expect(TimelineSampler.sample(tl, at: 75, index: 0)["a.opacity"] == 7.5)
+    }
+
     @Test func durationAccountsForRepeatAndStagger() {
         let tl = timeline(duration: 200, repeatCount: 2, [track("item", "opacity", stagger: 100, [
             TimelineKey(t: 0, v: 0, ease: nil), TimelineKey(t: 200, v: 1, ease: nil),

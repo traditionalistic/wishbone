@@ -3,6 +3,7 @@ import Testing
 @testable import WishboneCore
 
 /// Hand-written wire AST covering the same semantics as contract/conformance/handlers.json.
+@MainActor
 @Suite struct HandlerTests {
     private func stmts(_ json: String) throws -> [Stmt] { try Stmt.array(json: Data(json.utf8)) }
 
@@ -81,17 +82,25 @@ import Testing
     }
 
     @Test func awaitedCallBindsResultAndUnawaitedIsFireAndForget() async throws {
+        // A real unawaited call (`awaited: false`, no resultName) followed by a real awaited
+        // one (`awaited: true`, binds "r") — both must record their effect, in order; only the
+        // awaited one's value is usable.
         let go = try stmts(#"""
-        [["call", "demo.checkPromo", ["v", {"code": "WB10"}], "r", true],
+        [["call", "demo.claimOffer", ["v", {"id": "o1"}], null, false],
+         ["call", "demo.checkPromo", ["v", {"code": "WB10"}], "r", true],
          ["set", "s", "discount", [], ["op", "??", ["get", ["get", ["l", "r"], "value"], "discount"], ["v", 0]]]]
         """#)
         let interpreter = Interpreter(handlers: ["check": Handler(params: [], body: go)])
         let scope = MapScope(state: ["discount": .number(0)])
         let sink = RecordingEffectSink()
+        sink.calls["demo.claimOffer"] = .record(["ok": .bool(true), "value": .record(["tickets": .number(3)])])
         sink.calls["demo.checkPromo"] = .record(["ok": .bool(true), "value": .record(["discount": .number(10)])])
         await interpreter.run(handler: "check", args: [], scope: scope, effects: sink)
         #expect(scope.state("discount") == .number(10))
-        #expect(sink.effects == [.record(["effect": .string("call"), "op": .string("demo.checkPromo"), "args": .record(["code": .string("WB10")])])])
+        #expect(sink.effects == [
+            .record(["effect": .string("call"), "op": .string("demo.claimOffer"), "args": .record(["id": .string("o1")])]),
+            .record(["effect": .string("call"), "op": .string("demo.checkPromo"), "args": .record(["code": .string("WB10")])]),
+        ])
     }
 
     @Test func callFailureUsesUnmockedNetworkError() async throws {
@@ -132,6 +141,28 @@ import Testing
         #expect(scope.state("y") == .number(2))
         #expect(scope.setCalls[0].transaction == .record(["$motion": .string("snappy")]))
         #expect(scope.setCalls[1].transaction == nil)
+    }
+
+    @Test func animateTransactionIsRestoredAcrossAnAwaitInsideItsBody() async throws {
+        // anim(...) { x = 1; await call demo.x(...); y = 2 } — the `call` is a real suspension
+        // point (HandlerContext is a class, but this proves the transaction genuinely survives
+        // it rather than relying on incidental in-memory state). Both sets inside the anim body
+        // must see the transaction; the set after the anim body must not.
+        let go = try stmts(#"""
+        [["anim", ["t", "motion", "snappy"], [
+           ["set", "s", "x", [], ["v", 1]],
+           ["call", "demo.x", ["v", {}], "r", true],
+           ["set", "s", "y", [], ["v", 2]]
+         ]],
+         ["set", "s", "z", [], ["v", 3]]]
+        """#)
+        let interpreter = Interpreter(handlers: ["go": Handler(params: [], body: go)])
+        let scope = MapScope(state: ["x": .number(0), "y": .number(0), "z": .number(0)])
+        let sink = RecordingEffectSink()
+        sink.calls["demo.x"] = .record(["ok": .bool(true)])
+        await interpreter.run(handler: "go", args: [], scope: scope, effects: sink)
+        let snappy = Value.record(["$motion": .string("snappy")])
+        #expect(scope.setCalls.map(\.transaction) == [snappy, snappy, nil]) // x, y, z
     }
 
     @Test func computedIsReEvaluatedFreshOnEachRead() async throws {

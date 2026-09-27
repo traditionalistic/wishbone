@@ -3,6 +3,7 @@ import Testing
 @testable import WishboneCore
 
 /// Hand-written wire AST covering the same semantics as contract/conformance/events.json.
+@MainActor
 @Suite struct EventTests {
     private func node(_ json: String) throws -> Node { try Node(json: Data(json.utf8)) }
 
