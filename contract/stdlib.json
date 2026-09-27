@@ -356,13 +356,13 @@
   "language": {
     "escapes": "string escapes: \\\" \\\\ \\n \\t \\$ (literal '$', so \"\\${x}\" is the 4-char text ${x}) \\u{HEX}; any other escape is a compile error",
     "coalesce": "?? is right-associative; null is assignable to every T?; a: T?, b: T => T; b: T? => T?",
-    "event": "event is a contextual keyword: a declaration at template top level (`event tap`); inside on.* bodies an expression of the event payload type; anywhere else a compile error",
+    "event": "event is a contextual keyword: a declaration at template top level (`event tap`); inside on.* bodies an expression of the event payload type; anywhere else a compile error; on the wire the payload is the local [\"l\", \"event\"]",
     "declarations": "state initializers see params, data, env, earlier state, fns and tokens; let and fn are order-independent (cycles/recursion are errors); fn bodies see only their parameters, other fns, stdlib, env and tokens",
     "data": "data without `required` has type R?, with `required` R; args may reference only literals and params",
     "effects": "refresh/play/stop take a bare name, lowered to [\"v\", name]; await is legal before call and play only",
     "bind": "`bind` is a pseudo-prop inside textField props: bind: \"x\" == value: =x plus on.change: x = event.value",
     "repeat": "repeat.over accepts list<T> or list<T>? (null renders nothing)",
-    "types": "map<T> is string-keyed; a record literal is assignable to map<T> when every field is assignable to T; a field k?: T may be omitted and reads as T?; unions (incl. mixed like number | \"fill\") may be written in annotations; `any` exists only in contract signatures; a record literal assigned to a record type may not contain fields absent from that type (compile error naming the field)",
+    "types": "map<T> is string-keyed; a record-typed value is assignable to map<T> when every field is assignable to T; a field k?: T may be omitted and reads as T?; unions (incl. mixed like number | \"fill\") may be written in annotations; `any` exists only in contract signatures; a record literal assigned to a record type may not contain fields absent from that type (compile error naming the field)",
     "timelines": "equal key times act as a step to the later key; duplicate (target, prop) tracks in one timeline are a compile error; repeat must be >= 1 or -1"
   }
 }

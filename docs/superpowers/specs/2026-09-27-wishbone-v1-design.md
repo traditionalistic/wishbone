@@ -147,7 +147,7 @@ event tap                                // событие шаблона
 
 Приоритет (снизу вверх): `?:` → `??` → `||` → `&&` → `== !=` → `< <= > >=` → `+ -` → `* / %` → унарные `! -` → постфикс (вызов, `.`, `[]`). Литералы: числа, строки, `true/false/null`, списки `[…]`, записи `{a: 1}`. Лямбды `x => e`, `(a, b) => e` — только аргументами stdlib. Метод-синтаксис — сахар: `xs.map(f)` ≡ `map(xs, f)`.
 
-Специальные имена: `env.now` (мс UTC, тикает раз в секунду, когда читается), `env.platform` (`"ios"|"android"`), `env.locale`, `env.brand`, `env.colorScheme`, `env.reduceMotion`, `env.screenWidth`, `env.screenHeight`, `env.safeTop`, `env.safeBottom`; драйверы `scroll.<id>.x|y`, `drag.<id>.x|y`; `self.pressed`; `event.*` внутри обработчика события; `item`/`index` (или имена из `repeat.as/index`) внутри `repeat`.
+Специальные имена: `env.now` (мс UTC, тикает раз в секунду, когда читается), `env.platform` (`"ios"|"android"`), `env.locale`, `env.brand`, `env.colorScheme`, `env.reduceMotion`, `env.screenWidth`, `env.screenHeight`, `env.safeTop`, `env.safeBottom`; драйверы `scroll.<id>.x|y`, `drag.<id>.x|y`; `self.pressed`; `event.*` внутри обработчика события (на проводе — локальная `["l", "event"]`, рантайм кладёт payload в локальные под именем `event`); `item`/`index` (или имена из `repeat.as/index`) внутри `repeat`.
 
 ### 3.6 Stdlib (нормативно — `contract/stdlib.json`)
 
@@ -279,7 +279,7 @@ Go-модуль `backend/`, бинарь `cmd/server`, net/http (маршрут�
 
 ### 5.1 Пакеты
 - `internal/dsl` — лексер, парсер (Pratt), типы, проверка, понижение в AST §3.8.
-- `internal/compile` — исходник экрана → документ: раскрытие шаблонов, проверка props по `primitives.json`, токенов по теме, иконок, лимитов (размер ≤ 512 КБ, глубина ≤ 32, узлов ≤ 2000), уникальности `id`, `runtimeMin`. Ошибка = диагностика `{path, line, col, message}`.
+- `internal/compile` — исходник экрана → документ: раскрытие шаблонов, проверка props по `primitives.json`, токенов по теме, иконок, лимитов (размер ≤ 512 КБ, глубина дерева ≤ 32, узлов ≤ 2000, вложенность выражения/блока в одном DSL-фрагменте ≤ 500), уникальности `id`, `runtimeMin`. Ошибка = диагностика `{path, line, col, message}`.
 - `internal/ops` — реестр операций: `{id, kind: read|write, args: "<тип DSL>", result: "<тип DSL>", handler}`; демо-операции шоукейса.
 - `internal/store` — Postgres: `screens(id, title, draft jsonb, updated_at)`, `revisions(screen_id, rev, source, compiled, etag, runtime_min, published_at)`, `idempotency(key, op, response, created_at)`, `audit`. Живая ревизия = максимальная; откат = публикация старого исходника новой ревизией.
 - `internal/preview` — хаб сессий превью.
