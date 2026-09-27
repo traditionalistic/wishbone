@@ -123,6 +123,7 @@ class MotionTest {
         val r = registry()
         r.play("spin", 0)
         assertTrue(r.running(100_000 * ms))
+        assertFalse(r.running(100_000 * ms, reduceMotion = true)) // reduceMotion: end states, no frame loop
         assertEquals(Double.POSITIVE_INFINITY, r.duration("spin"))
         assertEquals(90.0, r.transform("s", 0, 250 * ms, false).rotation, 1e-6)
         assertEquals(360.0, r.transform("s", 0, 250 * ms, true).rotation, 1e-3) // reduceMotion: end state

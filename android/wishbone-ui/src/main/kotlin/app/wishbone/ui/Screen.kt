@@ -253,7 +253,7 @@ private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: 
                     do {
                         val t = withFrameNanos { it }
                         store.frameNanos.longValue = t
-                    } while (store.timelines.running(t))
+                    } while (store.timelines.running(t, store.reduceMotion))
                 }
             }
             val rootBg = store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }
@@ -280,10 +280,10 @@ private fun safeInsets(ignore: String?): WindowInsets {
     val sides = when (ignore) {
         "top" -> WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
         "bottom" -> WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-        "all" -> WindowInsetsSides.Horizontal
+        "all" -> null // edge-to-edge on every side (parity with iOS `.all`)
         else -> WindowInsetsSides.Top + WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
     }
-    return safeArea.only(sides).union(WindowInsets.ime)
+    return if (sides == null) WindowInsets.ime else safeArea.only(sides).union(WindowInsets.ime)
 }
 
 @Composable

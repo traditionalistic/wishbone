@@ -142,4 +142,35 @@ class StoreTest {
             handle.dispose()
         }
     }
+
+    @Test
+    fun dragReadersSubscribeUntilTheCellExists() {
+        val s = store()
+        val child = s.root.copy(keyPath = ".a.b") // a node inside drag instance "knob.a"
+        val reads = HashSet<Any>()
+        assertEquals(0.0, Snapshot.observe(readObserver = { reads.add(it) }) { child.driver("drag", "knob", "x") })
+        val applied = HashSet<Any>()
+        val handle = Snapshot.registerApplyObserver { changed, _ -> applied.addAll(changed) }
+        try {
+            val cell = s.driverCell("drag", "knob.a", "x") // created later, e.g. when the drag node composes
+            Snapshot.sendApplyNotifications()
+            assertTrue(applied.intersect(reads).isNotEmpty()) // the early reader is invalidated
+            cell.doubleValue = 42.0
+            assertEquals(42.0, child.driver("drag", "knob", "x")) // nearest key-path prefix
+            assertEquals(0.0, s.root.copy(keyPath = ".z").driver("drag", "knob", "x"))
+        } finally {
+            handle.dispose()
+        }
+    }
+
+    @Test
+    fun driverCellsSurviveAStoreRebuild() {
+        val s = store()
+        val scroll = s.driverCell("scroll", "page", "y").apply { doubleValue = 120.0 }
+        s.driverCell("drag", "card.k", "x").doubleValue = -60.0
+        val rebuilt = store(previous = s)
+        assertTrue(rebuilt.driverCell("scroll", "page", "y") === scroll) // effects keep writing the live cell
+        assertEquals(120.0, rebuilt.driver("scroll", "page", "y"))
+        assertEquals(-60.0, rebuilt.root.copy(keyPath = ".k").driver("drag", "card", "x"))
+    }
 }

@@ -19,14 +19,13 @@ import androidx.compose.ui.unit.dp
 import app.wishbone.core.Node
 import app.wishbone.core.Value
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 /**
  * `drag` (spec §4.3): the translation follows the finger along `axis` (clamped to `bounds`) and lives in the
- * instance's `drag.<id>.x|y` cells, which the transform layer adds to offsetX/Y. On release it springs
- * (`@motion.interactive`) to the nearest `snap` point (or 0), then fires `dragEnd` with the release
- * translation and velocity (dp/s).
+ * instance's `drag.<id>.x|y` cells, which the transform layer adds to offsetX/Y. On release `dragEnd` fires
+ * at once with the release translation and velocity (dp/s), then the node springs (`@motion.interactive`)
+ * to the nearest `snap` point (or 0).
  */
 @Composable
 internal fun Modifier.dragGesture(node: Node, ctx: RenderContext): Modifier {
@@ -64,15 +63,13 @@ internal fun Modifier.dragGesture(node: Node, ctx: RenderContext): Modifier {
             val ry = y.doubleValue
             val vx = (v.x / density).toDouble()
             val vy = (v.y / density).toDouble()
+            node.on["dragEnd"]?.let { current.fire(it, Value.rec("x" to Value.Num(rx), "y" to Value.Num(ry), "vx" to Value.Num(vx), "vy" to Value.Num(vy))) }
             settle = scope.launch {
                 val motion = current.store.theme.motions["interactive"] ?: MotionSpec.INTERACTIVE_FALLBACK
                 suspend fun settleAxis(cell: MutableDoubleState, from: Double, velocity: Double) =
                     animate(from.toFloat(), nearestSnap(from, spec.snap).toFloat(), velocity.toFloat(), motion.animationSpec()) { value, _ -> cell.doubleValue = value.toDouble() }
-                coroutineScope {
-                    if (spec.axis != "y") launch { settleAxis(x, rx, vx) }
-                    if (spec.axis != "x") launch { settleAxis(y, ry, vy) }
-                }
-                node.on["dragEnd"]?.let { current.fire(it, Value.rec("x" to Value.Num(rx), "y" to Value.Num(ry), "vx" to Value.Num(vx), "vy" to Value.Num(vy))) }
+                if (spec.axis != "y") launch { settleAxis(x, rx, vx) }
+                if (spec.axis != "x") launch { settleAxis(y, ry, vy) }
             }
         }
         when (spec.axis) {

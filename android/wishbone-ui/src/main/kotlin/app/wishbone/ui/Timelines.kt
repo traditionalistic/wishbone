@@ -40,10 +40,12 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
     var version by mutableIntStateOf(0)
         private set
 
-    private val byTarget: Map<String, List<String>> = timelines.entries
-        .flatMap { (name, t) -> t.tracks.map { it.target to name } }
+    /** Per target node: (timeline name, prop, single-track timeline) — precomputed so a frame samples without lookups. */
+    private class TargetTrack(val name: String, val prop: String, val timeline: Timeline)
+
+    private val byTarget: Map<String, List<TargetTrack>> = timelines.entries
+        .flatMap { (name, t) -> t.tracks.map { tr -> tr.target to TargetTrack(name, tr.prop, t.copy(tracks = listOf(tr))) } }
         .groupBy({ it.first }, { it.second })
-        .mapValues { it.value.distinct() }
 
     /** Materialized instance count per repeated target node (reported by the renderer), for stagger-aware durations. */
     val counts = HashMap<String, Int>()
@@ -89,19 +91,18 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
         return TimelineSampler.duration(t, t.tracks.maxOfOrNull { counts[it.target] ?: 1 } ?: 1)
     }
 
-    /** Whether any active timeline still changes values at [now] (the frame loop runs only then). */
-    fun running(now: Long): Boolean = active.any { (name, start) -> (now - start) / 1e6 < duration(name) }
+    /** Whether any active timeline still changes values at [now] (the frame loop runs only then; never under reduceMotion). */
+    fun running(now: Long, reduceMotion: Boolean = false): Boolean =
+        !reduceMotion && active.any { (name, start) -> (now - start) / 1e6 < duration(name) }
 
+    // ponytail: core TimelineSampler.sample still builds a one-entry map per call; expose its per-track sampler if profiles show it
     fun transform(id: String, index: Int, now: Long, reduceMotion: Boolean): LayerTransform {
-        val names = byTarget[id] ?: return LayerTransform.IDENTITY
+        val tracks = byTarget[id] ?: return LayerTransform.IDENTITY
         var tr = LayerTransform.IDENTITY
-        for (name in names) {
-            val start = active[name] ?: continue
-            val t = timelines.getValue(name)
-            val ms = if (reduceMotion) finalMs(t, name) else (now - start) / 1e6
-            for ((key, v) in TimelineSampler.sample(t, ms, index)) {
-                if (key.substringBeforeLast('.') == id) tr = tr.with(key.substringAfterLast('.'), v)
-            }
+        for (t in tracks) {
+            val start = active[t.name] ?: continue
+            val ms = if (reduceMotion) finalMs(t.timeline, t.name) else (now - start) / 1e6
+            for (v in TimelineSampler.sample(t.timeline, ms, index).values) tr = tr.with(t.prop, v)
         }
         return tr
     }

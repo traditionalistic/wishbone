@@ -28,6 +28,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
@@ -140,13 +141,15 @@ internal fun ScrollView(node: Node, p: Map<String, Value>, ctx: RenderContext, m
 
 /** A scroll measured with an unbounded main axis (nested same-axis scroll) is capped at the window size instead of crashing. */
 private fun Modifier.boundAxis(horizontal: Boolean, limit: Int) = layout { measurable, c ->
-    val capped = when {
-        horizontal && !c.hasBoundedWidth -> c.copy(minWidth = minOf(c.minWidth, limit), maxWidth = limit)
-        !horizontal && !c.hasBoundedHeight -> c.copy(minHeight = minOf(c.minHeight, limit), maxHeight = limit)
-        else -> c
-    }
-    val placeable = measurable.measure(capped)
+    val placeable = measurable.measure(capAxis(c, horizontal, limit))
     layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+}
+
+/** An unbounded scroll axis gets [limit] as its max; bounded constraints pass through. */
+internal fun capAxis(c: Constraints, horizontal: Boolean, limit: Int): Constraints = when {
+    horizontal && !c.hasBoundedWidth -> c.copy(minWidth = minOf(c.minWidth, limit), maxWidth = limit)
+    !horizontal && !c.hasBoundedHeight -> c.copy(minHeight = minOf(c.minHeight, limit), maxHeight = limit)
+    else -> c
 }
 
 /** Rows of `columns` equal cells (LazyVGrid with flexible columns: cells centered, rows as tall as their tallest cell). */

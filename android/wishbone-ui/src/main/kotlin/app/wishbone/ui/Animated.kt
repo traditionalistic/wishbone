@@ -8,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,16 +61,38 @@ internal fun animateProps(node: Node, p: Map<String, Value>, ctx: RenderContext)
 private fun animateValue(v: Value, spec: MotionSpec?, ctx: RenderContext): Value {
     if (v is Value.Num) {
         val target = v.value.toFloat()
-        val a = remember { Animatable(target) }
-        LaunchedEffect(target) { if (spec != null) a.animateTo(target, spec.animationSpec()) else a.snapTo(target) }
-        val shown = if (a.isRunning || (spec != null && a.value != target)) a.value else target
+        if (!target.isFinite()) return v
+        val shown = animated(target, spec) { AnimatedValue(Animatable(target), target) }
         return if (shown == target) v else Value.Num(shown.toDouble())
     }
     val color = ctx.store.theme.color(v, ctx.store.dark) ?: return v
-    val a = remember { ColorAnimatable(color) }
-    LaunchedEffect(color) { if (spec != null) a.animateTo(color, spec.animationSpec()) else a.snapTo(color) }
-    val shown: Color = if (a.isRunning || (spec != null && a.value != color)) a.value else color
+    val shown = animated(color, spec) { AnimatedValue(ColorAnimatable(color), color) }
     return if (shown == color) v else Value.rec("\$argb" to Value.Num(shown.toArgb().toDouble()))
+}
+
+private class AnimatedValue<T, V : AnimationVector>(val anim: Animatable<T, V>, var settled: T)
+
+/**
+ * Shows [target] directly while nothing animates (no effect is launched per change, e.g. per scroll frame);
+ * with a [spec] the change animates from the last settled value.
+ */
+@Composable
+private fun <T, V : AnimationVector> animated(target: T, spec: MotionSpec?, create: () -> AnimatedValue<T, V>): T {
+    val h = remember(create)
+    if (spec == null && !h.anim.isRunning) {
+        h.settled = target
+        return target
+    }
+    LaunchedEffect(target) {
+        if (spec == null) {
+            h.anim.snapTo(target)
+        } else {
+            if (!h.anim.isRunning) h.anim.snapTo(h.settled)
+            h.anim.animateTo(target, spec.animationSpec())
+        }
+        h.settled = target
+    }
+    return if (h.anim.isRunning) h.anim.value else h.settled
 }
 
 /**
@@ -82,13 +105,19 @@ internal class Presence {
     private var previous = emptyList<Item>()
     private var removed by mutableIntStateOf(0)
 
-    /** True during the container's first composition: children present then don't animate in. */
-    var initial = true
+    private var first = true
+
+    /**
+     * Keys that appeared in the latest merge (not at the container's first render). Only these animate in —
+     * a lazy item composed on scroll-in is not "entering".
+     */
+    var entering: Set<String> = emptySet()
         private set
 
     fun merge(items: List<Item>): List<Item> {
         removed // recompose when a ghost finishes
         val keys = items.mapTo(HashSet()) { it.key }
+        entering = if (first) emptySet() else keys - previous.mapTo(HashSet()) { it.key }
         previous.forEachIndexed { i, it ->
             if (it.key !in keys && it.visible && it.ctx.store.extras[it.node.id]?.trOut?.isNotEmpty() == true) ghosts[it.key] = i to it.copy(visible = false)
         }
@@ -100,7 +129,7 @@ internal class Presence {
 
     fun committed(items: List<Item>) {
         previous = items
-        initial = false
+        first = false
     }
 
     fun gone(key: String) {
@@ -117,8 +146,8 @@ internal fun rememberPresence(items: List<Item>): Pair<Presence, List<Item>> {
 }
 
 /**
- * A child with `transition`/`matchId` renders inside AnimatedVisibility: nodes present at the
- * container's first render don't animate in; the motion is the transaction's, else `animate["*"]`,
+ * A child with `transition`/`matchId` renders inside AnimatedVisibility: only keys new since the last
+ * render animate in (not those present at the container's first render or a lazy item scrolled in); the motion is the transaction's, else `animate["*"]`,
  * else `@motion.smooth`; reduceMotion turns slide/scale/offset into fades.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -130,7 +159,7 @@ internal fun ItemView(item: Item, parent: Parent, presence: Presence) {
         return
     }
     val store = item.ctx.store
-    val state = remember { MutableTransitionState(item.visible && presence.initial) }
+    val state = remember { MutableTransitionState(item.visible && item.key !in presence.entering) }
     state.targetState = item.visible
     if (!item.visible && state.isIdle && !state.currentState) SideEffect { presence.gone(item.key) }
 

@@ -21,10 +21,13 @@ import app.rive.runtime.kotlin.core.RendererType
 import app.rive.runtime.kotlin.core.Rive
 import app.rive.runtime.kotlin.core.RiveEvent
 import app.wishbone.core.Value
+import app.wishbone.ui.LocalWishbone
 import app.wishbone.ui.WishboneRenderers
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.net.URL
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import kotlinx.coroutines.CancellationException
 
 /** `rive` primitive (spec §4.4) on rive-android: call [install] once, before rendering screens. */
 object WishboneRive {
@@ -35,11 +38,26 @@ object WishboneRive {
     }
 }
 
-/** Taps pass through to ancestors (renderer-decisions: rive views don't intercept taps in V1). */
-private class PassThrough(context: Context) : FrameLayout(context) {
+/**
+ * Taps pass through to ancestors (renderer-decisions: rive views don't intercept taps in V1). Each node has
+ * its own lifecycle, destroyed when the node leaves composition, so the Rive controller is released then
+ * rather than with the Activity.
+ */
+private class PassThrough(context: Context) : FrameLayout(context), LifecycleOwner {
+    private val registry = LifecycleRegistry(this).apply { currentState = Lifecycle.State.RESUMED }
+    override val lifecycle: Lifecycle get() = registry
+
+    init {
+        setViewTreeLifecycleOwner(this)
+    }
+
     val rive = RiveAnimationView(context).also { addView(it, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)) }
     var loaded: ByteArray? = null
     override fun dispatchTouchEvent(ev: MotionEvent) = false
+
+    fun release() {
+        registry.currentState = Lifecycle.State.DESTROYED
+    }
 }
 
 /** Loads the file from `url`, runs `stateMachine`, pushes `inputs` (bool/number) on every change, Rive events → `event` `{name}`. */
@@ -49,8 +67,16 @@ private fun RiveNode(p: Map<String, Value>, modifier: Modifier, emit: (String, V
     val machine = (p["stateMachine"] as? Value.Str)?.value?.ifEmpty { null }
     val artboard = (p["artboard"] as? Value.Str)?.value?.ifEmpty { null }
     val inputs = (p["inputs"] as? Value.Rec)?.fields ?: emptyMap()
-    val bytes by produceState<ByteArray?>(null, url) {
-        value = withContext(Dispatchers.IO) { runCatching { URL(url).readBytes() }.onFailure { Log.w("Wishbone", "rive $url: $it") }.getOrNull() }
+    val client = LocalWishbone.current?.client
+    val bytes by produceState<ByteArray?>(null, url, client) {
+        value = try {
+            client?.bytes(url)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("Wishbone", "rive $url: $e")
+            null
+        }
     }
     val onEvent by rememberUpdatedState(emit)
     AndroidView(
@@ -64,6 +90,7 @@ private fun RiveNode(p: Map<String, Value>, modifier: Modifier, emit: (String, V
             }
         },
         modifier = modifier,
+        onRelease = { it.release() },
         update = { frame ->
             val file = bytes
             if (file != null && frame.loaded !== file) {

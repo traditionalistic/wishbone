@@ -17,7 +17,13 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
+import okhttp3.Response
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
@@ -147,6 +153,20 @@ class Client(
         val (code, body) = execute(Request.Builder().url(url("v1/preview/sessions")).headers(headers().toHeaders()).build())
         if (code != 200) throw parseError(code, body)
         return parseSessions(body)
+    }
+
+    /** GET an asset (e.g. a Rive file) with the SDK/host headers; OkHttp timeouts, cancelled with the caller. */
+    suspend fun bytes(url: String): ByteArray {
+        val call = http.newCall(Request.Builder().url(url).headers(headers().toHeaders()).build())
+        return suspendCancellableCoroutine { cont ->
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) = cont.resumeWithException(e)
+                override fun onResponse(call: Call, response: Response) = response.use {
+                    if (it.isSuccessful) cont.resume(it.body!!.bytes()) else cont.resumeWithException(IOException("HTTP ${it.code} $url"))
+                }
+            })
+        }
     }
 
     /** Preview socket with keep-alive pings, so dead connections are noticed and reconnected. */

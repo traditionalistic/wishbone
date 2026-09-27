@@ -35,6 +35,11 @@ private fun RenderContext.evalProps(node: Node): Map<String, Value>? {
 internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Modifier) {
     val inst = parentCtx.store.extras[node.id]?.inst
     var ctx = if (inst != null) parentCtx.withInstance(node.id + parentCtx.keyPath, inst) else parentCtx
+    // the instance's drag cells exist before its own props (e.g. `scale: 1 + abs(drag.knob.x) / 600`) read them
+    if (ctx.store.extras[node.id]?.drag != null) {
+        ctx.store.driverCell("drag", node.id + ctx.keyPath, "x")
+        ctx.store.driverCell("drag", node.id + ctx.keyPath, "y")
+    }
     val source = if (node.on["tap"] != null || node.on["longPress"] != null) remember { MutableInteractionSource() } else null
     if (source != null) ctx = ctx.copy(pressed = source.collectIsPressedAsState())
     val evaluated = ctx.evalProps(node) ?: return

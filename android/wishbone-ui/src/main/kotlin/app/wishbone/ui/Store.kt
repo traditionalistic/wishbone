@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableDoubleState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.withFrameNanos
@@ -143,7 +144,11 @@ class Store(
     private val cells = LinkedHashMap<String, MutableState<Value>>()
     internal val instances = HashMap<String, InstanceScope>()
     private val carried = previous?.instances
-    private val drivers = HashMap<String, MutableDoubleState>()
+    /** Scroll/drag cells survive a rebuild: effects keyed on remembered scroll states keep writing the same cells. */
+    private val drivers: HashMap<String, MutableDoubleState> = previous?.drivers ?: HashMap()
+
+    /** Bumped when a drag cell is created, so a reader that missed it (composed earlier) re-reads. */
+    private val dragCellsVersion = mutableIntStateOf(0)
     internal val extras: Map<String, NodeExtras> = NodeExtras.index(doc.root)
     internal val root = RenderContext(this, null, null, "", Parent.None)
 
@@ -187,8 +192,17 @@ class Store(
     }
 
     fun driver(kind: String, id: String, axis: String): Double = driverCell(kind, id, axis).doubleValue
-    internal fun driverCell(kind: String, id: String, axis: String) = drivers.getOrPut("$kind.$id.$axis") { mutableDoubleStateOf(0.0) }
-    internal fun existingDriver(kind: String, id: String, axis: String) = drivers["$kind.$id.$axis"]
+    internal fun driverCell(kind: String, id: String, axis: String) = drivers.getOrPut("$kind.$id.$axis") {
+        if (kind == "drag") dragCellsVersion.intValue++
+        mutableDoubleStateOf(0.0)
+    }
+
+    /** An existing cell, or null after subscribing to drag-cell creation (so the caller re-reads once it exists). */
+    internal fun existingDriver(kind: String, id: String, axis: String): MutableDoubleState? =
+        drivers["$kind.$id.$axis"] ?: run {
+            dragCellsVersion.intValue
+            null
+        }
 
     internal fun setState(name: String, path: List<Value>, value: Value) {
         val cell = cells[name] ?: return

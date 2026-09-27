@@ -75,7 +75,8 @@ class Wishbone(
     }
 }
 
-internal val LocalWishbone = staticCompositionLocalOf<Wishbone?> { null }
+/** The [Wishbone] rendering the current screen (adapters use its client for assets). */
+val LocalWishbone = staticCompositionLocalOf<Wishbone?> { null }
 
 fun Value.toAny(): Any? = when (this) {
     Value.Null -> null
