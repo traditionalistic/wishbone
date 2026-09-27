@@ -294,7 +294,7 @@ Go-модуль `backend/`, бинарь `cmd/server`, net/http (маршрут�
 - `POST /v1/call` `{screen, revision, op, args, idempotencyKey}` → `{ok, value?, error?, fieldErrors?}`; операция должна быть использована в ревизии (`OPERATION_NOT_BOUND`), write без ключа — `IDEMPOTENCY_REQUIRED`, повтор с тем же ключом отдаёт сохранённый ответ.
 - `GET /v1/theme?brand=` (+`If-None-Match`) → тема (§6.4).
 - `GET /v1/preview/sessions` → активные сессии; `GET /v1/preview/ws?session=` — WebSocket устройства.
-- `GET /assets/*` — статика шоукейса (lottie/rive/картинки) из `contract/assets/`.
+- `GET /assets/*` — статика шоукейса (lottie/rive/картинки) из `contract/assets/`. URL, начинающиеся с `/`, клиенты резолвят относительно базового адреса сервера.
 
 ### 5.3 Admin API
 `/admin/api/*`, авторизация — пароль из `WISHBONE_ADMIN_PASSWORD` (Bearer). Ресурсы: `GET/POST /screens`, `GET/PUT /screens/{id}` (черновик), `POST /screens/{id}/publish`, `GET /screens/{id}/revisions`, `POST /screens/{id}/rollback/{rev}`, `POST /compile` (диагностика без сохранения), `GET /catalog` (примитивы, stdlib, шаблоны с сигнатурами, токены, иконки, операции), `POST /preview` (новая сессия → код), `POST /preview/{code}/document` (компиляция + рассылка), `POST /preview/{code}/play` (запуск таймлайна на устройствах), `GET /preview/{code}/ws` (устройства и их логи).
