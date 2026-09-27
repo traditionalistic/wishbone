@@ -356,7 +356,7 @@
   "language": {
     "escapes": "string escapes: \\\" \\\\ \\n \\t \\$ (literal '$', so \"\\${x}\" is the 4-char text ${x}) \\u{HEX}; any other escape is a compile error",
     "coalesce": "?? is right-associative; null is assignable to every T?; a: T?, b: T => T; b: T? => T?",
-    "event": "event is a contextual keyword: a declaration at template top level (`event tap`); inside on.* bodies an expression of the event payload type; anywhere else a compile error; on the wire the payload is the local [\"l\", \"event\"]",
+    "event": "event is a contextual keyword: a declaration at template top level (`event tap`, or with a payload `event change(value: string)` emitted as `emit change(expr)`; the instance handler reads it as `event.value`); inside on.* bodies an expression of the event payload type; anywhere else a compile error; on the wire the payload is the local [\"l\", \"event\"]",
     "declarations": "state initializers see params, data, env, earlier state, fns and tokens; let and fn are order-independent (cycles/recursion are errors); fn bodies see only their parameters, other fns, stdlib, env and tokens",
     "data": "data without `required` has type R?, with `required` R; args may reference only literals and params",
     "effects": "refresh/play/stop take a bare name, lowered to [\"v\", name]; await is legal before call and play only",
