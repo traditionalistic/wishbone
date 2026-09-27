@@ -1,7 +1,7 @@
 {
  "id": "Banner",
  "title": "Banner",
- "script": "// Banner (ds-metrics §13 — InlineNotice / OperationNoticeBanner): style icon + message (bodyMedium, el16), gap sm,\n// padding lg × md, radius 16 (theme panel radius, no token), bg2. Icon tint: info accentPrimary, success success,\n// warning warning, error errorPressed (accessibleErrorText). dismissible adds a trailing close glyph (el9); like the\n// DS the whole banner is the dismiss target and emits `close`.\nparam title: string\nparam style: \"info\" | \"success\" | \"warning\" | \"error\" = \"info\"\nparam dismissible: bool = false\nevent close",
+ "script": "// Banner (ds-metrics §13 — InlineNotice / OperationNoticeBanner): style icon + message (bodyMedium, el16, fills the row),\n// gap sm, padding lg × md, radius 16 (theme panel radius, no token), bg2. Icon tint: info accentPrimary, success success,\n// warning warning, error errorPressed (accessibleErrorText). dismissible adds a trailing close glyph (el9); like the\n// DS the whole banner is the dismiss target and emits `close`.\nparam title: string\nparam style: \"info\" | \"success\" | \"warning\" | \"error\" = \"info\"\nparam dismissible: bool = false\nevent close",
  "root": {"type": "stack", "id": "root",
   "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill", "padding": "={h: @space.lg, v: @space.md}", "corner": 16, "background": "@color.bg2"},
   "on": {"tap": "if dismissible { emit close }"},
@@ -9,8 +9,7 @@
    {"type": "icon", "id": "icon", "props": {"size": 20,
     "name": "=style == \"info\" ? @icon.info : style == \"success\" ? @icon.check : @icon.warning",
     "color": "=style == \"info\" ? @color.accentPrimary : style == \"success\" ? @color.success : style == \"warning\" ? @color.warning : @color.errorPressed"}},
-   {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyMedium"}},
-   {"type": "spacer", "id": "gap"},
+   {"type": "text", "id": "title", "props": {"text": "=title", "width": "fill", "style": "@type.bodyMedium"}},
    {"type": "icon", "id": "close", "when": "dismissible", "props": {"name": "@icon.close", "size": 16, "color": "@color.el9"}, "a11y": {"label": "\"Закрыть\"", "role": "button"}}
   ]}
 }

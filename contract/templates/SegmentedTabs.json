@@ -10,7 +10,7 @@
      "background": "=i == selected ? @color.accentPrimary : alpha(@color.accentPrimary, 0)"},
     "animate": {"background": "@motion.smooth"},
     "on": {"tap": "if i != selected {\n  haptic(\"selection\")\n  emit change({index: i})\n}"},
-    "a11y": {"label": "title", "role": "button"},
+    "a11y": {"label": "i == selected ? title + \", выбрано\" : title", "role": "button"},
     "children": [
      {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyMedium", "color": "=i == selected ? @color.onAccent : @color.el9", "maxLines": 1}, "animate": {"color": "@motion.smooth"}}
     ]}

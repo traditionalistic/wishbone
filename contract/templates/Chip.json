@@ -7,7 +7,7 @@
    "background": "=selected ? @color.accentPrimary : @color.bg1Elevated"},
   "animate": {"background": "@motion.fast"},
   "on": {"tap": "haptic(\"selection\")\nemit tap"},
-  "a11y": {"label": "title", "role": "button"},
+  "a11y": {"label": "selected ? title + \", выбрано\" : title", "role": "button"},
   "children": [
    {"type": "icon", "id": "icon", "when": "icon != null", "props": {"name": "=icon ?? @icon.check", "size": 16, "color": "=ink"}, "animate": {"color": "@motion.fast"}},
    {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyMedium", "color": "=ink", "maxLines": 1}, "animate": {"color": "@motion.fast"}}

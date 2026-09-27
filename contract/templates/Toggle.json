@@ -1,14 +1,13 @@
 {
  "id": "Toggle",
  "title": "Toggle",
- "script": "// Toggle (ds-metrics §5): title (body, el16 / el6 disabled) + switch, min height 44. The iOS DS wraps the system switch,\n// so the geometry is Android SwitchPrimary's: 36×20 track (bg4 → accentPrimary), 16pt onAccent knob inset 2. Knob and\n// track animate implicitly (@motion.snappy / @motion.fast). `change` carries the new value.\n//  • controlled: bind `on` to screen state and assign it in on.change —\n//      {\"type\": \"Toggle\", \"props\": {\"title\": \"Push\", \"on\": \"=push\"}, \"on\": {\"change\": \"push = event.value\"}}\n//  • uncontrolled: leave `on` unset — the toggle keeps instance state `local` and reports it in `change`.\nparam title: string = \"\"\nparam on: bool? = null\nparam enabled: bool = true\nevent change(value: bool)\nstate local = false\nlet isOn = on ?? local",
+ "script": "// Toggle (ds-metrics §5): title (body, el16 / el6 disabled, fills the row) + switch, gap md, min height 44. The iOS DS\n// wraps the system switch, so the geometry is Android SwitchPrimary's: 36×20 track (bg4 → accentPrimary), 16pt onAccent\n// knob inset 2. Knob and track animate implicitly (@motion.snappy / @motion.fast). `change` carries the new value.\n//  • controlled: bind `value` to screen state and assign it in on.change —\n//      {\"type\": \"Toggle\", \"props\": {\"title\": \"Push\", \"value\": \"=push\"}, \"on\": {\"change\": \"push = event.value\"}}\n//  • uncontrolled: leave `value` unset — the toggle keeps instance state `local` and reports it in `change`.\nparam title: string = \"\"\nparam value: bool? = null\nparam enabled: bool = true\nevent change(value: bool)\nstate local = false\nlet isOn = value ?? local",
  "root": {"type": "stack", "id": "root",
-  "props": {"axis": "h", "align": "center", "minHeight": 44},
+  "props": {"axis": "h", "align": "center", "spacing": "@space.md", "minHeight": 44},
   "on": {"tap": "if enabled {\n  local = !isOn\n  haptic(\"selection\")\n  emit change({value: local})\n}"},
-  "a11y": {"label": "title", "role": "button"},
+  "a11y": {"label": "(title == \"\" ? \"\" : title + \", \") + (isOn ? \"включено\" : \"выключено\")", "role": "button"},
   "children": [
-   {"type": "text", "id": "title", "when": "title != \"\"", "props": {"text": "=title", "style": "@type.body", "color": "=enabled ? @color.el16 : @color.el6"}},
-   {"type": "spacer", "id": "gap", "props": {"min": "@space.md"}},
+   {"type": "text", "id": "title", "when": "title != \"\"", "props": {"text": "=title", "width": "fill", "style": "@type.body", "color": "=enabled ? @color.el16 : @color.el6"}},
    {"type": "stack", "id": "track",
     "props": {"axis": "z", "align": "start", "width": 36, "height": 20, "padding": 2, "corner": "@radius.pill",
      "background": "=isOn ? @color.accentPrimary : @color.bg4", "opacity": "=enabled ? 1 : 0.5"},

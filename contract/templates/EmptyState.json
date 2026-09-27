@@ -3,7 +3,7 @@
  "title": "EmptyState",
  "script": "// EmptyState (ds-metrics §12 — EmptyStatePlaceholder): centered icon (el9) / title (body, el16) / subtitle (caption,\n// el9), gap sm, padding xl. The DS has no CTA; per the metrics' recommendation an optional compact secondary Button\n// (shown when actionTitle is set) emits `action`.\nparam title: string\nparam subtitle: string = \"\"\nparam icon: icon? = null\nparam actionTitle: string = \"\"\nevent action",
  "root": {"type": "stack", "id": "root", "props": {"align": "center", "spacing": "@space.sm", "padding": "@space.xl"}, "children": [
-  {"type": "icon", "id": "icon", "when": "icon != null", "props": {"name": "=icon ?? @icon.info", "size": 48, "color": "@color.el9"}},
+  {"type": "icon", "id": "icon", "when": "icon != null", "props": {"name": "=icon ?? @icon.info", "size": 34, "color": "@color.el9"}},
   {"type": "text", "id": "title", "props": {"text": "=title", "textAlign": "center"}, "a11y": {"role": "header"}},
   {"type": "text", "id": "subtitle", "when": "subtitle != \"\"", "props": {"text": "=subtitle", "style": "@type.caption", "color": "@color.el9", "textAlign": "center"}},
   {"type": "Button", "id": "cta", "when": "actionTitle != \"\"", "props": {"title": "=actionTitle", "style": "secondary", "size": "compact"}, "on": {"tap": "emit action"}}

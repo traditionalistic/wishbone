@@ -1,7 +1,7 @@
 {
  "id": "ListRow",
  "title": "ListRow",
- "script": "// ListRow (ds-metrics §11): SelectorRow box — min height 48, padding h 12, gap 8, radius 24 (theme input radius, no\n// token), bg1Elevated — with GlassMenuRow's 20pt leading icon. title body/el16, value body/el9, chevron 16/el9.\nparam title: string\nparam icon: icon? = null\nparam value: string = \"\"\nparam chevron: bool = true\nevent tap",
+ "script": "// ListRow (ds-metrics §11): SelectorRow box — min height 48, padding h 12, gap 8, radius 24 (theme input radius, no\n// token), bg1Elevated — with GlassMenuRow's 20pt leading icon. title body/el16 (fills the row, so the trailing value\n// and chevron keep their size), value body/el9, chevron 16/el9.\nparam title: string\nparam icon: icon? = null\nparam value: string = \"\"\nparam chevron: bool = true\nevent tap",
  "root": {"type": "stack", "id": "root",
   "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill", "minHeight": 48, "padding": "={h: @space.md}",
    "background": "@color.bg1Elevated", "corner": 24},
@@ -9,8 +9,7 @@
   "a11y": {"label": "value == \"\" ? title : title + \", \" + value", "role": "button"},
   "children": [
    {"type": "icon", "id": "icon", "when": "icon != null", "props": {"name": "=icon ?? @icon.info", "size": 20}},
-   {"type": "text", "id": "title", "props": {"text": "=title", "maxLines": 1}},
-   {"type": "spacer", "id": "gap"},
+   {"type": "text", "id": "title", "props": {"text": "=title", "width": "fill", "maxLines": 1}},
    {"type": "text", "id": "value", "when": "value != \"\"", "props": {"text": "=value", "color": "@color.el9", "maxLines": 1}},
    {"type": "icon", "id": "chevron", "when": "chevron", "props": {"name": "@icon.chevronRight", "size": 16, "color": "@color.el9"}}
   ]}

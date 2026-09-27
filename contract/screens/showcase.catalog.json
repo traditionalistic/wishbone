@@ -1,7 +1,7 @@
 {
  "id": "showcase.catalog",
  "title": "Каталог DS",
- "script": "// Every DS template (contract/templates) in its main states — compile check + on-device eyeballing.\nstate loading = false\nstate push = true\nstate plan = \"month\"\nstate tab = 0\nstate progress = 0.35\nstate page = 0\nstate email = \"\"\nstate promo = \"\"\nstate pin = \"\"\nstate showBanner = true\nstate until = env.now + 90 * 60 * 1000\nstate expired = false\nlet plans = [{id: \"week\", title: \"Неделя\"}, {id: \"month\", title: \"Месяц\"}, {id: \"year\", title: \"Год\"}]\nlet tabs = [\"Все\", \"Активные\", \"Архив\"]\nlet emailError = email != \"\" && !email.contains(\"@\") ? \"Нужен e-mail\" : \"\"\nhandler buy() {\n  loading = true\n  wait(1500ms)\n  loading = false\n}",
+ "script": "// Every DS template (contract/templates) in its main states — compile check + on-device eyeballing.\nstate loading = false\nstate push = true\nstate plan = \"month\"\nstate tab = 0\nstate progress = 0.35\nstate page = 0\nstate email = \"\"\nstate promo = \"\"\nstate pin = \"\"\nstate taps = 0\nstate showBanner = true\nstate until = env.now + 90 * 60 * 1000\nstate expired = false\nlet plans = [{id: \"week\", title: \"Неделя\"}, {id: \"month\", title: \"Месяц\"}, {id: \"year\", title: \"Год\"}]\nlet tabs = [\"Все\", \"Активные\", \"Архив\"]\nlet emailError = email != \"\" && !email.contains(\"@\") ? \"Нужен e-mail\" : \"\"\nhandler buy() {\n  loading = true\n  wait(1500ms)\n  loading = false\n}",
  "root": {"type": "scroll", "id": "page", "props": {"spacing": "@space.xl", "padding": "@space.lg", "background": "@color.bg1", "width": "fill", "height": "fill"}, "children": [
   {"type": "text", "id": "h1", "props": {"text": "Каталог DS", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
 
@@ -10,6 +10,7 @@
    {"type": "Button", "id": "btnPrimary", "props": {"title": "Участвовать", "loading": "=loading", "width": "fill"}, "on": {"tap": "buy()"}},
    {"type": "Button", "id": "btnSecondary", "props": {"title": "Подробнее", "style": "secondary", "width": "fill"}},
    {"type": "Button", "id": "btnGhost", "props": {"title": "Пропустить", "style": "ghost", "width": "fill"}},
+   {"type": "Button", "id": "btnGhostOff", "props": {"title": "Ссылка недоступна", "style": "ghost", "enabled": false, "width": "fill"}},
    {"type": "stack", "id": "btnRow", "props": {"axis": "h", "spacing": "@space.sm"}, "children": [
     {"type": "Button", "id": "btnIcon", "props": {"title": "Подарок", "size": "compact", "icon": "@icon.gift"}},
     {"type": "Button", "id": "btnLoading", "props": {"title": "Жди", "size": "compact", "style": "secondary", "loading": true}},
@@ -20,12 +21,12 @@
   {"type": "stack", "id": "iconButtons", "props": {"spacing": "@space.md"}, "children": [
    {"type": "text", "id": "iconButtonsH", "props": {"text": "IconButton", "style": "@type.headingSmall"}},
    {"type": "stack", "id": "ibRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm"}, "children": [
-    {"type": "IconButton", "id": "ibSolid", "props": {"icon": "@icon.close"}, "a11y": {"label": "\"Закрыть\""}},
-    {"type": "IconButton", "id": "ibGlass", "props": {"icon": "@icon.share", "style": "glass"}, "a11y": {"label": "\"Поделиться\""}},
-    {"type": "IconButton", "id": "ibOutline", "props": {"icon": "@icon.heart", "style": "outline"}, "a11y": {"label": "\"В избранное\""}},
-    {"type": "IconButton", "id": "ibPlain", "props": {"icon": "@icon.back", "style": "plain"}, "a11y": {"label": "\"Назад\""}},
-    {"type": "IconButton", "id": "ibSmall", "props": {"icon": "@icon.plus", "size": "small"}, "a11y": {"label": "\"Добавить\""}},
-    {"type": "IconButton", "id": "ibOff", "props": {"icon": "@icon.lock", "enabled": false}, "a11y": {"label": "\"Закрыто\""}}
+    {"type": "IconButton", "id": "ibSolid", "props": {"icon": "@icon.close", "label": "Закрыть"}},
+    {"type": "IconButton", "id": "ibGlass", "props": {"icon": "@icon.share", "style": "glass", "label": "Поделиться"}},
+    {"type": "IconButton", "id": "ibOutline", "props": {"icon": "@icon.heart", "style": "outline", "label": "В избранное"}},
+    {"type": "IconButton", "id": "ibPlain", "props": {"icon": "@icon.back", "style": "plain", "label": "Назад"}},
+    {"type": "IconButton", "id": "ibSmall", "props": {"icon": "@icon.plus", "size": "small", "label": "Добавить"}},
+    {"type": "IconButton", "id": "ibOff", "props": {"icon": "@icon.lock", "enabled": false, "label": "Закрыто"}}
    ]}
   ]},
 
@@ -45,9 +46,10 @@
 
   {"type": "stack", "id": "toggles", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
    {"type": "text", "id": "togglesH", "props": {"text": "Toggle", "style": "@type.headingSmall"}},
-   {"type": "Toggle", "id": "tgPush", "props": {"title": "=push ? \"Уведомления включены\" : \"Уведомления выключены\"", "on": "=push", "width": "fill"}, "on": {"change": "push = event.value"}},
+   {"type": "Toggle", "id": "tgPush", "props": {"title": "=push ? \"Уведомления включены\" : \"Уведомления выключены\"", "value": "=push", "width": "fill"}, "on": {"change": "push = event.value"}},
    {"type": "Toggle", "id": "tgLocal", "props": {"title": "Без привязки к стейту", "width": "fill"}, "on": {"change": "track(\"catalog.toggle\", {value: event.value})"}},
-   {"type": "Toggle", "id": "tgOff", "props": {"title": "Недоступно", "on": true, "enabled": false, "width": "fill"}}
+   {"type": "Toggle", "id": "tgOff", "props": {"title": "Недоступно (вкл)", "value": true, "enabled": false, "width": "fill"}},
+   {"type": "Toggle", "id": "tgOffOff", "props": {"title": "Недоступно (выкл)", "value": false, "enabled": false, "width": "fill"}}
   ]},
 
   {"type": "stack", "id": "badges", "props": {"spacing": "@space.md"}, "children": [
@@ -99,12 +101,14 @@
   {"type": "stack", "id": "rows", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
    {"type": "text", "id": "rowsH", "props": {"text": "ListRow · Divider", "style": "@type.headingSmall"}},
    {"type": "ListRow", "id": "rowProfile", "props": {"title": "Профиль", "icon": "@icon.user", "value": "Иван"}},
-   {"type": "ListRow", "id": "rowMail", "props": {"title": "Почта", "icon": "@icon.mail"}},
+   {"type": "ListRow", "id": "rowMail", "props": {"title": "Почта", "icon": "@icon.mail", "value": "=taps == 0 ? \"\" : \"нажато \" + str(taps)"}, "on": {"tap": "taps = taps + 1"}},
    {"type": "Divider", "id": "divider", "props": {"padding": "={h: @space.md}"}},
    {"type": "ListRow", "id": "rowPlain", "props": {"title": "Версия", "value": "1.0.0", "chevron": false}}
   ]},
 
   {"type": "EmptyState", "id": "empty", "props": {"icon": "@icon.gift", "title": "Пока нет розыгрышей", "subtitle": "Загляните позже — мы пришлём уведомление", "actionTitle": "Обновить", "width": "fill"}, "on": {"action": "haptic(\"light\")"}},
+
+  {"type": "EmptyState", "id": "emptyPlain", "props": {"icon": "@icon.sparkles", "title": "Здесь будут ваши билеты", "width": "fill"}},
 
   {"type": "stack", "id": "banners", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
    {"type": "text", "id": "bannersH", "props": {"text": "Banner", "style": "@type.headingSmall"}},
@@ -138,7 +142,8 @@
    {"type": "text", "id": "inputsH", "props": {"text": "TextInput", "style": "@type.headingSmall"}},
    {"type": "TextInput", "id": "emailInput", "props": {"label": "E-mail", "value": "=email", "placeholder": "you@mail.com", "keyboard": "email", "hint": "Пришлём чек", "error": "=emailError"}, "on": {"change": "email = event.value"}},
    {"type": "TextInput", "id": "promoInput", "props": {"label": "Промокод", "value": "=promo", "placeholder": "Необязательно"}, "on": {"change": "promo = event.value", "submit": "promo = event.value.trim().upper()"}},
-   {"type": "TextInput", "id": "pinInput", "props": {"label": "PIN", "value": "=pin", "keyboard": "number", "secure": true}, "on": {"change": "pin = event.value.substring(0, 4)"}}
+   {"type": "TextInput", "id": "pinInput", "props": {"label": "PIN", "value": "=pin", "keyboard": "number", "secure": true}, "on": {"change": "pin = event.value.substring(0, 4)"}},
+   {"type": "TextInput", "id": "noteInput", "props": {"placeholder": "Без привязки — текст в стейте экземпляра"}, "on": {"submit": "track(\"catalog.submit\", {length: event.value.length})"}}
   ]},
 
   {"type": "stack", "id": "tabsBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
