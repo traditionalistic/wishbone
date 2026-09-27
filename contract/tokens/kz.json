@@ -160,6 +160,14 @@
     "accentTertiary": {
       "light": "#AFE5F3FF",
       "dark": "#AFE5F3FF"
+    },
+    "onAccent": {
+      "light": "#FFFFFFFF",
+      "dark": "#FFFFFFFF"
+    },
+    "shadow": {
+      "light": "#0000001F",
+      "dark": "#00000066"
     }
   },
   "type": {
