@@ -1,0 +1,95 @@
+{
+ "id": "fixture.primitives",
+ "title": "Primitives",
+ "script": "state count = 0\nstate email = \"\"\nstate secret = \"\"\nstate free = \"\"\nstate held = false\nstate promo = \"\"\nlet cards = [{id: \"a\", title: \"Alpha\"}, {id: \"b\", title: \"Beta\"}, {id: \"c\", title: \"Gamma\"}]\nlet emailError = email != \"\" && !email.contains(\"@\") ? \"Нужен e-mail\" : \"\"\nhandler inc() {\n  count = count + 1\n  haptic(\"light\")\n  track(\"counter\", {count: count})\n}\nhandler check() {\n  let r = await call demo.checkPromo({code: \"WISH\"})\n  promo = r.ok ? \"ok\" : \"failed: \" + (r.error.code ?? \"?\")\n}",
+ "root": {"type": "scroll", "id": "page", "props": {"width": "fill", "height": "fill", "background": "@color.bg1"}, "children": [
+  {"type": "stack", "id": "content", "props": {"spacing": "@space.lg", "padding": "@space.lg", "width": "fill"}, "children": [
+   {"type": "text", "id": "title", "props": {"text": "Primitives", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
+   {"type": "text", "id": "envInfo", "props": {"text": "=\"safe ${env.safeTop}/${env.safeBottom} · ${env.screenWidth}×${env.screenHeight} · ${env.locale} · ${env.colorScheme}\"", "style": "@type.caption", "color": "@color.el9"}},
+
+   {"type": "stack", "id": "texts", "props": {"spacing": "@space.xs", "width": "fill", "padding": "@space.md", "background": "@color.bg1Elevated", "corner": "@radius.md", "border": "={color: @color.el3, width: 1}"}, "children": [
+    {"type": "text", "id": "tDisplay", "props": {"text": "Display 40", "style": "@type.display"}},
+    {"type": "text", "id": "tAction", "props": {"text": "Display action", "style": "@type.displayAction", "color": "@color.accentPrimary"}},
+    {"type": "text", "id": "tSheet", "props": {"text": "Sheet title: lineHeight 28 across two lines of text", "style": "@type.sheetTitle"}},
+    {"type": "text", "id": "tBody", "props": {"text": "Body: the quick brown fox jumps over the lazy dog, twice, to check that maxLines 2 truncates this line.", "maxLines": 2}},
+    {"type": "text", "id": "tCenter", "props": {"text": "centered caption", "style": "@type.caption", "textAlign": "center", "width": "fill", "color": "@color.el9"}},
+    {"type": "text", "id": "tEnd", "props": {"text": "end aligned", "textAlign": "end", "width": "fill", "color": "@color.accentPrimary"}}
+   ]},
+
+   {"type": "stack", "id": "share", "props": {"axis": "h", "spacing": 8, "width": "fill", "height": 44}, "children": [
+    {"type": "stack", "id": "s1", "props": {"axis": "z", "width": "fill", "height": "fill", "background": "@color.accentPrimary", "corner": "@radius.sm"}, "children": [
+     {"type": "text", "id": "s1t", "props": {"text": "fill", "color": "@color.onAccent"}}]},
+    {"type": "stack", "id": "s2", "props": {"axis": "z", "width": "fill", "height": "fill", "background": "@color.accentSecondary", "corner": "@radius.sm"}, "children": [
+     {"type": "text", "id": "s2t", "props": {"text": "fill, longer", "color": "@color.onAccent"}}]},
+    {"type": "stack", "id": "s3", "props": {"axis": "z", "height": "fill", "padding": "={h: 12}", "background": "@color.bg3", "corner": "@radius.pill"}, "children": [
+     {"type": "text", "id": "s3t", "props": {"text": "wrap"}}]}
+   ]},
+
+   {"type": "grid", "id": "zgrid", "props": {"columns": 3, "spacing": 8, "rowSpacing": 8, "width": "fill"}, "children": [
+    {"type": "stack", "id": "z1", "props": {"axis": "z", "align": "topStart", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d1", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z2", "props": {"axis": "z", "align": "top", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d2", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z3", "props": {"axis": "z", "align": "topEnd", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d3", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z4", "props": {"axis": "z", "align": "start", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d4", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z5", "props": {"axis": "z", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d5", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z6", "props": {"axis": "z", "align": "end", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d6", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z7", "props": {"axis": "z", "align": "bottomStart", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d7", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z8", "props": {"axis": "z", "align": "bottom", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d8", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]},
+    {"type": "stack", "id": "z9", "props": {"axis": "z", "align": "bottomEnd", "width": "fill", "height": 56, "padding": 6, "background": "@color.bg2", "corner": "@radius.sm"}, "children": [{"type": "shape", "id": "d9", "props": {"kind": "circle", "width": 12, "height": 12, "fill": "@color.accentPrimary"}}]}
+   ]},
+
+   {"type": "stack", "id": "card", "props": {"width": "fill", "height": 120, "padding": 16, "spacing": 4, "corner": "@radius.lg", "background": "=gradient([@color.accentPrimary, @color.accentTertiary], 135)", "shadow": "={color: @color.shadow, radius: 12, y: 4}"}, "children": [
+    {"type": "text", "id": "cardT", "props": {"text": "Gradient 135°", "style": "@type.title", "color": "@color.onAccent"}},
+    {"type": "text", "id": "cardS", "props": {"text": "shadow · corner lg", "style": "@type.bodySmall", "color": "=alpha(@color.onAccent, 0.8)"}}
+   ]},
+
+   {"type": "stack", "id": "matBox", "props": {"axis": "z", "width": "fill", "height": 140, "corner": "@radius.lg", "clip": true}, "children": [
+    {"type": "image", "id": "photo", "props": {"url": "https://picsum.photos/seed/wishbone/800/400", "width": "fill", "height": "fill"}},
+    {"type": "stack", "id": "matLabel", "props": {"padding": "={h: 12, v: 8}", "material": "regular", "corner": "@radius.pill"}, "children": [
+     {"type": "text", "id": "matT", "props": {"text": "material over image", "style": "@type.bodySmallStrong"}}]}
+   ]},
+
+   {"type": "stack", "id": "shapes", "props": {"axis": "h", "spacing": 12, "align": "center"}, "children": [
+    {"type": "shape", "id": "rect", "props": {"width": 56, "height": 40, "corner": 8, "fill": "@color.success", "stroke": "={color: @color.el16, width: 2}"}},
+    {"type": "shape", "id": "circle", "props": {"kind": "circle", "width": 40, "height": 40, "fill": "@color.warning"}},
+    {"type": "shape", "id": "capsule", "props": {"kind": "capsule", "width": 72, "height": 28, "stroke": "={color: @color.error, width: 2}"}},
+    {"type": "icon", "id": "i1", "props": {"name": "@icon.heart", "color": "@color.error"}},
+    {"type": "icon", "id": "i2", "props": {"name": "@icon.sparkles", "size": 32, "color": "@color.accentPrimary"}},
+    {"type": "icon", "id": "i3", "props": {"name": "@icon.chevronRight"}}
+   ]},
+
+   {"type": "scroll", "id": "carousel", "props": {"axis": "h", "paging": true, "spacing": 0, "width": "fill"}, "children": [
+    {"type": "stack", "id": "slide", "repeat": {"over": "cards", "key": "item.id"}, "props": {"axis": "z", "width": "=env.screenWidth - 32", "height": 88, "padding": 4}, "children": [
+     {"type": "stack", "id": "slideBox", "props": {"axis": "z", "width": "fill", "height": "fill", "corner": "@radius.md", "background": "=index % 2 == 0 ? @color.bg3 : @color.bg4"}, "children": [
+      {"type": "text", "id": "slideT", "props": {"text": "=\"${index + 1}. ${item.title}\"", "style": "@type.headingSmall"}}]}
+    ]}
+   ]},
+
+   {"type": "stack", "id": "counter", "props": {"axis": "h", "align": "center", "spacing": 8, "height": 48, "padding": "={h: 16}", "background": "@color.accentPrimary", "corner": "@radius.pill"}, "on": {"tap": "inc()", "longPress": "held = !held"}, "a11y": {"label": "\"Tapped \" + str(count)", "role": "button"}, "children": [
+    {"type": "icon", "id": "plus", "props": {"name": "@icon.plus", "size": 20, "color": "@color.onAccent"}},
+    {"type": "text", "id": "counterT", "props": {"text": "=\"Tapped ${count}\" + (held ? \" · held\" : \"\")", "style": "@type.bodyStrong", "color": "@color.onAccent"}}
+   ]},
+
+   {"type": "stack", "id": "fields", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
+    {"type": "stack", "id": "emailBox", "props": {"axis": "h", "align": "center", "width": "fill", "height": 48, "padding": "={h: 12}", "background": "@color.bg1Elevated", "corner": "@radius.md", "border": "={color: emailError != \"\" ? @color.error : @color.el3, width: 1}"}, "children": [
+     {"type": "textField", "id": "email", "props": {"bind": "email", "placeholder": "E-mail (controlled)", "keyboard": "email", "width": "fill"}}]},
+    {"type": "text", "id": "emailErr", "when": "emailError != \"\"", "props": {"text": "=emailError", "style": "@type.caption", "color": "@color.error"}},
+    {"type": "stack", "id": "secretBox", "props": {"axis": "h", "align": "center", "width": "fill", "height": 48, "padding": "={h: 12}", "background": "@color.bg1Elevated", "corner": "@radius.md"}, "children": [
+     {"type": "textField", "id": "secret", "props": {"bind": "secret", "placeholder": "Password", "secure": true, "width": "fill"}}]},
+    {"type": "stack", "id": "freeBox", "props": {"axis": "h", "align": "center", "width": "fill", "height": 48, "padding": "={h: 12}", "background": "@color.bg1Elevated", "corner": "@radius.md"}, "children": [
+     {"type": "textField", "id": "free", "props": {"placeholder": "Uncontrolled", "width": "fill"}, "on": {"change": "free = event.value"}}]},
+    {"type": "text", "id": "echo", "props": {"text": "=\"echo: ${free} · ${secret.length()} chars\"", "style": "@type.caption", "color": "@color.el9"}}
+   ]},
+
+   {"type": "native", "id": "nat", "props": {"name": "badge", "props": "={text: \"host view\"}"}},
+
+   {"type": "stack", "id": "nav", "props": {"spacing": 8, "width": "fill"}, "children": [
+    {"type": "stack", "id": "push", "props": {"width": "fill", "padding": 12, "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "navigate(\"fixture.second\", {from: \"push\"})"}, "children": [{"type": "text", "id": "pushT", "props": {"text": "navigate → push"}}]},
+    {"type": "stack", "id": "fade", "props": {"width": "fill", "padding": 12, "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "navigate(\"fixture.second\", {from: \"fade\"}, \"fade\")"}, "children": [{"type": "text", "id": "fadeT", "props": {"text": "navigate → fade"}}]},
+    {"type": "stack", "id": "present", "props": {"width": "fill", "padding": 12, "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "present(\"fixture.second\", {from: \"sheet\"})"}, "children": [{"type": "text", "id": "presentT", "props": {"text": "present → sheet"}}]},
+    {"type": "stack", "id": "hostAct", "props": {"width": "fill", "padding": 12, "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "host(\"toast\", {message: \"Привет от экрана\"})"}, "children": [{"type": "text", "id": "hostT", "props": {"text": "host(\"toast\")"}}]},
+    {"type": "stack", "id": "openUrl", "props": {"width": "fill", "padding": 12, "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "open(\"https://example.com\")"}, "children": [{"type": "text", "id": "openT", "props": {"text": "open(https://example.com)"}}]},
+    {"type": "stack", "id": "callBtn", "props": {"width": "fill", "padding": 12, "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "check()"}, "children": [{"type": "text", "id": "callT", "props": {"text": "=\"await call demo.checkPromo → \" + promo"}}]}
+   ]}
+  ]}
+ ]}
+}

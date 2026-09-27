@@ -23,7 +23,8 @@ let package = Package(
         ),
         .target(
             name: "WishboneUI",
-            dependencies: ["WishboneCore"]
+            dependencies: ["WishboneCore"],
+            resources: [.copy("Resources/korpu.json"), .copy("Resources/Fonts")]
         ),
         .target(
             name: "WishboneLottie",
@@ -42,6 +43,10 @@ let package = Package(
         .testTarget(
             name: "WishboneCoreTests",
             dependencies: ["WishboneCore"]
+        ),
+        .testTarget(
+            name: "WishboneUITests",
+            dependencies: ["WishboneUI"]
         )
     ],
     swiftLanguageModes: [.v6]

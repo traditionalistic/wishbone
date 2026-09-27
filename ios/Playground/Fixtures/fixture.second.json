@@ -1,0 +1,11 @@
+{
+ "id": "fixture.second",
+ "title": "Second",
+ "script": "param from: string = \"?\"",
+ "root": {"type": "stack", "id": "root", "props": {"spacing": "@space.md", "padding": "@space.lg", "width": "fill", "height": "fill", "background": "@color.bg1Elevated"}, "children": [
+  {"type": "text", "id": "title", "props": {"text": "=\"Second screen (${from})\"", "style": "@type.title"}, "a11y": {"role": "header"}},
+  {"type": "stack", "id": "back", "props": {"padding": 12, "width": "fill", "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "back()"}, "children": [{"type": "text", "id": "backT", "props": {"text": "back()"}}]},
+  {"type": "stack", "id": "dismiss", "props": {"padding": 12, "width": "fill", "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "dismiss()"}, "children": [{"type": "text", "id": "dismissT", "props": {"text": "dismiss()"}}]},
+  {"type": "stack", "id": "deeper", "props": {"padding": 12, "width": "fill", "background": "@color.bg2", "corner": "@radius.md"}, "on": {"tap": "navigate(\"fixture.second\", {from: from + \" → push\"})"}, "children": [{"type": "text", "id": "deeperT", "props": {"text": "push again"}}]}
+ ]}
+}
