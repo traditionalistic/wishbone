@@ -58,8 +58,23 @@ enum Stdlib {
     // MARK: Strings
 
     static func length(_ s: String) -> Double { Double(CodePoints.length(s)) }
-    static func upper(_ s: String) -> String { s.uppercased() }
-    static func lower(_ s: String) -> String { s.lowercased() }
+
+    /// Full case mapping applied per code point, independently — not Swift's
+    /// `String.uppercased()/lowercased()`, which apply *whole-string* (locale- and
+    /// context-sensitive, e.g. Greek final sigma) mapping. `Unicode.Scalar.Properties`
+    /// exposes the same per-scalar full case mapping tables with no such context rules.
+    static func upper(_ s: String) -> String {
+        var result = String.UnicodeScalarView()
+        for scalar in s.unicodeScalars { result.append(contentsOf: scalar.properties.uppercaseMapping.unicodeScalars) }
+        return String(result)
+    }
+
+    static func lower(_ s: String) -> String {
+        var result = String.UnicodeScalarView()
+        for scalar in s.unicodeScalars { result.append(contentsOf: scalar.properties.lowercaseMapping.unicodeScalars) }
+        return String(result)
+    }
+
     static func trim(_ s: String) -> String { CodePoints.trim(s) }
 
     static func startsWith(_ s: String, _ p: String) -> Bool { s.hasPrefix(p) }

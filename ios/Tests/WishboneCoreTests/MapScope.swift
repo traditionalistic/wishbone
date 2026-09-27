@@ -101,6 +101,11 @@ final class MapScope: Scope {
             interpreter: interpreter, theme: theme, computed: document.computed,
             data: data, params: params, env: env
         )
+        // Params not overridden by the vector fall back to their compiled default expr
+        // (document.params holds each param's default, per spec `param id: string = "x"`).
+        for (name, defaultExpr) in document.params where paramValues[name] == nil {
+            paramValues[name] = (try? interpreter.eval(defaultExpr, scope: self)) ?? .null
+        }
         for (name, initializer) in document.state {
             stateValues[name] = (try? interpreter.eval(initializer, scope: self)) ?? .null
         }

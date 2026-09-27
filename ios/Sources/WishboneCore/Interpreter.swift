@@ -488,15 +488,18 @@ public final class Interpreter: Sendable {
             ctx.transaction = motion
             defer { ctx.transaction = previous }
             try await execList(body, scope: scope, ctx: ctx, effects: effects, budget: budget)
-        case let .call(op, argsExpr, resultName, awaited):
+        case let .call(op, argsExpr, resultName, _):
+            // `awaited` (wire `await`) only controls whether the *value* is bound — the call
+            // is always issued in statement order so it's recorded synchronously (harness
+            // rule 3, contract/conformance/compiled/handlers.json `h.call.fireforget`: even a
+            // bare, unbound `call` records its effect immediately). The grammar never binds a
+            // result without `await` anyway (`resultName` is null whenever `awaited` is
+            // false), so this loses no real "fire and forget" behavior for well-formed
+            // programs — a real networking EffectSink is free to return immediately from its
+            // own `call()` and finish the network round trip in the background internally.
             let argsValue = try evalStep(argsExpr, scope: scope, locals: ctx.locals, budget: budget)
-            if awaited {
-                let result = await effects.call(op: op, args: argsValue)
-                if let resultName { ctx.locals = Locals(name: resultName, value: result, parent: ctx.locals) }
-            } else {
-                let sink = effects
-                Task { _ = await sink.call(op: op, args: argsValue) }
-            }
+            let result = await effects.call(op: op, args: argsValue)
+            if let resultName { ctx.locals = Locals(name: resultName, value: result, parent: ctx.locals) }
         case let .doEffect(effect, argExprs, awaited):
             let argVals = try argExprs.map { try evalStep($0, scope: scope, locals: ctx.locals, budget: budget) }
             await effects.perform(effect: effect, args: argVals, awaited: awaited)
