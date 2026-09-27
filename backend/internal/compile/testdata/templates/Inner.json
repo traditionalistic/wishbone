@@ -1,0 +1,3 @@
+{"id": "Inner", "title": "Inner", "script": "param tag: string", "root": {"type": "stack", "id": "root", "children": [
+ {"type": "text", "id": "t", "repeat": {"over": "[tag]"}, "props": {"text": "=item + tag"}}
+]}}

@@ -215,6 +215,10 @@ func TestScreenErrors(t *testing.T) {
 		{"timeline dup name", "", `{"type": "spacer", "id": "root"}`, `[{"name": "t", "tracks": []}, {"name": "t", "tracks": []}]`, "timelines/1", "duplicate"},
 		{"timeline name", "", `{"type": "spacer", "id": "root"}`, `[{"name": "a b", "tracks": []}]`, "timelines/0", "name"},
 		{"play unknown", "", `{"type": "shape", "id": "root", "on": {"tap": "play(nope)"}}`, "", "root/on/tap", "timeline"},
+		{"transition NaN", "", `{"type": "spacer", "id": "root", "transition": {"in": "scale(NaN)"}}`, "", "root/transition/in", "finite"},
+		{"number out of range", "", `{"type": "spacer", "id": "root", "props": {"opacity": 1e999}}`, "", "root/props/opacity", "out of range"},
+		{"number out of range nested", "", `{"type": "spacer", "id": "root", "props": {"padding": {"top": -1e999}}}`, "", "root/props/padding", "out of range"},
+		{"@ expression", "", `{"type": "spacer", "id": "root", "props": {"opacity": "@space.lg * 2 + 1"}}`, "", "root/props/opacity", "="},
 	}
 	for _, c := range cases {
 		_, _, diags := Screen(contract(t), src(c.script, c.root, c.timelines), 1)
@@ -260,7 +264,7 @@ func TestLimits(t *testing.T) {
 		"size":  big,
 	} {
 		_, _, diags := Screen(contract(t), src("", root, ""), 1)
-		if len(diags) != 1 || !strings.Contains(diags[0].Msg, "limit") {
+		if len(diags) != 1 || !strings.Contains(diags[0].Msg, "limit") || diags[0].Path != "root" {
 			t.Errorf("%s: diags %v", name, diags)
 		}
 	}
@@ -288,7 +292,7 @@ func TestTransitionParse(t *testing.T) {
 			t.Errorf("%q: %s %v, want %s", in, js(tr), err, want)
 		}
 	}
-	for _, in := range []string{"", "fade +", "slide()", "scale(a)", "offset(1)", "fade(1)", "wipe"} {
+	for _, in := range []string{"", "fade +", "slide()", "scale(a)", "offset(1)", "fade(1)", "wipe", "scale(NaN)", "offset(Inf, 0)", "scale(-inf)"} {
 		if _, err := parseTransition(in); err == nil {
 			t.Errorf("%q: expected an error", in)
 		}
@@ -318,6 +322,7 @@ func FuzzScreen(f *testing.F) {
 		`{"type": "stack", "id": "root", "children": [{"type": "Card", "id": "c", "repeat": {"over": "[\"a\"]"}, "props": {"items": "=[item]"}, "children": [{"type": "Toggle", "id": "t"}]}]}`,
 		`{"type": "Row", "id": "r", "props": {"code": "x"}, "on": {"pick": "n = 0"}}`,
 		`{"type": "textField", "id": "root", "props": {"bind": "e"}, "drag": {"axis": "x"}, "on": {"dragEnd": "n = event.x"}}`,
+		`{"type": "stack", "id": "root", "transition": {"in": "fade + slide(bottom) + scale(0.9)", "out": "offset(0, 20)"}, "when": "n > 0"}`,
 	} {
 		f.Add(string(src("state n = 0\nstate e = \"\"", s, `[{"name": "t", "tracks": [{"target": "root", "prop": "opacity", "keys": [{"t": 0, "v": 0, "ease": "spring"}]}]}]`)))
 	}

@@ -98,7 +98,7 @@ func Screen(c *Contract, src []byte, rev int) (json.RawMessage, Meta, []Diag) {
 	}
 	b := encode(doc)
 	if len(b) > maxSize {
-		return nil, Meta{}, []Diag{{Msg: fmt.Sprintf("limit: document is %d KB, the maximum is %d KB", len(b)/1024, maxSize/1024)}}
+		return nil, Meta{}, []Diag{{Path: "root", Msg: fmt.Sprintf("limit: document is %d KB, the maximum is %d KB", len(b)/1024, maxSize/1024)}}
 	}
 	return b, meta(doc), nil
 }
@@ -620,6 +620,11 @@ func (u *unit) common(n *srcNode, w *Node, locals map[string]*dsl.Type) {
 // expr compiles a DSL expression fragment; nil wire on error.
 func (u *unit) expr(src string, want *dsl.Type, sc *dsl.Scope, path string) (json.RawMessage, *dsl.Type) {
 	e, d := dsl.ParseExpr(src)
+	return u.checked(e, d, want, sc, path)
+}
+
+// checked type-checks and lowers a parsed fragment (d = its parse diagnostics).
+func (u *unit) checked(e dsl.Expr, d []dsl.Diag, want *dsl.Type, sc *dsl.Scope, path string) (json.RawMessage, *dsl.Type) {
 	if e != nil && len(d) == 0 {
 		d = u.prog.CheckExpr(e, sc, want)
 	}

@@ -1,0 +1,4 @@
+{"id": "Outer", "title": "Outer", "script": "param label: string\nevent done\nhandler go() {\n  emit done\n}", "root": {"type": "stack", "id": "root", "children": [
+ {"type": "stack", "id": "list", "repeat": {"over": "[label]"}, "children": [{"type": "Inner", "id": "in", "props": {"tag": "=item + label"}}]},
+ {"type": "Button", "id": "b", "props": {"title": "=label"}, "on": {"tap": "go()"}}
+]}}

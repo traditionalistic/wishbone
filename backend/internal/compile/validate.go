@@ -21,14 +21,23 @@ func (u *unit) value(raw json.RawMessage, want *dsl.Type, sc *dsl.Scope, path st
 			v, _ := u.expr(s[1:], want, sc, path)
 			return v
 		case strings.HasPrefix(s, "@"):
-			v, _ := u.expr(s, want, sc, path)
+			e, d := dsl.ParseExpr(s)
+			if _, ok := e.(*dsl.TokenRef); len(d) == 0 && !ok {
+				u.errf(path, "a value starting with @ must be a single token like @space.lg; write expressions as \"=%s\"", s)
+				return nil
+			}
+			v, _ := u.checked(e, d, want, sc, path)
 			return v
 		case strings.HasPrefix(s, `\=`), strings.HasPrefix(s, `\@`):
 			raw = encode(s[1:])
 		}
 	}
-	lit := decode(raw)
-	if d := u.prog.CheckExpr(literalExpr(lit), sc, want); len(d) > 0 {
+	lit, err := literalExpr(decode(raw))
+	if err != nil {
+		u.errf(path, "%v", err)
+		return nil
+	}
+	if d := u.prog.CheckExpr(lit, sc, want); len(d) > 0 {
 		for _, x := range d {
 			u.errf(path, "%s", x.Msg)
 		}
@@ -42,25 +51,36 @@ func (u *unit) value(raw json.RawMessage, want *dsl.Type, sc *dsl.Scope, path st
 }
 
 // literalExpr builds a DSL literal from a JSON value so it is type-checked like source text.
-func literalExpr(v any) dsl.Expr {
+func literalExpr(v any) (dsl.Expr, error) {
 	switch v := v.(type) {
 	case json.Number:
-		f, _ := v.Float64()
-		return &dsl.Lit{Val: f}
+		f, err := v.Float64()
+		if err != nil {
+			return nil, fmt.Errorf("number %s out of range", v)
+		}
+		return &dsl.Lit{Val: f}, nil
 	case []any:
 		l := &dsl.ListLit{}
 		for _, x := range v {
-			l.Elems = append(l.Elems, literalExpr(x))
+			e, err := literalExpr(x)
+			if err != nil {
+				return nil, err
+			}
+			l.Elems = append(l.Elems, e)
 		}
-		return l
+		return l, nil
 	case map[string]any:
 		r := &dsl.RecLit{}
 		for _, k := range sortedKeys(v) {
-			r.Fields = append(r.Fields, dsl.RecField{Name: k, X: literalExpr(v[k])})
+			e, err := literalExpr(v[k])
+			if err != nil {
+				return nil, err
+			}
+			r.Fields = append(r.Fields, dsl.RecField{Name: k, X: e})
 		}
-		return r
+		return r, nil
 	}
-	return &dsl.Lit{Val: v}
+	return &dsl.Lit{Val: v}, nil
 }
 
 type dragSpec struct {
@@ -119,8 +139,8 @@ func parseTransition(s string) ([]Trans, error) {
 			out := make([]*float64, n)
 			for i, a := range args {
 				f, err := strconv.ParseFloat(a, 64)
-				if err != nil {
-					return nil, fmt.Errorf("transition %s: %q is not a number", name, a)
+				if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+					return nil, fmt.Errorf("transition %s: %q is not a finite number", name, a)
 				}
 				out[i] = &f
 			}

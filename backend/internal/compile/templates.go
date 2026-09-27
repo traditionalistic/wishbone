@@ -151,6 +151,10 @@ func (u *unit) instance(n *srcNode, locals map[string]*dsl.Type) *Node {
 	}
 	u.common(n, w, locals)
 	sc := &dsl.Scope{Locals: locals}
+	// modifiers land on the expanded root, so self.pressed works there when the root is pressable (ruling);
+	// params are substituted into arbitrary inner nodes and never see self
+	pressable := func(ev string) bool { return hasKey(t.Root.On, ev) || hasKey(n.On, ev) && !t.Events[ev] }
+	modSc := &dsl.Scope{Locals: locals, Self: pressable("tap") || pressable("longPress")}
 
 	params := map[string]json.RawMessage{}
 	isParam := map[string]bool{}
@@ -170,7 +174,7 @@ func (u *unit) instance(n *srcNode, locals map[string]*dsl.Type) *Node {
 			continue
 		}
 		if p := u.c.Prims.Common[k]; p != nil {
-			u.setProp(w, k, u.value(n.Props[k], p.Type, sc, n.path+"/props/"+k))
+			u.setProp(w, k, u.value(n.Props[k], p.Type, modSc, n.path+"/props/"+k))
 		} else {
 			u.errf(n.path+"/props/"+k, "unknown prop '%s' for template %s (params: %s)", k, t.Name, paramNames(t))
 		}

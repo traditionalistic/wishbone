@@ -116,6 +116,7 @@ func TestTemplateErrors(t *testing.T) {
 		{"param type", `{"type": "Button", "id": "root", "props": {"title": 1}}`, "root/props/title", "type"},
 		{"param literal union", `{"type": "Button", "id": "root", "props": {"title": "a", "kind": "tertiary"}}`, "root/props/kind", "type"},
 		{"self in instance", `{"type": "Button", "id": "root", "props": {"title": "=self.pressed ? \"a\" : \"b\""}}`, "root/props/title", "self.pressed"},
+		{"self in modifier without tap", `{"type": "Dot", "id": "root", "props": {"lit": true, "scale": "=self.pressed ? 0.9 : 1"}}`, "root/props/scale", "self.pressed"},
 		{"unknown event", `{"type": "Button", "id": "root", "props": {"title": "a"}, "on": {"change": "back()"}}`, "root/on/change", "event"},
 		{"template event has no payload", `{"type": "Button", "id": "root", "props": {"title": "a"}, "on": {"tap": "track(\"x\", {e: event})"}}`, "root/on/tap", "event"},
 		{"children without slot", `{"type": "Button", "id": "root", "props": {"title": "a"}, "children": [{"type": "spacer", "id": "s"}]}`, "root", "slot"},
@@ -184,5 +185,45 @@ func TestTemplateInstanceFields(t *testing.T) {
 		"root/c/0/a11y":       `{"label":["v","dot"],"role":"image"}`,
 		"root/c/0/tr":         `{"in":[{"k":"fade"}]}`,
 		"root/c/0/match":      `["v","m"]`,
+	})
+}
+
+// A nested template's event handler runs the outer template's handler, which emits the outer event; repeats at
+// three levels (screen, Outer, Inner) all bind "item" and must stay distinct.
+func TestTemplateNestedEmitAndRepeats(t *testing.T) {
+	root := `{"type": "stack", "id": "root", "children": [
+	  {"type": "Outer", "id": "o", "repeat": {"over": "xs", "as": "item"}, "props": {"label": "=item"}, "on": {"done": "n = n + 1"}}
+	]}`
+	doc, _ := compileOK(t, src("state xs = [\"a\"]\nstate n = 0", root, ""))
+	expect(t, doc, map[string]string{
+		"root/c/0/id":                 `"o"`,
+		"root/c/0/rep":                `{"as":"item","index":"index","over":["s","xs"]}`,
+		"root/c/0/c/0/id":             `"o/list"`,
+		"root/c/0/c/0/rep":            `{"as":"Outer#1.item","index":"Outer#1.index","over":["list",[["l","item"]]]}`,
+		"root/c/0/c/0/c/0/id":         `"o/in"`,
+		"root/c/0/c/0/c/0/c/0/id":     `"o/in/t"`,
+		"root/c/0/c/0/c/0/c/0/rep":    `{"as":"Outer#1.Inner#1.item","index":"Outer#1.Inner#1.index","over":["list",[["op","+",["l","Outer#1.item"],["l","item"]]]]}`,
+		"root/c/0/c/0/c/0/c/0/p/text": `["op","+",["l","Outer#1.Inner#1.item"],["op","+",["l","Outer#1.item"],["l","item"]]]`,
+		"root/c/0/c/1/id":             `"o/b"`,
+		"root/c/0/c/1/on/tap":         `[["set","i","Button.presses",[],["op","+",["u","Button.double",[["i","Button.presses"]]],["v",1]]],["set","s","n",[],["op","+",["s","n"],["v",1]]],["do","play",[["v","o/b/pulse"]],false]]`,
+		"root/c/0/c/1/c/1/p/text":     `["op","+",["l","item"],["v","!"]]`,
+	})
+	tl := doc["timelines"].(map[string]any)["o/b/pulse"]
+	if got := js(at(tl, "tracks/0/target")); got != `"o/b/bg"` {
+		t.Errorf("timeline o/b/pulse target: %s (timelines %s)", got, js(doc["timelines"]))
+	}
+}
+
+// Controller ruling: self.pressed is allowed in an instance's modifier props when the expanded root is pressable.
+func TestTemplateSelfInModifiers(t *testing.T) {
+	root := `{"type": "stack", "id": "root", "children": [
+	  {"type": "Button", "id": "b", "props": {"title": "a", "scale": "=self.pressed ? 0.97 : 1"}},
+	  {"type": "Dot", "id": "d", "props": {"lit": true, "opacity": "=self.pressed ? 0.5 : 1"}, "on": {"tap": "back()"}}
+	]}`
+	doc, _ := compileOK(t, src("", root, ""))
+	expect(t, doc, map[string]string{
+		"root/c/0/p/scale":   `["if",["self","pressed"],["v",0.97],["v",1]]`,
+		"root/c/1/p/opacity": `["if",["self","pressed"],["v",0.5],["v",1]]`,
+		"root/c/1/on/tap":    `[["do","back",[],false]]`,
 	})
 }
