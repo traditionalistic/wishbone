@@ -65,3 +65,35 @@ import Testing
         #expect(Date().timeIntervalSince(started) < 1)
     }
 }
+
+@MainActor
+@Suite struct HandlerLifetimeTests {
+    private func answer(_ revision: Int, handler: String) throws -> ScreenResponse {
+        try API.parseScreen(Data(#"""
+        {"etag": "e", "revision": \#(revision), "data": {}, "document": {"format": 1, "screen": "s", "revision": \#(revision),
+         "root": {"t": "stack", "id": "root", "on": {"tap": \#(handler)}}}}
+        """#.utf8))
+    }
+
+    @Test func aHandlerSurvivesADocumentReplaceAndIsCancelledOnTeardown() async throws {
+        let nav = Navigator()
+        var model: ScreenModel? = ScreenModel(wishbone: testWishbone(), route: Route(screen: "s", params: [:]), navigator: nav)
+        let awaitCall = #"[["call", "demo.x", ["v", {}], "r", true], ["do", "navigate", [["v", "next"]], false]]"#
+        model?.apply(try answer(1, handler: awaitCall))
+        let v1 = try #require(model?.store)
+        let run = v1.fire(v1.document.root.on["tap"]!, ctx: RenderContext(store: v1), event: .record([:]))
+        model?.apply(try answer(2, handler: "[]"))          // live-preview push / SWR refresh mid-call
+        #expect(model?.store !== v1)
+        await run.value
+        #expect(nav.path.map(\.screen) == ["next"])        // the trailing effect still ran
+
+        let longWait = #"[["do", "wait", [["v", 60000]], true], ["do", "navigate", [["v", "late"]], false]]"#
+        model?.apply(try answer(3, handler: longWait))
+        let v3 = try #require(model?.store)
+        let pending = v3.fire(v3.document.root.on["tap"]!, ctx: RenderContext(store: v3), event: .record([:]))
+        try await Task.sleep(for: .milliseconds(30))
+        model = nil                                         // screen torn down
+        await pending.value
+        #expect(nav.path.map(\.screen) == ["next"])        // cancelled: no late navigate
+    }
+}
