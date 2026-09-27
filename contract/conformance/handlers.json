@@ -467,6 +467,24 @@
   }
  },
  {
+  "name": "h.path.alias",
+  "kind": "handler",
+  "script": "state items = [{done: false}]\nstate snap = true\nhandler go() {\n  let before = items\n  items[0].done = true\n  snap = before[0].done ?? true\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "snap": false,
+    "items": [
+     {
+      "done": true
+     }
+    ]
+   },
+   "effects": []
+  }
+ },
+ {
   "name": "h.list.update",
   "kind": "handler",
   "script": "state items: list<{id: number, qty: number}> = [{id: 1, qty: 1}]\nhandler add(id: number) {\n  let i = items.indexOf(items.find(x => x.id == id) ?? {id: -1, qty: 0})\n  if i >= 0 { items[i].qty = (items[i].qty ?? 0) + 1 } else { items = items.append({id: id, qty: 1}) }\n}",

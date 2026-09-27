@@ -113,6 +113,68 @@
  {
   "name": "err.event.outside",
   "expr": "event.value",
-  "error": "unknown"
+  "error": "event"
+ },
+ {
+  "name": "err.eq.mismatch",
+  "expr": "1 == \"1\"",
+  "error": "type"
+ },
+ {
+  "name": "err.assign.type",
+  "script": "state a = 1\nhandler go() { a = \"x\" }",
+  "error": "type"
+ },
+ {
+  "name": "err.data.args.state",
+  "script": "state s = \"\"\ndata x = demo.checkPromo({code: s})",
+  "error": "param"
+ },
+ {
+  "name": "err.lambda.userfn",
+  "script": "fn f(x: number): number = x",
+  "expr": "f(y => y)",
+  "error": "lambda"
+ },
+ {
+  "name": "err.with.unknownfield",
+  "script": "state u = {a: 1}",
+  "expr": "u.with({nope: 1})",
+  "error": "nope"
+ },
+ {
+  "name": "err.plural.other",
+  "expr": "plural(1, {one: \"x\"})",
+  "error": "other"
+ },
+ {
+  "name": "err.sortBy.key",
+  "expr": "[1].sortBy(x => true)",
+  "error": "type"
+ },
+ {
+  "name": "err.handler.arity",
+  "script": "handler h(a: number) { }\nhandler go() { h() }",
+  "error": "arg"
+ },
+ {
+  "name": "err.play.unknown",
+  "script": "handler go() { play(nope) }",
+  "error": "timeline"
+ },
+ {
+  "name": "err.refresh.notdata",
+  "script": "state s = 1\nhandler go() { refresh(s) }",
+  "error": "data"
+ },
+ {
+  "name": "err.escape.unknown",
+  "expr": "\"\\d\"",
+  "error": "escape"
+ },
+ {
+  "name": "err.op.args.extra",
+  "script": "handler go() { call demo.checkPromo({code: \"a\", nope: 1}) }",
+  "error": "nope"
  }
 ]

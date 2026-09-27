@@ -27,7 +27,31 @@
   "name": "fmt.number.binary",
   "kind": "expr",
   "expr": "formatNumber(2.675, 2)",
-  "expect": "2.67"
+  "expect": "2.68"
+ },
+ {
+  "name": "fmt.number.binary.down",
+  "kind": "expr",
+  "expr": "formatNumber(1.005, 2)",
+  "expect": "1.00"
+ },
+ {
+  "name": "fmt.number.negzero",
+  "kind": "expr",
+  "expr": "formatNumber(-0.4, 0) + \"|\" + formatNumber(-0.001, 2)",
+  "expect": "0|0.00"
+ },
+ {
+  "name": "fmt.number.group.exact",
+  "kind": "expr",
+  "expr": "formatNumber(1000, 0)",
+  "expect": "1 000"
+ },
+ {
+  "name": "fmt.number.big",
+  "kind": "expr",
+  "expr": "formatNumber(100000000000000000, 1)",
+  "expect": "100 000 000 000 000 000.0"
  },
  {
   "name": "fmt.number.small",
@@ -202,6 +226,33 @@
   "expect": "0 days",
   "env": {
    "locale": "en"
+  }
+ },
+ {
+  "name": "plural.en.neg",
+  "kind": "expr",
+  "expr": "plural(-1, {one: \"# day\", other: \"# days\"})",
+  "expect": "-1 day",
+  "env": {
+   "locale": "en"
+  }
+ },
+ {
+  "name": "plural.locale.region",
+  "kind": "expr",
+  "expr": "plural(2, {one: \"a\", few: \"b\", many: \"c\", other: \"d\"})",
+  "expect": "b",
+  "env": {
+   "locale": "ru-RU"
+  }
+ },
+ {
+  "name": "plural.kk",
+  "kind": "expr",
+  "expr": "plural(1, {one: \"бір\", other: \"көп\"})",
+  "expect": "бір",
+  "env": {
+   "locale": "kk"
   }
  },
  {

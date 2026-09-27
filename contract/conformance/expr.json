@@ -108,7 +108,7 @@
   "expect": 2
  },
  {
-  "name": "cmp.shortcircuit",
+  "name": "cmp.and.false",
   "kind": "expr",
   "expr": "false && 1 / 0 > 0",
   "expect": false
@@ -862,5 +862,144 @@
   "expr": "total(items)",
   "expect": 30,
   "script": "state items = [{price: 10}, {price: 20}]\nfn total(xs: list<{price: number}>): number = xs.map(x => x.price).sum()"
+ },
+ {
+  "name": "str.big.17",
+  "kind": "expr",
+  "expr": "str(100000000000000000)",
+  "expect": "100000000000000000"
+ },
+ {
+  "name": "str.tiny.neg",
+  "kind": "expr",
+  "expr": "str(-0.0000001)",
+  "expect": "0"
+ },
+ {
+  "name": "str.identity",
+  "kind": "expr",
+  "expr": "str(\"a\\\"b\")",
+  "expect": "a\"b"
+ },
+ {
+  "name": "str.record.sorted",
+  "kind": "expr",
+  "expr": "str({b: 1, a: \"x/y\"})",
+  "expect": "{\"a\":\"x/y\",\"b\":1}"
+ },
+ {
+  "name": "str.combining.length",
+  "kind": "expr",
+  "expr": "\"e\\u{301}\".length",
+  "expect": 2
+ },
+ {
+  "name": "str.combining.eq",
+  "kind": "expr",
+  "expr": "\"e\\u{301}\" == \"\\u{E9}\"",
+  "expect": false
+ },
+ {
+  "name": "str.cmp.astral",
+  "kind": "expr",
+  "expr": "\"\\u{FF01}\" < \"\\u{1F600}\"",
+  "expect": true
+ },
+ {
+  "name": "str.sort.astral",
+  "kind": "expr",
+  "expr": "[\"\\u{1F600}\", \"\\u{FF01}\"].sortBy(x => x)",
+  "expect": [
+   "！",
+   "😀"
+  ]
+ },
+ {
+  "name": "str.substring.astral",
+  "kind": "expr",
+  "expr": "\"😀ab\".substring(1, 2)",
+  "expect": "a"
+ },
+ {
+  "name": "str.length.skintone",
+  "kind": "expr",
+  "expr": "\"👍🏽\".length",
+  "expect": 2
+ },
+ {
+  "name": "str.matches.unicode",
+  "kind": "expr",
+  "expr": "\"Привет\".matches(\"\\\\w+\")",
+  "expect": true
+ },
+ {
+  "name": "str.escape.dollar",
+  "kind": "expr",
+  "expr": "\"\\${x}\".length",
+  "expect": 4
+ },
+ {
+  "name": "math.round.edge",
+  "kind": "expr",
+  "expr": "round(0.49999999999999994)",
+  "expect": 0
+ },
+ {
+  "name": "list.index.frac",
+  "kind": "expr",
+  "expr": "[1, 2, 3][1.5] ?? -1",
+  "expect": -1
+ },
+ {
+  "name": "opt.method",
+  "kind": "expr",
+  "expr": "xs.count ?? -1",
+  "expect": -1,
+  "script": "data xs = demo.offers()"
+ },
+ {
+  "name": "opt.method.present",
+  "kind": "expr",
+  "expr": "xs.count ?? -1",
+  "expect": 0,
+  "script": "data xs = demo.offers()",
+  "data": {
+   "xs": []
+  }
+ },
+ {
+  "name": "map.index",
+  "kind": "expr",
+  "expr": "m[\"a\"] ?? 0",
+  "expect": 1,
+  "script": "state m: map<number> = {a: 1}"
+ },
+ {
+  "name": "map.index.missing",
+  "kind": "expr",
+  "expr": "m[\"z\"] ?? 0",
+  "expect": 0,
+  "script": "state m: map<number> = {a: 1}"
+ },
+ {
+  "name": "coalesce.rightassoc",
+  "kind": "expr",
+  "expr": "null ?? null ?? 3",
+  "expect": 3,
+  "script": "state n: number? = null"
+ },
+ {
+  "name": "tok.alpha.one",
+  "kind": "expr",
+  "expr": "alpha(@color.el16, 1) == @color.el16",
+  "expect": true
+ },
+ {
+  "name": "tok.alpha.clamp",
+  "kind": "expr",
+  "expr": "alpha(@color.el16, 2)",
+  "expect": {
+   "$color": "el16"
+  }
  }
 ]

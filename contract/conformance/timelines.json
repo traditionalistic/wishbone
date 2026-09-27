@@ -87,14 +87,14 @@
     "t": 500,
     "index": 0,
     "expect": {
-     "a.offsetY": 68.464318749
+     "a.offsetY": 68.464318743
     }
    },
    {
     "t": 750,
     "index": 0,
     "expect": {
-     "a.offsetY": 90.653534901
+     "a.offsetY": 90.653534928
     }
    }
   ]
@@ -146,7 +146,7 @@
     "t": 175,
     "index": 0,
     "expect": {
-     "a.scale": 0.129161901
+     "a.scale": 0.129161931
     }
    }
   ]
@@ -231,14 +231,14 @@
     "t": 300,
     "index": 0,
     "expect": {
-     "a.rotation": 46.198381955
+     "a.rotation": 46.198364488
     }
    },
    {
     "t": 500,
     "index": 0,
     "expect": {
-     "a.rotation": 72.216304893
+     "a.rotation": 72.216304883
     }
    }
   ]

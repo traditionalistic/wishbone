@@ -73,7 +73,7 @@ wishbone/
 1. `width`/`height`: number | `"fill"` | `"wrap"` (дефолт `"wrap"`); `minWidth`, `maxWidth`, `minHeight`, `maxHeight`; `aspect` (w/h)
 2. `padding`: number | `{top, bottom, start, end, h, v}` (все необязательны)
 3. `background`: paint; `material`: `"thin"|"regular"|"thick"` (размытие фона)
-4. `corner`: number | `"pill"`; `border`: `{color, width}`; `clip`: bool
+4. `corner`: number (капсула — `@radius.pill` = 9999, рендер клампит радиус к половине стороны); `border`: `{color, width}`; `clip`: bool
 5. `shadow`: `{color, radius, x, y}`
 6. `opacity`, `offsetX`, `offsetY`, `scale`, `rotation` (градусы) — визуальные, на лэйаут не влияют; `zIndex`
 
@@ -137,7 +137,7 @@ event tap                                // событие шаблона
 
 ### 3.4 Типы
 
-`bool`, `number` (float64), `string`, `color`, `paint` (⊃ color), `textStyle`, `motion`, `icon`, `list<T>`, записи `{a: T, b: U}`, опционал `T?`, объединение строковых литералов `"a" | "b"`, `null`. Вывод типов локальный; аннотации обязательны у `param`, `fn`-параметров, пустых литералов (`state xs: list<number> = []`).
+`bool`, `number` (float64), `string`, `color`, `paint` (⊃ color), `textStyle`, `motion`, `icon`, `list<T>`, записи `{a: T, b?: U}` (необязательное поле читается как `U?`), `map<T>` (строковые ключи; литерал записи присваиваем `map<T>`, если все поля присваиваемы `T`), опционал `T?`, объединения (`"a" | "b"`, `number | "fill"`), `null`; `any` — только в сигнатурах контракта. Уточнения семантики (null-propagation методов, перегрузки, индексы, иммутабельность значений, видимость объявлений) — нормативно в `contract/stdlib.json` (`notes`, `language`). Вывод типов локальный; аннотации обязательны у `param`, `fn`-параметров, пустых литералов (`state xs: list<number> = []`).
 
 Правила: арифметика — только number; `+` — number+number или string+string; сравнения `< <= > >=` — number/string; `== !=` — одинаковые типы или с `null`; `&& || !` — только bool (истинности нет); `c ? a : b` — c bool; `a ?? b` — a: `T?`, b: `T` → `T`. Доступ `.field` к опционалу даёт опционал (null-safe без `?.`); `list[i]` → `T?`. Присваивание — только в стейт (экрана или экземпляра), по пути `x.a[i].b`.
 
@@ -177,7 +177,7 @@ next()                    // вызов другого handler (дожидает
 
 Исполнение асинхронное, на главном потоке; каждое событие — отдельный прогон; запись в стейт видна сразу. Циклов нет ⇒ исполнение конечно; бюджет — 10 000 шагов вычисления на прогон (превышение = ошибка прогона, телеметрия, экран живёт дальше).
 
-### 3.8 Проводной AST (нормативно — `contract/schema/`)
+### 3.8 Проводной AST (нормативно — этот раздел + `contract/README.md`)
 
 **Выражения** — JSON-массивы:
 
@@ -189,7 +189,7 @@ next()                    // вызов другого handler (дожидает
 | `["t", group, name]` | токен |
 | `["dr", "scroll"\|"drag", id, "x"\|"y"]` | драйвер |
 | `["self", "pressed"]` | состояние узла |
-| `["get", obj, field]` / `["at", list, index]` | доступ (null-safe) |
+| `["get", obj, field]` / `["at", obj, key]` | доступ (null-safe); `at` — индекс списка (целое в диапазоне) или ключ `map` |
 | `["op", op, a, b]` | `+ - * / % == != < <= > >= && \|\| ??` (`&& \|\| ??` — ленивые) |
 | `["un", "!"\|"-", a]` | унарные |
 | `["if", c, a, b]` | тернарный |
@@ -238,9 +238,9 @@ next()                    // вызов другого handler (дожидает
   "fns": { "tax": { "params": ["x"], "body": ["op", "*", ["l", "x"], ["v", 0.2]] } },
   "handlers": { "next": { "params": [], "body": [ … ] } },
   "data": [ { "name": "me", "op": "demo.profile", "args": {"id": {"$param": "id"}}, "required": false } ],
-  "timelines": { "intro": { "duration": 1200, "repeat": 1, "autoreverse": false, "autoplay": false,
+  "timelines": { "intro": { "duration": 400, "repeat": 1, "autoreverse": false, "autoplay": false,
       "tracks": [ { "target": "hero", "prop": "opacity", "stagger": 0,
-                    "keys": [ {"t": 0, "v": 0}, {"t": 400, "v": 1, "ease": "easeOut"} ] } ] } },
+                    "keys": [ {"t": 0, "v": 0}, {"t": 400, "v": 1, "ease": [0, 0, 0.58, 1]} ] } ] } },
   "root": { … } }
 ```
 
