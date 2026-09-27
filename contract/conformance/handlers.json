@@ -1,0 +1,513 @@
+[
+ {
+  "name": "h.assign.arg",
+  "kind": "handler",
+  "script": "state n = 0\nhandler inc(x: number) { n = n + x }",
+  "handler": "inc",
+  "args": [
+   2
+  ],
+  "expect": {
+   "state": {
+    "n": 2
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.if.then",
+  "kind": "handler",
+  "script": "state step = 0\nstate done = false\nhandler next() {\n  if step < 2 { step = step + 1 } else { done = true }\n}",
+  "handler": "next",
+  "args": [],
+  "expect": {
+   "state": {
+    "step": 1,
+    "done": false
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.if.else",
+  "kind": "handler",
+  "script": "state step = 0\nstate done = false\nhandler next() {\n  if step < 2 { step = step + 1 } else { done = true }\n}",
+  "handler": "next",
+  "args": [],
+  "expect": {
+   "state": {
+    "step": 2,
+    "done": true
+   },
+   "effects": []
+  },
+  "state": {
+   "step": 2
+  }
+ },
+ {
+  "name": "h.elseif",
+  "kind": "handler",
+  "script": "state n = 5\nstate r = \"\"\nhandler go() {\n  if n < 3 { r = \"low\" } else if n < 10 { r = \"mid\" } else { r = \"high\" }\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "r": "mid"
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.path.list",
+  "kind": "handler",
+  "script": "state items = [{title: \"a\", done: false}, {title: \"b\", done: false}]\nhandler toggle(i: number) { items[i].done = !(items[i].done ?? false) }",
+  "handler": "toggle",
+  "args": [
+   1
+  ],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "title": "a",
+      "done": false
+     },
+     {
+      "title": "b",
+      "done": true
+     }
+    ]
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.path.record",
+  "kind": "handler",
+  "script": "state user = {name: \"A\", meta: {age: 1}}\nhandler bump() { user.meta.age = user.meta.age + 1 }",
+  "handler": "bump",
+  "args": [],
+  "expect": {
+   "state": {
+    "user": {
+     "name": "A",
+     "meta": {
+      "age": 2
+     }
+    }
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.path.oob",
+  "kind": "handler",
+  "script": "state items = [{done: false}]\nhandler go() { items[5].done = true }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "done": false
+     }
+    ]
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.let.effects",
+  "kind": "handler",
+  "script": "handler go() {\n  let id = \"x\" + str(1)\n  navigate(\"details\", {id: id})\n  navigate(\"promo\", {}, \"fade\")\n  track(\"open\", {id: id})\n  haptic(\"light\")\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "navigate",
+     "args": [
+      "details",
+      {
+       "id": "x1"
+      }
+     ]
+    },
+    {
+     "effect": "navigate",
+     "args": [
+      "promo",
+      {},
+      "fade"
+     ]
+    },
+    {
+     "effect": "track",
+     "args": [
+      "open",
+      {
+       "id": "x1"
+      }
+     ]
+    },
+    {
+     "effect": "haptic",
+     "args": [
+      "light"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "name": "h.call.ok",
+  "kind": "handler",
+  "script": "state promo = \"\"\nstate discount = 0\nstate msg = \"\"\nhandler check() {\n  let r = await call demo.checkPromo({code: promo})\n  if r.ok {\n    discount = r.value.discount ?? 0\n    msg = r.value.message ?? \"\"\n  } else {\n    msg = r.error.message ?? \"error\"\n  }\n}",
+  "handler": "check",
+  "args": [],
+  "expect": {
+   "state": {
+    "discount": 10,
+    "msg": "ok"
+   },
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.checkPromo",
+     "args": {
+      "code": "WB10"
+     }
+    }
+   ]
+  },
+  "state": {
+   "promo": "WB10"
+  },
+  "calls": {
+   "demo.checkPromo": {
+    "ok": true,
+    "value": {
+     "valid": true,
+     "discount": 10,
+     "message": "ok"
+    }
+   }
+  }
+ },
+ {
+  "name": "h.call.fail",
+  "kind": "handler",
+  "script": "state promo = \"\"\nstate discount = 0\nstate msg = \"\"\nhandler check() {\n  let r = await call demo.checkPromo({code: promo})\n  if r.ok {\n    discount = r.value.discount ?? 0\n    msg = r.value.message ?? \"\"\n  } else {\n    msg = r.error.message ?? \"error\"\n  }\n}",
+  "handler": "check",
+  "args": [],
+  "expect": {
+   "state": {
+    "discount": 0,
+    "msg": "offline"
+   },
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.checkPromo",
+     "args": {
+      "code": "X"
+     }
+    }
+   ]
+  },
+  "state": {
+   "promo": "X"
+  },
+  "calls": {
+   "demo.checkPromo": {
+    "ok": false,
+    "error": {
+     "code": "NETWORK",
+     "message": "offline"
+    }
+   }
+  }
+ },
+ {
+  "name": "h.call.fieldErrors",
+  "kind": "handler",
+  "script": "state err = \"\"\nhandler go() {\n  let r = await call demo.subscribe({email: \"taken@example.com\", name: \"A\", plan: \"pro\", promo: \"\"})\n  err = r.fieldErrors[\"email\"] ?? \"none\"\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "err": "Этот email уже занят"
+   },
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.subscribe",
+     "args": {
+      "email": "taken@example.com",
+      "name": "A",
+      "plan": "pro",
+      "promo": ""
+     }
+    }
+   ]
+  },
+  "calls": {
+   "demo.subscribe": {
+    "ok": false,
+    "error": {
+     "code": "ARGS_INVALID",
+     "message": "Проверьте поля"
+    },
+    "fieldErrors": {
+     "email": "Этот email уже занят"
+    }
+   }
+  }
+ },
+ {
+  "name": "h.call.fireforget",
+  "kind": "handler",
+  "script": "handler go() { call demo.claimOffer({id: \"o1\"}) }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.claimOffer",
+     "args": {
+      "id": "o1"
+     }
+    }
+   ]
+  },
+  "calls": {
+   "demo.claimOffer": {
+    "ok": true,
+    "value": {
+     "tickets": 3
+    }
+   }
+  }
+ },
+ {
+  "name": "h.run.nested",
+  "kind": "handler",
+  "script": "state log = \"\"\nhandler a() {\n  log = log + \"a\"\n  b()\n  log = log + \"c\"\n}\nhandler b() { log = log + \"b\" }",
+  "handler": "a",
+  "args": [],
+  "expect": {
+   "state": {
+    "log": "abc"
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.run.args",
+  "kind": "handler",
+  "script": "state total = 0\nhandler add(x: number, y: number) { total = total + x * y }\nhandler go() { add(2, 3)\n add(1, 1) }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "total": 7
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.animate.body",
+  "kind": "handler",
+  "script": "state x = 0\nhandler go() { animate(@motion.snappy) { x = 1 } }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "x": 1
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.timeline.effects",
+  "kind": "handler",
+  "script": "handler go() {\n  play(intro)\n  wait(300ms)\n  await play(intro)\n  stop(intro)\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "play",
+     "args": [
+      "intro"
+     ]
+    },
+    {
+     "effect": "wait",
+     "args": [
+      300
+     ]
+    },
+    {
+     "effect": "play",
+     "args": [
+      "intro"
+     ]
+    },
+    {
+     "effect": "stop",
+     "args": [
+      "intro"
+     ]
+    }
+   ]
+  },
+  "timelines": [
+   {
+    "name": "intro",
+    "tracks": [
+     {
+      "target": "root",
+      "prop": "opacity",
+      "keys": [
+       {
+        "t": 0,
+        "v": 0
+       },
+       {
+        "t": 100,
+        "v": 1
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "name": "h.computed.read",
+  "kind": "handler",
+  "script": "state a = 1\nlet b = a + 1\nhandler go() { a = b * 10 }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "a": 20
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.computed.fresh",
+  "kind": "handler",
+  "script": "state a = 1\nlet b = a * 2\nstate seen = 0\nhandler go() {\n  a = 5\n  seen = b\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "a": 5,
+    "seen": 10
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.misc.effects",
+  "kind": "handler",
+  "script": "data me = demo.profile()\nhandler go() {\n  refresh(me)\n  host(\"openProfile\", {id: 5})\n  open(\"https://example.com/\" + str(7))\n  present(\"sheet.x\", {a: 1})\n  dismiss()\n  back()\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "refresh",
+     "args": [
+      "me"
+     ]
+    },
+    {
+     "effect": "host",
+     "args": [
+      "openProfile",
+      {
+       "id": 5
+      }
+     ]
+    },
+    {
+     "effect": "open",
+     "args": [
+      "https://example.com/7"
+     ]
+    },
+    {
+     "effect": "present",
+     "args": [
+      "sheet.x",
+      {
+       "a": 1
+      }
+     ]
+    },
+    {
+     "effect": "dismiss",
+     "args": []
+    },
+    {
+     "effect": "back",
+     "args": []
+    }
+   ]
+  }
+ },
+ {
+  "name": "h.list.update",
+  "kind": "handler",
+  "script": "state items: list<{id: number, qty: number}> = [{id: 1, qty: 1}]\nhandler add(id: number) {\n  let i = items.indexOf(items.find(x => x.id == id) ?? {id: -1, qty: 0})\n  if i >= 0 { items[i].qty = (items[i].qty ?? 0) + 1 } else { items = items.append({id: id, qty: 1}) }\n}",
+  "handler": "add",
+  "args": [
+   2
+  ],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "id": 1,
+      "qty": 1
+     },
+     {
+      "id": 2,
+      "qty": 1
+     }
+    ]
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "h.list.update.existing",
+  "kind": "handler",
+  "script": "state items: list<{id: number, qty: number}> = [{id: 1, qty: 1}]\nhandler add(id: number) {\n  let i = items.indexOf(items.find(x => x.id == id) ?? {id: -1, qty: 0})\n  if i >= 0 { items[i].qty = (items[i].qty ?? 0) + 1 } else { items = items.append({id: id, qty: 1}) }\n}",
+  "handler": "add",
+  "args": [
+   1
+  ],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "id": 1,
+      "qty": 2
+     }
+    ]
+   },
+   "effects": []
+  }
+ }
+]

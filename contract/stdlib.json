@@ -1,0 +1,343 @@
+{
+  "version": "1.0.0",
+  "notes": [
+    "sig uses DSL type syntax; <T>/<U> are generic parameters. method: true => callable as receiver.name(args) (receiver = first param). property: true => accessed as receiver.name without parentheses (lowered to [\"f\", name, [receiver]]).",
+    "Lambdas passed to map/filter/find/some/every may declare 1 or 2 parameters: (item) or (item, index).",
+    "Rounding everywhere = half away from zero. Strings are sequences of Unicode code points (scalars); indices, length, comparison and equality operate on code points, no normalization.",
+    "Fixed-point formatting algorithm (used by str() and formatNumber): scaled = x * 10^d computed in double; r = round-half-away-from-zero(scaled) in double; take the exact decimal expansion of r as an integer (Swift: String(format: \"%.0f\", r); Kotlin: BigDecimal(r).toPlainString()) and insert the decimal point d digits from the right (left-padding with zeros). Never round a decimal string representation: formatNumber(2.675, 2) = '2.67' (2.675*100 = 267.49999999999997), formatNumber(0.125, 2) = '0.13'.",
+    "Number to string (str, interpolation, join): integral and |n| < 1e15 => integer digits without fraction ('-0' prints '0'); otherwise fixed with 6 fraction digits (half away from zero) and trailing zeros (and a trailing '.') trimmed. NaN => 'NaN', +/-Infinity => 'Infinity'/'-Infinity'. Decimal separator is always '.'.",
+    "str of list/record => compact JSON (records keep insertion order; nested numbers use the rule above); str(null) => 'null'; bool => 'true'/'false'; token values => their JSON encoding.",
+    "Arithmetic is IEEE-754 double: x/0 => ±Infinity or NaN, % is fmod (sign of the dividend).",
+    "Equality (==) is deep and structural: numbers by value (NaN != NaN), strings by code points, lists elementwise, records by key set + values (order-insensitive), token values by encoding.",
+    "Runtime token values: color => {\"$color\": name} (+\"alpha\": a when alpha() applied, a multiplies), gradient => {\"$gradient\": [colors], \"angle\": deg}, textStyle => {\"$type\": name}, motion => {\"$motion\": name} or {\"$motion\": {spec}}, icon => {\"$icon\": name}. @space.* and @radius.* evaluate to numbers from the active theme."
+  ],
+  "functions": {
+    "min": {
+      "sig": "(a: number, b: number) => number"
+    },
+    "max": {
+      "sig": "(a: number, b: number) => number"
+    },
+    "abs": {
+      "sig": "(x: number) => number"
+    },
+    "round": {
+      "sig": "(x: number) => number",
+      "doc": "half away from zero: round(2.5)=3, round(-2.5)=-3"
+    },
+    "floor": {
+      "sig": "(x: number) => number"
+    },
+    "ceil": {
+      "sig": "(x: number) => number"
+    },
+    "sqrt": {
+      "sig": "(x: number) => number"
+    },
+    "pow": {
+      "sig": "(a: number, b: number) => number"
+    },
+    "sin": {
+      "sig": "(x: number) => number",
+      "doc": "radians"
+    },
+    "cos": {
+      "sig": "(x: number) => number",
+      "doc": "radians"
+    },
+    "clamp": {
+      "sig": "(x: number, lo: number, hi: number) => number",
+      "doc": "min(max(x, lo), hi)"
+    },
+    "interpolate": {
+      "sig": "(x: number, input: list<number>, output: list<number>) => number",
+      "doc": "piecewise linear over ascending input stops, clamped to the first/last output outside the range. If lengths differ or fewer than 2 stops: output.first ?? 0."
+    },
+    "length": {
+      "sig": "(s: string) => number",
+      "method": true,
+      "property": true,
+      "doc": "code point count"
+    },
+    "isEmpty": {
+      "sig": "<T>(x: string | list<T>) => bool",
+      "method": true,
+      "property": true
+    },
+    "upper": {
+      "sig": "(s: string) => string",
+      "method": true,
+      "doc": "locale-independent"
+    },
+    "lower": {
+      "sig": "(s: string) => string",
+      "method": true,
+      "doc": "locale-independent"
+    },
+    "trim": {
+      "sig": "(s: string) => string",
+      "method": true,
+      "doc": "strips leading/trailing whitespace (Unicode White_Space)"
+    },
+    "contains": {
+      "sig": "<T>(x: string | list<T>, v: string | T) => bool",
+      "method": true,
+      "doc": "string: substring test; list: deep equality membership"
+    },
+    "startsWith": {
+      "sig": "(s: string, p: string) => bool",
+      "method": true
+    },
+    "endsWith": {
+      "sig": "(s: string, p: string) => bool",
+      "method": true
+    },
+    "split": {
+      "sig": "(s: string, sep: string) => list<string>",
+      "method": true,
+      "doc": "keeps empty parts: 'a,,b'.split(',') = ['a','','b']; empty sep => list of single code points"
+    },
+    "replace": {
+      "sig": "(s: string, a: string, b: string) => string",
+      "method": true,
+      "doc": "all literal occurrences; empty a => s unchanged"
+    },
+    "matches": {
+      "sig": "(s: string, re: string) => bool",
+      "method": true,
+      "doc": "whole-string match. Use only the common ICU/Java subset: classes [], \\d \\w \\s, quantifiers * + ? {m,n}, groups, alternation, anchors"
+    },
+    "substring": {
+      "sig": "(s: string, start: number, end?: number) => string",
+      "method": true,
+      "doc": "code point indices, clamped to [0, length]; end defaults to length; start >= end => ''"
+    },
+    "num": {
+      "sig": "(s: string) => number?",
+      "doc": "trims, parses decimal with optional sign, '.' separator and optional exponent; anything else => null"
+    },
+    "str": {
+      "sig": "<T>(x: T) => string",
+      "doc": "see notes"
+    },
+    "count": {
+      "sig": "<T>(xs: list<T>) => number",
+      "method": true,
+      "property": true
+    },
+    "first": {
+      "sig": "<T>(xs: list<T>) => T?",
+      "method": true,
+      "property": true
+    },
+    "last": {
+      "sig": "<T>(xs: list<T>) => T?",
+      "method": true,
+      "property": true
+    },
+    "map": {
+      "sig": "<T, U>(xs: list<T>, f: (T, number) => U) => list<U>",
+      "method": true
+    },
+    "filter": {
+      "sig": "<T>(xs: list<T>, f: (T, number) => bool) => list<T>",
+      "method": true
+    },
+    "find": {
+      "sig": "<T>(xs: list<T>, f: (T, number) => bool) => T?",
+      "method": true
+    },
+    "some": {
+      "sig": "<T>(xs: list<T>, f: (T, number) => bool) => bool",
+      "method": true
+    },
+    "every": {
+      "sig": "<T>(xs: list<T>, f: (T, number) => bool) => bool",
+      "method": true,
+      "doc": "true for empty list"
+    },
+    "reduce": {
+      "sig": "<T, U>(xs: list<T>, init: U, f: (U, T) => U) => U",
+      "method": true
+    },
+    "sum": {
+      "sig": "(xs: list<number>) => number",
+      "method": true,
+      "doc": "0 for empty"
+    },
+    "join": {
+      "sig": "<T>(xs: list<T>, sep: string) => string",
+      "method": true,
+      "doc": "elements converted with str()"
+    },
+    "append": {
+      "sig": "<T>(xs: list<T>, x: T) => list<T>",
+      "method": true
+    },
+    "removeAt": {
+      "sig": "<T>(xs: list<T>, i: number) => list<T>",
+      "method": true,
+      "doc": "out of range => unchanged copy"
+    },
+    "set": {
+      "sig": "<T>(xs: list<T>, i: number, v: T) => list<T>",
+      "method": true,
+      "doc": "out of range => unchanged copy"
+    },
+    "slice": {
+      "sig": "<T>(xs: list<T>, start: number, end?: number) => list<T>",
+      "method": true,
+      "doc": "clamped like substring"
+    },
+    "indexOf": {
+      "sig": "<T>(xs: list<T>, v: T) => number",
+      "method": true,
+      "doc": "deep equality; -1 when absent"
+    },
+    "sortBy": {
+      "sig": "<T>(xs: list<T>, f: (T) => number | string) => list<T>",
+      "method": true,
+      "doc": "stable ascending; numbers numerically, strings by code points"
+    },
+    "reverse": {
+      "sig": "<T>(xs: list<T>) => list<T>",
+      "method": true
+    },
+    "range": {
+      "sig": "(n: number) => list<number>",
+      "doc": "[0, 1, …, floor(n)-1]; n <= 0 => []; n capped at 10000"
+    },
+    "with": {
+      "sig": "<R>(r: R, patch: R-partial) => R",
+      "method": true,
+      "doc": "copy of record r with fields from patch replaced; patch may only name fields of r with assignable types"
+    },
+    "formatNumber": {
+      "sig": "(x: number, decimals: number) => string",
+      "doc": "fixed `decimals` fraction digits (half away from zero), '.' decimal separator, integer part grouped by 3 with U+00A0 when |x| >= 1000: formatNumber(1990, 0) = '1 990', formatNumber(-1234.5, 1) = '-1 234.5'"
+    },
+    "formatDuration": {
+      "sig": "(ms: number, style: \"hms\" | \"ms\" | \"dhms\") => string",
+      "doc": "negative => 0; whole seconds (floor). hms => 'HH:MM:SS' (hours unbounded, ≥2 digits); ms => 'MM:SS' (minutes unbounded, ≥2 digits); dhms => 'D:HH:MM:SS' (days without padding)"
+    },
+    "formatDate": {
+      "sig": "(ms: number, style: \"date\" | \"time\" | \"dateTime\") => string",
+      "doc": "epoch ms in env.timeZone: date => 'dd.MM.yyyy', time => 'HH:mm', dateTime => 'dd.MM.yyyy HH:mm'"
+    },
+    "plural": {
+      "sig": "(n: number, forms: {one?: string, few?: string, many?: string, other: string}) => string",
+      "doc": "CLDR category of n for env.locale; 'ru': integer i=|n|: i%10==1 && i%100!=11 => one; i%10 in 2..4 && i%100 not in 12..14 => few; else many; non-integer n => other. 'en','az','ka','uz','ab': n == 1 => one else other. Any other locale => other. Missing form => other. Every '#' in the chosen form is replaced by str(n)."
+    },
+    "gradient": {
+      "sig": "(colors: list<color>, angle: number) => paint",
+      "doc": "CSS semantics: 0 = to top, 90 = to right"
+    },
+    "alpha": {
+      "sig": "(c: color, a: number) => color"
+    },
+    "spring": {
+      "sig": "(response: number, damping: number) => motion",
+      "doc": "response ms, damping ratio: {\"$motion\": {\"kind\":\"spring\",\"response\":r,\"damping\":d}}"
+    },
+    "ease": {
+      "sig": "(duration: number) => motion",
+      "doc": "{kind:curve, duration, bezier:[0.42,0,0.58,1]}"
+    },
+    "linear": {
+      "sig": "(duration: number) => motion",
+      "doc": "{kind:curve, duration, bezier:[0,0,1,1]}"
+    },
+    "curve": {
+      "sig": "(duration: number, x1: number, y1: number, x2: number, y2: number) => motion"
+    }
+  },
+  "env": {
+    "now": "number",
+    "platform": "\"ios\" | \"android\" | \"test\"",
+    "locale": "string",
+    "brand": "string",
+    "colorScheme": "\"light\" | \"dark\"",
+    "reduceMotion": "bool",
+    "screenWidth": "number",
+    "screenHeight": "number",
+    "safeTop": "number",
+    "safeBottom": "number",
+    "timeZone": "string"
+  },
+  "effects": {
+    "navigate": {
+      "sig": "(screen: string, params?: map<any>, transition?: \"push\" | \"fade\")"
+    },
+    "back": {
+      "sig": "()"
+    },
+    "present": {
+      "sig": "(screen: string, params?: map<any>)"
+    },
+    "dismiss": {
+      "sig": "()"
+    },
+    "open": {
+      "sig": "(url: string)",
+      "doc": "https or a host-allowlisted scheme; anything else is ignored"
+    },
+    "haptic": {
+      "sig": "(kind: \"light\" | \"medium\" | \"heavy\" | \"selection\" | \"success\" | \"warning\" | \"error\")"
+    },
+    "track": {
+      "sig": "(event: string, params?: map<any>)"
+    },
+    "host": {
+      "sig": "(action: string, args?: map<any>)"
+    },
+    "wait": {
+      "sig": "(ms: number)",
+      "doc": "suspends the running handler"
+    },
+    "refresh": {
+      "sig": "(source: <data name>)",
+      "doc": "argument is a bare data-source name, lowered to [\"v\", name]"
+    },
+    "play": {
+      "sig": "(timeline: <timeline name>)",
+      "doc": "bare timeline name; restarts from 0; `await play(x)` resumes when every instance finished (never for repeat -1)"
+    },
+    "stop": {
+      "sig": "(timeline: <timeline name>)",
+      "doc": "removes the timeline's effect (values return to identity)"
+    }
+  },
+  "callResult": "{ok: bool, value: <op result>?, error: {code: string, message: string}?, fieldErrors: map<string>?}",
+  "easings": {
+    "linear": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "easeIn": [
+      0.42,
+      0,
+      1,
+      1
+    ],
+    "easeOut": [
+      0,
+      0,
+      0.58,
+      1
+    ],
+    "easeInOut": [
+      0.42,
+      0,
+      0.58,
+      1
+    ],
+    "spring": [
+      0.38,
+      0.7,
+      0.125,
+      1.0
+    ]
+  }
+}

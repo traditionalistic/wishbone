@@ -1,0 +1,199 @@
+[
+ {
+  "name": "e.change.bind",
+  "kind": "event",
+  "script": "state email = \"\"",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "textField",
+     "id": "field",
+     "props": {
+      "bind": "email"
+     }
+    }
+   ]
+  },
+  "node": "field",
+  "event": "change",
+  "payload": {
+   "value": "a@b.c"
+  },
+  "expect": {
+   "state": {
+    "email": "a@b.c"
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "e.change.explicit",
+  "kind": "event",
+  "script": "state name = \"\"\nstate edits = 0",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "textField",
+     "id": "field",
+     "props": {
+      "value": "=name"
+     },
+     "on": {
+      "change": "name = event.value.trim()\nedits = edits + 1"
+     }
+    }
+   ]
+  },
+  "node": "field",
+  "event": "change",
+  "payload": {
+   "value": "  Ann "
+  },
+  "expect": {
+   "state": {
+    "name": "Ann",
+    "edits": 1
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "e.tap.handler",
+  "kind": "event",
+  "script": "state n = 0\nhandler inc(by: number) { n = n + by }",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "text",
+     "id": "btn",
+     "props": {
+      "text": "+"
+     },
+     "on": {
+      "tap": "inc(3)"
+     }
+    }
+   ]
+  },
+  "node": "btn",
+  "event": "tap",
+  "payload": {},
+  "expect": {
+   "state": {
+    "n": 3
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "e.dragEnd",
+  "kind": "event",
+  "script": "state dismissed = false",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "shape",
+     "id": "card",
+     "drag": {
+      "axis": "x"
+     },
+     "on": {
+      "dragEnd": "if abs(event.x) > 120 || abs(event.vx) > 800 { dismissed = true }"
+     }
+    }
+   ]
+  },
+  "node": "card",
+  "event": "dragEnd",
+  "payload": {
+   "x": 150,
+   "y": 0,
+   "vx": 0,
+   "vy": 0
+  },
+  "expect": {
+   "state": {
+    "dismissed": true
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "e.dragEnd.small",
+  "kind": "event",
+  "script": "state dismissed = false",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "shape",
+     "id": "card",
+     "drag": {
+      "axis": "x"
+     },
+     "on": {
+      "dragEnd": "if abs(event.x) > 120 || abs(event.vx) > 800 { dismissed = true }"
+     }
+    }
+   ]
+  },
+  "node": "card",
+  "event": "dragEnd",
+  "payload": {
+   "x": 40,
+   "y": 0,
+   "vx": 100,
+   "vy": 0
+  },
+  "expect": {
+   "state": {
+    "dismissed": false
+   },
+   "effects": []
+  }
+ },
+ {
+  "name": "e.repeat.item",
+  "kind": "event",
+  "script": "state picked = \"\"\nstate plans = [{id: \"basic\"}, {id: \"pro\"}]",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "text",
+     "id": "chip",
+     "repeat": {
+      "over": "plans",
+      "as": "p"
+     },
+     "props": {
+      "text": "=p.id"
+     },
+     "on": {
+      "tap": "picked = p.id"
+     }
+    }
+   ]
+  },
+  "node": "chip",
+  "event": "tap",
+  "payload": {},
+  "expect": {
+   "state": {
+    "picked": "pro"
+   },
+   "effects": []
+  },
+  "repeatIndex": 1
+ }
+]

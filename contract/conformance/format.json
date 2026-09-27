@@ -1,0 +1,222 @@
+[
+ {
+  "name": "fmt.number.group",
+  "kind": "expr",
+  "expr": "formatNumber(1990, 0)",
+  "expect": "1 990"
+ },
+ {
+  "name": "fmt.number.neg",
+  "kind": "expr",
+  "expr": "formatNumber(-1234.5, 1)",
+  "expect": "-1 234.5"
+ },
+ {
+  "name": "fmt.number.carry",
+  "kind": "expr",
+  "expr": "formatNumber(999.999, 2)",
+  "expect": "1 000.00"
+ },
+ {
+  "name": "fmt.number.halfaway",
+  "kind": "expr",
+  "expr": "formatNumber(0.125, 2)",
+  "expect": "0.13"
+ },
+ {
+  "name": "fmt.number.binary",
+  "kind": "expr",
+  "expr": "formatNumber(2.675, 2)",
+  "expect": "2.67"
+ },
+ {
+  "name": "fmt.number.small",
+  "kind": "expr",
+  "expr": "formatNumber(999, 0) + \"|\" + formatNumber(0.5, 0) + \"|\" + formatNumber(-0.5, 0)",
+  "expect": "999|1|-1"
+ },
+ {
+  "name": "fmt.number.pad",
+  "kind": "expr",
+  "expr": "formatNumber(0.05, 3)",
+  "expect": "0.050"
+ },
+ {
+  "name": "fmt.number.million",
+  "kind": "expr",
+  "expr": "formatNumber(1234567.891, 2)",
+  "expect": "1 234 567.89"
+ },
+ {
+  "name": "fmt.duration.hms",
+  "kind": "expr",
+  "expr": "formatDuration(3723000, \"hms\")",
+  "expect": "01:02:03"
+ },
+ {
+  "name": "fmt.duration.ms",
+  "kind": "expr",
+  "expr": "formatDuration(59999, \"ms\")",
+  "expect": "00:59"
+ },
+ {
+  "name": "fmt.duration.neg",
+  "kind": "expr",
+  "expr": "formatDuration(-5, \"hms\")",
+  "expect": "00:00:00"
+ },
+ {
+  "name": "fmt.duration.dhms",
+  "kind": "expr",
+  "expr": "formatDuration(90061000, \"dhms\")",
+  "expect": "1:01:01:01"
+ },
+ {
+  "name": "fmt.duration.bighours",
+  "kind": "expr",
+  "expr": "formatDuration(360000000, \"hms\")",
+  "expect": "100:00:00"
+ },
+ {
+  "name": "fmt.duration.countdown",
+  "kind": "expr",
+  "expr": "formatDuration(until - env.now, \"hms\")",
+  "expect": "00:00:10",
+  "script": "state until = 20000",
+  "env": {
+   "now": 10000
+  }
+ },
+ {
+  "name": "fmt.date.epoch",
+  "kind": "expr",
+  "expr": "formatDate(0, \"dateTime\")",
+  "expect": "01.01.1970 00:00"
+ },
+ {
+  "name": "fmt.date.date",
+  "kind": "expr",
+  "expr": "formatDate(1790000000000, \"date\")",
+  "expect": "21.09.2026"
+ },
+ {
+  "name": "fmt.date.tz",
+  "kind": "expr",
+  "expr": "formatDate(0, \"time\")",
+  "expect": "03:00",
+  "env": {
+   "timeZone": "Europe/Moscow"
+  }
+ },
+ {
+  "name": "fmt.date.tz.dst",
+  "kind": "expr",
+  "expr": "formatDate(1783000000000, \"dateTime\")",
+  "expect": "02.07.2026 15:46",
+  "env": {
+   "timeZone": "Europe/Berlin"
+  }
+ },
+ {
+  "name": "plural.ru.1",
+  "kind": "expr",
+  "expr": "plural(1, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "1 билет"
+ },
+ {
+  "name": "plural.ru.2",
+  "kind": "expr",
+  "expr": "plural(2, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "2 билета"
+ },
+ {
+  "name": "plural.ru.5",
+  "kind": "expr",
+  "expr": "plural(5, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "5 билетов"
+ },
+ {
+  "name": "plural.ru.11",
+  "kind": "expr",
+  "expr": "plural(11, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "11 билетов"
+ },
+ {
+  "name": "plural.ru.21",
+  "kind": "expr",
+  "expr": "plural(21, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "21 билет"
+ },
+ {
+  "name": "plural.ru.22",
+  "kind": "expr",
+  "expr": "plural(22, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "22 билета"
+ },
+ {
+  "name": "plural.ru.111",
+  "kind": "expr",
+  "expr": "plural(111, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "111 билетов"
+ },
+ {
+  "name": "plural.ru.1.5",
+  "kind": "expr",
+  "expr": "plural(1.5, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "1.5 билета"
+ },
+ {
+  "name": "plural.ru.0",
+  "kind": "expr",
+  "expr": "plural(0, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "0 билетов"
+ },
+ {
+  "name": "plural.ru.14",
+  "kind": "expr",
+  "expr": "plural(14, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "expect": "14 билетов"
+ },
+ {
+  "name": "plural.en.one",
+  "kind": "expr",
+  "expr": "plural(1, {one: \"# day\", other: \"# days\"})",
+  "expect": "1 day",
+  "env": {
+   "locale": "en"
+  }
+ },
+ {
+  "name": "plural.en.other",
+  "kind": "expr",
+  "expr": "plural(3, {one: \"# day\", other: \"# days\"})",
+  "expect": "3 days",
+  "env": {
+   "locale": "en"
+  }
+ },
+ {
+  "name": "plural.en.zero",
+  "kind": "expr",
+  "expr": "plural(0, {one: \"# day\", other: \"# days\"})",
+  "expect": "0 days",
+  "env": {
+   "locale": "en"
+  }
+ },
+ {
+  "name": "plural.tt.other",
+  "kind": "expr",
+  "expr": "plural(1, {one: \"бер\", other: \"күп\"})",
+  "expect": "күп",
+  "env": {
+   "locale": "tt"
+  }
+ },
+ {
+  "name": "plural.missing.form",
+  "kind": "expr",
+  "expr": "plural(2, {one: \"one\", other: \"other\"})",
+  "expect": "other"
+ }
+]

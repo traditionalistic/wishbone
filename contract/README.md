@@ -1,0 +1,64 @@
+# contract/
+
+Нормативные данные Wishbone. Проводной формат и грамматика DSL — спека `docs/superpowers/specs/2026-09-27-wishbone-v1-design.md` §2–§4; этот каталог — их машинно-читаемая часть. Меняется одним MR вместе с компилятором (`backend/`) и обоими рантаймами (`ios/`, `android/`).
+
+| Файл | Что | Кто читает |
+|---|---|---|
+| `primitives.json` | примитивы, их props (типы DSL, дефолты), события, общие props, какие props анимируемы и какие доступны таймлайнам | компилятор, админка (инспектор), рендеры (дефолты) |
+| `stdlib.json` | встроенные функции, env, эффекты, easings, форма результата `call`; **семантика и крайние случаи** | компилятор (типы), рантаймы (реализация), админка (автокомплит) |
+| `operations.json` | операции бэка: `kind`, типы `args`/`result` | компилятор, сервер (handlers обязаны существовать) |
+| `errors.json` | коды ошибок API | сервер, SDK |
+| `tokens/<brand>.json` | темы (§6.4 спеки) | компилятор (валидные имена токенов), сервер (`/v1/theme`), SDK (фоллбек-снапшот) |
+| `icons.json` | реестр иконок | компилятор, SDK |
+| `templates/*.json` | DS-шаблоны в формате исходника экрана | компилятор |
+| `screens/*.json` | исходники шоукейсов (сид БД) | сервер |
+| `assets/` | шрифты, lottie, rive, картинки | сервер (`/assets/*`), SDK (шрифты) |
+| `conformance/` | векторы паритета | все три реализации |
+
+## Conformance
+
+### Исходные векторы (`conformance/*.json`, пишутся руками/генератором)
+
+Каждый файл — JSON-массив. Общие поля: `name`, `kind`, `script?` (объявления DSL), `state?` (переопределения стейта после инициализации, JSON), `params?`, `data?` (значения источников `{name: value}`; не указанный источник = `null`), `env?` (переопределения env), `timelines?` (таймлайны в форме исходника).
+
+- `expr.json`, `format.json` — `kind: "expr"`: `expr` (выражение DSL), `expect` (JSON).
+- `handlers.json` — `kind: "handler"`: `handler`, `args` (JSON-значения), `calls?` (`{opId: <ответ call>}`), `expect: {state: {ключ: значение} (только перечисленные ключи), effects: [...]}`.
+- `events.json` — `kind: "event"`: `root` (дерево узлов в форме исходника), `node` (id), `event`, `payload` (значение `event`), `repeatIndex?` (экземпляр внутри `repeat`), `expect` как у handler.
+- `timelines.json` — `kind: "timeline"`: `timeline` (форма исходника), `samples: [{t, index, expect: {"<target>.<prop>": number}}]`.
+- `errors.json` — только для компилятора: `script?`/`expr?` и `error` — подстрока (без учёта регистра), которая должна встретиться в тексте диагностики.
+
+Env по умолчанию: `{now: 0, platform: "test", locale: "ru", brand: "korpu", colorScheme: "light", reduceMotion: false, screenWidth: 390, screenHeight: 844, safeTop: 0, safeBottom: 0, timeZone: "UTC"}`. Тема для `@space.*`/`@radius.*` — `tokens/korpu.json`.
+
+### Скомпилированные векторы (`conformance/compiled/*.json`, генерирует `go run ./cmd/wbc conformance`)
+
+Тот же массив, где каждый вектор дополнен:
+- `document` — проводной документ (§3.8 спеки), собранный из `script` (+`timelines`, +`root`; без `root` — `{"t":"stack","id":"root"}`), с учётом `params`;
+- `expr` — заменён на проводной AST выражения (скомпилированный в окружении `document`);
+- `env` — полный (дефолт + переопределения);
+- `timeline` (у timeline-векторов) — заменён на проводную форму таймлайна.
+
+Исходные поля (`state`, `data`, `params`, `args`, `calls`, `expect`, `samples`, `node`, `event`, `payload`, `repeatIndex`) копируются как есть.
+
+### Правила харнесса (одинаковы для Swift и Kotlin)
+
+1. Скоуп: стейт инициализируется из `document.state` по порядку (инициализаторы видят `params`, `data`, `env` и предыдущий стейт), затем поверх кладутся значения `state` вектора. `data`/`params` вектора — значения источников и параметров.
+2. `expr`: результат вычисления сравнивается с `expect` глубоким равенством; числа — с допуском `1e-9` (относительным для |x| > 1).
+3. `handler`/`event`: тестовый хост записывает эффекты в список `{"effect": name, "args": [значения аргументов, как написаны в вызове]}`; `call` записывается как `{"effect": "call", "op": id, "args": <запись аргументов>}` и отвечает `calls[op]` (нет записи — `{ok: false, error: {code: "NETWORK", message: "no mock"}}`). `wait`, `await play` завершаются сразу. `animate` не записывается — выполняется его тело. После прогона сравниваются перечисленные в `expect.state` ключи и список эффектов целиком.
+4. `timeline`: для каждого сэмпла — значения всех треков в момент `t` для экземпляра `index`, допуск `1e-6`.
+
+### Семантика сэмплинга таймлайна (нормативно)
+
+```
+D = max(key.t по всем трекам таймлайна)
+для трека с ключами k0..kn (по возрастанию t), stagger s, экземпляра i, времени t:
+  u = t − s·i
+  если D == 0            → kn.v
+  если u < 0             → k0.v
+  c = floor(u / D); ph = u − c·D
+  если repeat ≠ −1 и c ≥ repeat:     ph = (autoreverse и (repeat−1) нечётно) ? 0 : D
+  иначе если autoreverse и c нечётно: ph = D − ph
+  value(ph): ph ≤ k0.t → k0.v; ph между kj и kj+1 → kj.v + (kj+1.v − kj.v)·ease_{j+1}((ph − kj.t)/(kj+1.t − kj.t)); ph ≥ kn.t → kn.v
+ease — cubic-bezier (WebKit UnitBezier: Newton 8 итераций, eps 1e-7, затем бисекция); отсутствует = линейно.
+```
+
+Композиция с props узла: `opacity`, `scale` — умножение; `offsetX`, `offsetY`, `rotation` — сложение; несколько таймлайнов на одном (узел, prop) комбинируются так же. Таймлайн без `play` (и без `autoplay`) на узел не влияет; после окончания держит конечные значения; `stop` снимает эффект. `autoplay: true` — таймлайн считается запущенным с первого рендера документа (иначе входная анимация по `on.appear` мигает первым кадром).

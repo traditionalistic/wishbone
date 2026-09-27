@@ -1,0 +1,518 @@
+[
+ {
+  "name": "tl.linear",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "opacity",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 400,
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 0,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0
+    }
+   },
+   {
+    "t": 100,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0.25
+    }
+   },
+   {
+    "t": 400,
+    "index": 0,
+    "expect": {
+     "a.opacity": 1.0
+    }
+   },
+   {
+    "t": 1000,
+    "index": 0,
+    "expect": {
+     "a.opacity": 1.0
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.easeOut",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "offsetY",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 1000,
+       "v": 100,
+       "ease": "easeOut"
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 250,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 37.813813083
+    }
+   },
+   {
+    "t": 500,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 68.464318749
+    }
+   },
+   {
+    "t": 750,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 90.653534901
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.easeIn.easeInOut",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "scale",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 100,
+       "v": 1,
+       "ease": "easeIn"
+      },
+      {
+       "t": 200,
+       "v": 0,
+       "ease": "easeInOut"
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.scale": 0.315356813
+    }
+   },
+   {
+    "t": 150,
+    "index": 0,
+    "expect": {
+     "a.scale": 0.5
+    }
+   },
+   {
+    "t": 175,
+    "index": 0,
+    "expect": {
+     "a.scale": 0.129161901
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.spring",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "offsetY",
+     "keys": [
+      {
+       "t": 0,
+       "v": 40
+      },
+      {
+       "t": 200,
+       "v": 0,
+       "ease": "spring"
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 15.333559586
+    }
+   },
+   {
+    "t": 100,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 2.7664857
+    }
+   },
+   {
+    "t": 199,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 0.000131286
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.custom",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "rotation",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 1000,
+       "v": 90,
+       "ease": [
+        0.25,
+        0.1,
+        0.25,
+        1
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 300,
+    "index": 0,
+    "expect": {
+     "a.rotation": 46.198381955
+    }
+   },
+   {
+    "t": 500,
+    "index": 0,
+    "expect": {
+     "a.rotation": 72.216304893
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.stagger",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "item",
+     "prop": "opacity",
+     "stagger": 100,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 200,
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 150,
+    "index": 0,
+    "expect": {
+     "item.opacity": 0.75
+    }
+   },
+   {
+    "t": 150,
+    "index": 1,
+    "expect": {
+     "item.opacity": 0.25
+    }
+   },
+   {
+    "t": 150,
+    "index": 2,
+    "expect": {
+     "item.opacity": 0
+    }
+   },
+   {
+    "t": 500,
+    "index": 2,
+    "expect": {
+     "item.opacity": 1.0
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.repeat.autoreverse",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "repeat": 2,
+   "autoreverse": true,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "offsetX",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 100,
+       "v": 10
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.offsetX": 5.0
+    }
+   },
+   {
+    "t": 130,
+    "index": 0,
+    "expect": {
+     "a.offsetX": 7.0
+    }
+   },
+   {
+    "t": 250,
+    "index": 0,
+    "expect": {
+     "a.offsetX": 0
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.repeat.forever",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "repeat": -1,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "rotation",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 100,
+       "v": 360
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 1050,
+    "index": 0,
+    "expect": {
+     "a.rotation": 180.0
+    }
+   },
+   {
+    "t": 99,
+    "index": 0,
+    "expect": {
+     "a.rotation": 356.4
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.multitrack",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "opacity",
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 400,
+       "v": 1
+      }
+     ]
+    },
+    {
+     "target": "a",
+     "prop": "offsetY",
+     "keys": [
+      {
+       "t": 0,
+       "v": 40
+      },
+      {
+       "t": 200,
+       "v": 0,
+       "ease": "spring"
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 100,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0.25,
+     "a.offsetY": 2.7664857
+    }
+   },
+   {
+    "t": 300,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0.75,
+     "a.offsetY": 0
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.lateStart",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "scale",
+     "keys": [
+      {
+       "t": 100,
+       "v": 5
+      },
+      {
+       "t": 200,
+       "v": 10
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.scale": 5
+    }
+   },
+   {
+    "t": 150,
+    "index": 0,
+    "expect": {
+     "a.scale": 7.5
+    }
+   }
+  ]
+ },
+ {
+  "name": "tl.zeroDuration",
+  "kind": "timeline",
+  "timeline": {
+   "name": "t",
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "opacity",
+     "keys": [
+      {
+       "t": 0,
+       "v": 3
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 0,
+    "index": 0,
+    "expect": {
+     "a.opacity": 3
+    }
+   },
+   {
+    "t": 500,
+    "index": 0,
+    "expect": {
+     "a.opacity": 3
+    }
+   }
+  ]
+ }
+]

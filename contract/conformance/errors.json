@@ -1,0 +1,118 @@
+[
+ {
+  "name": "err.type.plus",
+  "expr": "\"a\" + 1",
+  "error": "type"
+ },
+ {
+  "name": "err.type.not",
+  "expr": "!3",
+  "error": "type"
+ },
+ {
+  "name": "err.type.cond",
+  "expr": "1 ? 2 : 3",
+  "error": "type"
+ },
+ {
+  "name": "err.unknown.name",
+  "expr": "nope + 1",
+  "error": "unknown"
+ },
+ {
+  "name": "err.unknown.fn",
+  "expr": "frobnicate(1)",
+  "error": "unknown"
+ },
+ {
+  "name": "err.unknown.token",
+  "expr": "@color.nope",
+  "error": "token"
+ },
+ {
+  "name": "err.unknown.icon",
+  "expr": "@icon.nope",
+  "error": "icon"
+ },
+ {
+  "name": "err.color.literal",
+  "script": "state c: color = \"#FF0000\"",
+  "expr": "c",
+  "error": "type"
+ },
+ {
+  "name": "err.assign.computed",
+  "script": "state a = 1\nlet b = a\nhandler go() { b = 2 }",
+  "error": "assign"
+ },
+ {
+  "name": "err.assign.param",
+  "script": "param p: string = \"\"\nhandler go() { p = \"x\" }",
+  "error": "assign"
+ },
+ {
+  "name": "err.fn.recursion",
+  "script": "fn f(x: number): number = g(x)\nfn g(x: number): number = f(x)",
+  "error": "recurs"
+ },
+ {
+  "name": "err.computed.cycle",
+  "script": "let a = b + 1\nlet b = a + 1",
+  "error": "cycle"
+ },
+ {
+  "name": "err.state.forward",
+  "script": "state a = b\nstate b = 1",
+  "error": "unknown"
+ },
+ {
+  "name": "err.op.unknown",
+  "script": "handler go() { call demo.nope({}) }",
+  "error": "operation"
+ },
+ {
+  "name": "err.op.args",
+  "script": "handler go() { call demo.checkPromo({code: 1}) }",
+  "error": "type"
+ },
+ {
+  "name": "err.data.write",
+  "script": "data x = demo.subscribe({email: \"\", name: \"\", plan: \"\", promo: \"\"})",
+  "error": "read"
+ },
+ {
+  "name": "err.emit.outside",
+  "script": "handler go() { emit tap }",
+  "error": "emit"
+ },
+ {
+  "name": "err.lambda.outside",
+  "expr": "(x => x)",
+  "error": "lambda"
+ },
+ {
+  "name": "err.empty.list.untyped",
+  "script": "state xs = []",
+  "error": "annot"
+ },
+ {
+  "name": "err.duplicate.decl",
+  "script": "state a = 1\nstate a = 2",
+  "error": "duplicate"
+ },
+ {
+  "name": "err.syntax",
+  "expr": "1 +",
+  "error": "syntax"
+ },
+ {
+  "name": "err.string.unterminated",
+  "expr": "\"abc",
+  "error": "syntax"
+ },
+ {
+  "name": "err.event.outside",
+  "expr": "event.value",
+  "error": "unknown"
+ }
+]

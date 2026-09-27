@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "notes": "args/result are DSL types. kind=read ops may be used in `data` declarations and `call`; kind=write ops only in `call` and require an idempotencyKey. Every op here must have a Go handler registered in backend/internal/ops (the server refuses to start otherwise).",
+  "operations": {
+    "demo.profile": {
+      "kind": "read",
+      "args": "{}",
+      "result": "{name: string, tickets: number, avatar: string, level: number}"
+    },
+    "demo.offers": {
+      "kind": "read",
+      "args": "{}",
+      "result": "list<{id: string, title: string, subtitle: string, price: number, image: string, until: number}>"
+    },
+    "demo.plans": {
+      "kind": "read",
+      "args": "{}",
+      "result": "list<{id: string, title: string, monthly: number, perks: list<string>}>"
+    },
+    "demo.checkPromo": {
+      "kind": "read",
+      "args": "{code: string}",
+      "result": "{valid: bool, discount: number, message: string}"
+    },
+    "demo.subscribe": {
+      "kind": "write",
+      "args": "{email: string, name: string, plan: string, promo: string}",
+      "result": "{id: string, total: number}"
+    },
+    "demo.claimOffer": {
+      "kind": "write",
+      "args": "{id: string}",
+      "result": "{tickets: number}"
+    }
+  }
+}

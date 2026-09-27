@@ -1,0 +1,866 @@
+[
+ {
+  "name": "arith.precedence",
+  "kind": "expr",
+  "expr": "1 + 2 * 3",
+  "expect": 7
+ },
+ {
+  "name": "arith.parens",
+  "kind": "expr",
+  "expr": "(1 + 2) * 3",
+  "expect": 9
+ },
+ {
+  "name": "arith.division",
+  "kind": "expr",
+  "expr": "10 / 4",
+  "expect": 2.5
+ },
+ {
+  "name": "arith.mod",
+  "kind": "expr",
+  "expr": "7 % 3",
+  "expect": 1
+ },
+ {
+  "name": "arith.mod.negative",
+  "kind": "expr",
+  "expr": "-7 % 3",
+  "expect": -1
+ },
+ {
+  "name": "arith.leftassoc",
+  "kind": "expr",
+  "expr": "2 - 3 - 4",
+  "expect": -5
+ },
+ {
+  "name": "arith.unary",
+  "kind": "expr",
+  "expr": "-2 * 3",
+  "expect": -6
+ },
+ {
+  "name": "arith.units",
+  "kind": "expr",
+  "expr": "300ms + 1.5s",
+  "expect": 1800
+ },
+ {
+  "name": "arith.float",
+  "kind": "expr",
+  "expr": "0.1 + 0.2",
+  "expect": 0.30000000000000004
+ },
+ {
+  "name": "arith.float.str",
+  "kind": "expr",
+  "expr": "str(0.1 + 0.2)",
+  "expect": "0.3"
+ },
+ {
+  "name": "arith.div0",
+  "kind": "expr",
+  "expr": "str(1 / 0) + \" \" + str(-1 / 0) + \" \" + str(0 / 0)",
+  "expect": "Infinity -Infinity NaN"
+ },
+ {
+  "name": "cmp.and",
+  "kind": "expr",
+  "expr": "1 < 2 && 2 <= 2",
+  "expect": true
+ },
+ {
+  "name": "cmp.string",
+  "kind": "expr",
+  "expr": "\"a\" < \"b\"",
+  "expect": true
+ },
+ {
+  "name": "cmp.string.codepoints",
+  "kind": "expr",
+  "expr": "\"B\" < \"a\"",
+  "expect": true
+ },
+ {
+  "name": "cmp.not.or",
+  "kind": "expr",
+  "expr": "!(1 == 1) || 3 != 4",
+  "expect": true
+ },
+ {
+  "name": "cmp.coalesce.null",
+  "kind": "expr",
+  "expr": "null ?? 5",
+  "expect": 5
+ },
+ {
+  "name": "cmp.ternary",
+  "kind": "expr",
+  "expr": "true ? \"y\" : \"n\"",
+  "expect": "y"
+ },
+ {
+  "name": "cmp.ternary.precedence",
+  "kind": "expr",
+  "expr": "1 == 1 ? 2 : 3 + 1",
+  "expect": 2
+ },
+ {
+  "name": "cmp.shortcircuit",
+  "kind": "expr",
+  "expr": "false && 1 / 0 > 0",
+  "expect": false
+ },
+ {
+  "name": "eq.list",
+  "kind": "expr",
+  "expr": "[1, 2] == [1, 2]",
+  "expect": true
+ },
+ {
+  "name": "eq.record.order",
+  "kind": "expr",
+  "expr": "{a: 1, b: 2} == {b: 2, a: 1}",
+  "expect": true
+ },
+ {
+  "name": "eq.record.diff",
+  "kind": "expr",
+  "expr": "{a: 1} == {a: 2}",
+  "expect": false
+ },
+ {
+  "name": "str.interp.state",
+  "kind": "expr",
+  "expr": "\"Привет, ${name}!\"",
+  "expect": "Привет, Мир!",
+  "script": "state name = \"Мир\""
+ },
+ {
+  "name": "str.interp.values",
+  "kind": "expr",
+  "expr": "\"n=${3} f=${2.5} b=${true}\"",
+  "expect": "n=3 f=2.5 b=true"
+ },
+ {
+  "name": "str.big",
+  "kind": "expr",
+  "expr": "str(1000000000000000)",
+  "expect": "1000000000000000"
+ },
+ {
+  "name": "str.fraction",
+  "kind": "expr",
+  "expr": "str(-0.5) + \" \" + str(1 / 3) + \" \" + str(2 / 3)",
+  "expect": "-0.5 0.333333 0.666667"
+ },
+ {
+  "name": "str.negzero",
+  "kind": "expr",
+  "expr": "str(-0)",
+  "expect": "0"
+ },
+ {
+  "name": "str.record",
+  "kind": "expr",
+  "expr": "str({a: 1, b: \"x\"})",
+  "expect": "{\"a\":1,\"b\":\"x\"}"
+ },
+ {
+  "name": "str.length",
+  "kind": "expr",
+  "expr": "\"héllo\".length",
+  "expect": 5
+ },
+ {
+  "name": "str.length.emoji",
+  "kind": "expr",
+  "expr": "\"😀a\".length",
+  "expect": 2
+ },
+ {
+  "name": "str.trim.upper",
+  "kind": "expr",
+  "expr": "\" Hi \".trim().upper()",
+  "expect": "HI"
+ },
+ {
+  "name": "str.lower",
+  "kind": "expr",
+  "expr": "\"ПрИвЕт\".lower()",
+  "expect": "привет"
+ },
+ {
+  "name": "str.split",
+  "kind": "expr",
+  "expr": "\"a,,b\".split(\",\")",
+  "expect": [
+   "a",
+   "",
+   "b"
+  ]
+ },
+ {
+  "name": "str.replace",
+  "kind": "expr",
+  "expr": "\"hello world\".replace(\"o\", \"0\")",
+  "expect": "hell0 w0rld"
+ },
+ {
+  "name": "str.substring.from",
+  "kind": "expr",
+  "expr": "\"abc\".substring(1)",
+  "expect": "bc"
+ },
+ {
+  "name": "str.substring.clamp",
+  "kind": "expr",
+  "expr": "\"abc\".substring(-5, 2)",
+  "expect": "ab"
+ },
+ {
+  "name": "str.substring.empty",
+  "kind": "expr",
+  "expr": "\"abc\".substring(2, 1)",
+  "expect": ""
+ },
+ {
+  "name": "str.matches.ok",
+  "kind": "expr",
+  "expr": "\"test@example.com\".matches(\"[^@]+@[^@]+\\\\.[a-z]+\")",
+  "expect": true
+ },
+ {
+  "name": "str.matches.fail",
+  "kind": "expr",
+  "expr": "\"test@\".matches(\"[^@]+@[^@]+\\\\.[a-z]+\")",
+  "expect": false
+ },
+ {
+  "name": "str.matches.whole",
+  "kind": "expr",
+  "expr": "\"abc\".matches(\"b\")",
+  "expect": false
+ },
+ {
+  "name": "str.num",
+  "kind": "expr",
+  "expr": "num(\" 42.5 \")",
+  "expect": 42.5
+ },
+ {
+  "name": "str.num.invalid",
+  "kind": "expr",
+  "expr": "num(\"abc\") ?? -1",
+  "expect": -1
+ },
+ {
+  "name": "str.num.exp",
+  "kind": "expr",
+  "expr": "num(\"1e3\")",
+  "expect": 1000
+ },
+ {
+  "name": "str.num.empty",
+  "kind": "expr",
+  "expr": "num(\"\") ?? -1",
+  "expect": -1
+ },
+ {
+  "name": "str.contains",
+  "kind": "expr",
+  "expr": "\"abc\".contains(\"bc\") && \"abc\".startsWith(\"ab\") && \"abc\".endsWith(\"bc\")",
+  "expect": true
+ },
+ {
+  "name": "str.isEmpty",
+  "kind": "expr",
+  "expr": "\"\".isEmpty",
+  "expect": true
+ },
+ {
+  "name": "str.escapes",
+  "kind": "expr",
+  "expr": "\"a\\\"b\\\\c\\u{1F600}\".length",
+  "expect": 6
+ },
+ {
+  "name": "list.count",
+  "kind": "expr",
+  "expr": "[3, 1, 2].count",
+  "expect": 3
+ },
+ {
+  "name": "list.map",
+  "kind": "expr",
+  "expr": "[1, 2, 3].map(x => x * 2)",
+  "expect": [
+   2,
+   4,
+   6
+  ]
+ },
+ {
+  "name": "list.filter",
+  "kind": "expr",
+  "expr": "[1, 2, 3, 4].filter(x => x % 2 == 0)",
+  "expect": [
+   2,
+   4
+  ]
+ },
+ {
+  "name": "list.map.index",
+  "kind": "expr",
+  "expr": "[\"a\", \"b\"].map((x, i) => x + str(i))",
+  "expect": [
+   "a0",
+   "b1"
+  ]
+ },
+ {
+  "name": "list.reduce",
+  "kind": "expr",
+  "expr": "[1, 2, 3].reduce(0, (acc, x) => acc + x)",
+  "expect": 6
+ },
+ {
+  "name": "list.sum",
+  "kind": "expr",
+  "expr": "[1.5, 2.5].sum()",
+  "expect": 4
+ },
+ {
+  "name": "list.empty.sum",
+  "kind": "expr",
+  "expr": "xs.sum()",
+  "expect": 0,
+  "script": "state xs: list<number> = []"
+ },
+ {
+  "name": "list.empty.first",
+  "kind": "expr",
+  "expr": "xs.first ?? -1",
+  "expect": -1,
+  "script": "state xs: list<number> = []"
+ },
+ {
+  "name": "list.empty.every",
+  "kind": "expr",
+  "expr": "xs.every(x => x > 0)",
+  "expect": true,
+  "script": "state xs: list<number> = []"
+ },
+ {
+  "name": "list.find",
+  "kind": "expr",
+  "expr": "[5, 6, 7].find(x => x > 5)",
+  "expect": 6
+ },
+ {
+  "name": "list.find.none",
+  "kind": "expr",
+  "expr": "[5].find(x => x > 5) ?? 0",
+  "expect": 0
+ },
+ {
+  "name": "list.indexOf",
+  "kind": "expr",
+  "expr": "[1, 2, 3].indexOf(2)",
+  "expect": 1
+ },
+ {
+  "name": "list.indexOf.none",
+  "kind": "expr",
+  "expr": "[1, 2, 3].indexOf(9)",
+  "expect": -1
+ },
+ {
+  "name": "list.chain",
+  "kind": "expr",
+  "expr": "[1, 2, 3].append(4).removeAt(0).set(0, 9)",
+  "expect": [
+   9,
+   3,
+   4
+  ]
+ },
+ {
+  "name": "list.set.oob",
+  "kind": "expr",
+  "expr": "[1, 2].set(5, 0)",
+  "expect": [
+   1,
+   2
+  ]
+ },
+ {
+  "name": "list.slice",
+  "kind": "expr",
+  "expr": "[1, 2, 3].slice(1)",
+  "expect": [
+   2,
+   3
+  ]
+ },
+ {
+  "name": "list.slice.clamp",
+  "kind": "expr",
+  "expr": "[1, 2, 3].slice(-1, 10)",
+  "expect": [
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "name": "list.sortBy.stable",
+  "kind": "expr",
+  "expr": "[{n: \"b\", v: 2}, {n: \"a\", v: 1}, {n: \"c\", v: 1}].sortBy(x => x.v).map(x => x.n)",
+  "expect": [
+   "a",
+   "c",
+   "b"
+  ]
+ },
+ {
+  "name": "list.sortBy.strings",
+  "kind": "expr",
+  "expr": "[\"b\", \"a\", \"B\"].sortBy(x => x)",
+  "expect": [
+   "B",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "name": "list.range",
+  "kind": "expr",
+  "expr": "range(4)",
+  "expect": [
+   0,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "name": "list.range.neg",
+  "kind": "expr",
+  "expr": "range(-1)",
+  "expect": []
+ },
+ {
+  "name": "list.range.frac",
+  "kind": "expr",
+  "expr": "range(2.9)",
+  "expect": [
+   0,
+   1
+  ]
+ },
+ {
+  "name": "list.reverse",
+  "kind": "expr",
+  "expr": "[1, 2, 3].reverse()",
+  "expect": [
+   3,
+   2,
+   1
+  ]
+ },
+ {
+  "name": "list.join",
+  "kind": "expr",
+  "expr": "[1, 2.5].join(\", \")",
+  "expect": "1, 2.5"
+ },
+ {
+  "name": "list.index",
+  "kind": "expr",
+  "expr": "[1, 2, 3][1]",
+  "expect": 2
+ },
+ {
+  "name": "list.index.oob",
+  "kind": "expr",
+  "expr": "[1, 2, 3][5] ?? 0",
+  "expect": 0
+ },
+ {
+  "name": "list.some.every",
+  "kind": "expr",
+  "expr": "[10, 20].some(x => x > 15) && !([10, 20].every(x => x > 15))",
+  "expect": true
+ },
+ {
+  "name": "list.contains",
+  "kind": "expr",
+  "expr": "[1, 2, 3].contains(2)",
+  "expect": true
+ },
+ {
+  "name": "list.contains.records",
+  "kind": "expr",
+  "expr": "items.contains({id: 2})",
+  "expect": true,
+  "script": "state items = [{id: 1}, {id: 2}]"
+ },
+ {
+  "name": "list.isEmpty",
+  "kind": "expr",
+  "expr": "[1].isEmpty",
+  "expect": false
+ },
+ {
+  "name": "rec.with",
+  "kind": "expr",
+  "expr": "user.with({age: 31})",
+  "expect": {
+   "name": "Ann",
+   "age": 31
+  },
+  "script": "state user = {name: \"Ann\", age: 30}"
+ },
+ {
+  "name": "rec.fields",
+  "kind": "expr",
+  "expr": "user.name + \" \" + str(user.age)",
+  "expect": "Ann 30",
+  "script": "state user = {name: \"Ann\", age: 30}"
+ },
+ {
+  "name": "rec.nested",
+  "kind": "expr",
+  "expr": "{a: {b: 1}}.a.b",
+  "expect": 1
+ },
+ {
+  "name": "rec.optional",
+  "kind": "expr",
+  "expr": "maybe.name ?? \"none\"",
+  "expect": "none",
+  "script": "state maybe: {name: string}? = null"
+ },
+ {
+  "name": "math.round",
+  "kind": "expr",
+  "expr": "[round(2.5), round(-2.5), round(2.4), round(-0.4)]",
+  "expect": [
+   3,
+   -3,
+   2,
+   0
+  ]
+ },
+ {
+  "name": "math.floorceil",
+  "kind": "expr",
+  "expr": "[floor(-1.5), ceil(1.2), abs(-3)]",
+  "expect": [
+   -2,
+   2,
+   3
+  ]
+ },
+ {
+  "name": "math.minmax",
+  "kind": "expr",
+  "expr": "[clamp(15, 0, 10), min(3, 4), max(3, 4), pow(2, 10), sqrt(16)]",
+  "expect": [
+   10,
+   3,
+   4,
+   1024,
+   4
+  ]
+ },
+ {
+  "name": "math.trig",
+  "kind": "expr",
+  "expr": "round(sin(0) * 1000) + round(cos(0) * 1000)",
+  "expect": 1000
+ },
+ {
+  "name": "math.interpolate",
+  "kind": "expr",
+  "expr": "[interpolate(50, [0, 100], [1, 0]), interpolate(-20, [0, 100], [1, 0]), interpolate(150, [0, 100, 200], [0, 10, 0]), interpolate(1, [0], [3])]",
+  "expect": [
+   0.5,
+   1,
+   5,
+   3
+  ]
+ },
+ {
+  "name": "tok.color",
+  "kind": "expr",
+  "expr": "@color.el16",
+  "expect": {
+   "$color": "el16"
+  }
+ },
+ {
+  "name": "tok.alpha",
+  "kind": "expr",
+  "expr": "alpha(@color.bg1, 0.5)",
+  "expect": {
+   "$color": "bg1",
+   "alpha": 0.5
+  }
+ },
+ {
+  "name": "tok.alpha.twice",
+  "kind": "expr",
+  "expr": "alpha(alpha(@color.bg1, 0.5), 0.5)",
+  "expect": {
+   "$color": "bg1",
+   "alpha": 0.25
+  }
+ },
+ {
+  "name": "tok.type",
+  "kind": "expr",
+  "expr": "@type.body",
+  "expect": {
+   "$type": "body"
+  }
+ },
+ {
+  "name": "tok.space",
+  "kind": "expr",
+  "expr": "@space.lg + @space.xs",
+  "expect": 20
+ },
+ {
+  "name": "tok.radius.pill",
+  "kind": "expr",
+  "expr": "@radius.pill",
+  "expect": 9999
+ },
+ {
+  "name": "tok.icon",
+  "kind": "expr",
+  "expr": "@icon.close",
+  "expect": {
+   "$icon": "close"
+  }
+ },
+ {
+  "name": "tok.motion",
+  "kind": "expr",
+  "expr": "@motion.snappy",
+  "expect": {
+   "$motion": "snappy"
+  }
+ },
+ {
+  "name": "tok.spring",
+  "kind": "expr",
+  "expr": "spring(300, 0.8)",
+  "expect": {
+   "$motion": {
+    "kind": "spring",
+    "response": 300,
+    "damping": 0.8
+   }
+  }
+ },
+ {
+  "name": "tok.ease",
+  "kind": "expr",
+  "expr": "ease(200)",
+  "expect": {
+   "$motion": {
+    "kind": "curve",
+    "duration": 200,
+    "bezier": [
+     0.42,
+     0,
+     0.58,
+     1
+    ]
+   }
+  }
+ },
+ {
+  "name": "tok.linear",
+  "kind": "expr",
+  "expr": "linear(100)",
+  "expect": {
+   "$motion": {
+    "kind": "curve",
+    "duration": 100,
+    "bezier": [
+     0,
+     0,
+     1,
+     1
+    ]
+   }
+  }
+ },
+ {
+  "name": "tok.curve",
+  "kind": "expr",
+  "expr": "curve(250, 0.2, 0, 0, 1)",
+  "expect": {
+   "$motion": {
+    "kind": "curve",
+    "duration": 250,
+    "bezier": [
+     0.2,
+     0,
+     0,
+     1
+    ]
+   }
+  }
+ },
+ {
+  "name": "tok.gradient",
+  "kind": "expr",
+  "expr": "gradient([@color.accentPrimary, @color.accentSecondary], 90)",
+  "expect": {
+   "$gradient": [
+    {
+     "$color": "accentPrimary"
+    },
+    {
+     "$color": "accentSecondary"
+    }
+   ],
+   "angle": 90
+  }
+ },
+ {
+  "name": "tok.ternary",
+  "kind": "expr",
+  "expr": "selected ? @color.el16 : @color.el8",
+  "expect": {
+   "$color": "el16"
+  },
+  "script": "state selected = true"
+ },
+ {
+  "name": "tok.eq",
+  "kind": "expr",
+  "expr": "@color.el16 == @color.el16",
+  "expect": true
+ },
+ {
+  "name": "env.platform",
+  "kind": "expr",
+  "expr": "env.platform",
+  "expect": "test"
+ },
+ {
+  "name": "env.locale",
+  "kind": "expr",
+  "expr": "env.locale + \"/\" + env.brand + \"/\" + env.colorScheme",
+  "expect": "ru/korpu/light"
+ },
+ {
+  "name": "env.metrics",
+  "kind": "expr",
+  "expr": "env.screenWidth / 2",
+  "expect": 195
+ },
+ {
+  "name": "env.override",
+  "kind": "expr",
+  "expr": "env.colorScheme == \"dark\" && env.reduceMotion",
+  "expect": true,
+  "env": {
+   "colorScheme": "dark",
+   "reduceMotion": true
+  }
+ },
+ {
+  "name": "decl.computed.fn",
+  "kind": "expr",
+  "expr": "twice(b) + 1",
+  "expect": 41,
+  "script": "state a = 2\nlet b = a * 10\nfn twice(x: number): number = x * 2"
+ },
+ {
+  "name": "decl.state.override",
+  "kind": "expr",
+  "expr": "label",
+  "expect": "21 билет",
+  "script": "state count = 0\nlet label = plural(count, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "state": {
+   "count": 21
+  }
+ },
+ {
+  "name": "decl.state.order",
+  "kind": "expr",
+  "expr": "b",
+  "expect": 3,
+  "script": "state a = 1\nstate b = a + 2"
+ },
+ {
+  "name": "decl.param.given",
+  "kind": "expr",
+  "expr": "\"id=\" + id",
+  "expect": "id=42",
+  "script": "param id: string = \"x\"",
+  "params": {
+   "id": "42"
+  }
+ },
+ {
+  "name": "decl.param.default",
+  "kind": "expr",
+  "expr": "\"id=\" + id",
+  "expect": "id=x",
+  "script": "param id: string = \"x\""
+ },
+ {
+  "name": "decl.data",
+  "kind": "expr",
+  "expr": "me.name ?? \"?\"",
+  "expect": "Ann",
+  "script": "data me = demo.profile()",
+  "data": {
+   "me": {
+    "name": "Ann",
+    "tickets": 5,
+    "avatar": "",
+    "level": 2
+   }
+  }
+ },
+ {
+  "name": "decl.data.missing",
+  "kind": "expr",
+  "expr": "me.name ?? \"?\"",
+  "expect": "?",
+  "script": "data me = demo.profile()"
+ },
+ {
+  "name": "decl.data.required",
+  "kind": "expr",
+  "expr": "me.tickets * 2",
+  "expect": 10,
+  "script": "data me = demo.profile() required",
+  "data": {
+   "me": {
+    "name": "Ann",
+    "tickets": 5,
+    "avatar": "",
+    "level": 2
+   }
+  }
+ },
+ {
+  "name": "decl.fn.lambda",
+  "kind": "expr",
+  "expr": "total(items)",
+  "expect": 30,
+  "script": "state items = [{price: 10}, {price: 20}]\nfn total(xs: list<{price: number}>): number = xs.map(x => x.price).sum()"
+ }
+]

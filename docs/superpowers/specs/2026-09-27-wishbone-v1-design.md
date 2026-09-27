@@ -114,7 +114,7 @@ wishbone/
 }
 ```
 
-Значения `props` в исходнике — JSON. Строка, начинающаяся с `=`, — выражение (`"=\"Привет, ${me.name}\""`); строка с `@` — токен; остальное — литерал (строка `"\\="`/`"\\@"` экранирует первый символ). Значения `on.*`, `when`, `repeat.over/key`, `matchId`, `a11y.label`, значения `animate` — всегда DSL (без `=`). `repeat` — `{"over": "offers", "as": "item", "index": "i", "key": "item.id"}` (`as`/`index` по умолчанию `item`/`index`). `transition` — строки `{"in": "fade + slide(bottom) + scale(0.9)", "out": "fade"}`. `drag` — литеральный JSON как на проводе. Таймлайн: `{name, repeat?: 1, autoreverse?: false, tracks: [{target, prop, stagger?, keys}]}`; длительность = максимальное `t` ключей (stagger удлиняет её на рантайме). Сахар `textField.bind: "email"` ≡ `value: =email` + `on.change: email = event.value`.
+Значения `props` в исходнике — JSON. Строка, начинающаяся с `=`, — выражение (`"=\"Привет, ${me.name}\""`); строка с `@` — токен; остальное — литерал (строка `"\\="`/`"\\@"` экранирует первый символ). Значения `on.*`, `when`, `repeat.over/key`, `matchId`, `a11y.label`, значения `animate` — всегда DSL (без `=`). `repeat` — `{"over": "offers", "as": "item", "index": "i", "key": "item.id"}` (`as`/`index` по умолчанию `item`/`index`). `transition` — строки `{"in": "fade + slide(bottom) + scale(0.9)", "out": "fade"}`. `drag` — литеральный JSON как на проводе. Таймлайн: `{name, repeat?: 1, autoreverse?: false, autoplay?: false, tracks: [{target, prop, stagger?, keys}]}`; длительность = максимальное `t` ключей (stagger удлиняет её на рантайме). Сахар `textField.bind: "email"` ≡ `value: =email` + `on.change: email = event.value`.
 
 ### 3.2 Лексика
 
@@ -238,7 +238,7 @@ next()                    // вызов другого handler (дожидает
   "fns": { "tax": { "params": ["x"], "body": ["op", "*", ["l", "x"], ["v", 0.2]] } },
   "handlers": { "next": { "params": [], "body": [ … ] } },
   "data": [ { "name": "me", "op": "demo.profile", "args": {"id": {"$param": "id"}}, "required": false } ],
-  "timelines": { "intro": { "duration": 1200, "repeat": 1, "autoreverse": false,
+  "timelines": { "intro": { "duration": 1200, "repeat": 1, "autoreverse": false, "autoplay": false,
       "tracks": [ { "target": "hero", "prop": "opacity", "stagger": 0,
                     "keys": [ {"t": 0, "v": 0}, {"t": 400, "v": 1, "ease": "easeOut"} ] } ] } },
   "root": { … } }
@@ -258,7 +258,7 @@ next()                    // вызов другого handler (дожидает
 ### 4.2 Таймлайны
 Трек анимирует **трансформ-слой** узла: `opacity` и `scale` умножаются на значение prop, `offsetX/offsetY/rotation` — прибавляются. Таймлайн не спорит с биндингами стейта и по окончании держит последнее значение (для входных анимаций оно — нейтральное: 1 / 0).
 - Ключи: `{t: мс, v: число, ease}`; `ease` — сегмента, ведущего **в** этот ключ: `linear` (дефолт), `easeIn`, `easeOut`, `easeInOut` (cubic-bezier CSS-стандартов), `spring` (кривая `Motion.spring` Stratoapp: bezier 0.38, 0.70, 0.125, 1.0), `[x1, y1, x2, y2]`.
-- `stagger` — задержка на индекс экземпляра `repeat`; `repeat` — число повторов (`-1` — бесконечно), `autoreverse`.
+- `stagger` — задержка на индекс экземпляра `repeat`; `repeat` — число повторов (`-1` — бесконечно), `autoreverse`; `autoplay` — запущен с первого рендера (без мигания входной анимации). На проводе `ease` — всегда массив `[x1, y1, x2, y2]` (имена раскрывает компилятор по `stdlib.json` `easings`) или отсутствует (линейно). Нормативный алгоритм сэмплинга — `contract/README.md`.
 - Цель — `id` узла; все материализованные экземпляры узла анимируются вместе (со stagger по индексу).
 - Сэмплинг — чистая функция `(timeline, t) → значения`, покрыта conformance-векторами; кадры — `TimelineView(.animation)` на iOS, `withFrameNanos` на Android.
 - `env.reduceMotion` ⇒ таймлайны сразу в конечное состояние, `slide/scale/offset`-переходы заменяются на `fade`.
