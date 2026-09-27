@@ -175,6 +175,7 @@ navigate("screen.id", {id: "1"}, "push"|"fade")  back()  present("screen.id", {�
 open("https://…")  haptic("light"|"medium"|"heavy"|"selection"|"success"|"warning"|"error")
 track("event", {…})  host("action", {…})  wait(300ms)  refresh(me)
 emit tap                  // только в шаблоне
+emit change({value: x})   // событие шаблона с payload (`event change(value: string)`)
 next()                    // вызов другого handler (дожидается)
 ```
 
