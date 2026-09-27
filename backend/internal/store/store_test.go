@@ -38,6 +38,16 @@ func open(t *testing.T) *Store {
 	return s
 }
 
+// fresh opens the store on empty tables (so -count=N reruns see no earlier state).
+func fresh(t *testing.T) *Store {
+	t.Helper()
+	s := open(t)
+	if _, err := s.db.Exec(ctx, `TRUNCATE screens, revisions, idempotency, audit`); err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
 var ctx = context.Background()
 
 func TestMigrationsIdempotent(t *testing.T) {
@@ -62,7 +72,7 @@ func migrationFiles(t *testing.T) []string {
 }
 
 func TestScreens(t *testing.T) {
-	s := open(t)
+	s := fresh(t)
 	d1 := json.RawMessage(`{"id":"s.one","root":{"b":1,"a":2}}`)
 	sc, err := s.CreateScreen(ctx, "s.one", "One", d1, "admin")
 	if err != nil || sc.ID != "s.one" || sc.Title != "One" || sc.PublishedRev != nil {
@@ -113,7 +123,7 @@ func build(src json.RawMessage, rev int) (*Revision, error) {
 }
 
 func TestPublishAndRollback(t *testing.T) {
-	s := open(t)
+	s := fresh(t)
 	d1, d2 := json.RawMessage(`{"n":1}`), json.RawMessage(`{"n":2}`)
 	if _, err := s.CreateScreen(ctx, "s.pub", "Pub", d1, "admin"); err != nil {
 		t.Fatal(err)
@@ -178,7 +188,7 @@ func TestPublishAndRollback(t *testing.T) {
 }
 
 func TestIdempotency(t *testing.T) {
-	s := open(t)
+	s := fresh(t)
 	h1, h2 := []byte{1}, []byte{2}
 	if done, err := s.Reserve(ctx, "k1", "demo.subscribe", h1); err != nil || done != nil {
 		t.Fatalf("first reserve: %s %v", done, err)

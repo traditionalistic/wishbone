@@ -2,6 +2,7 @@
 package api
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -54,8 +55,10 @@ type theme struct {
 	version string
 }
 
-// Admin-only codes that contract/errors.json does not define.
-var extraErrs = map[string]errInfo{"NOT_FOUND": {404, false}, "CONFLICT": {409, false}}
+// codes the server emits; contract/errors.json must define each of them
+var usedCodes = []string{"SCREEN_NOT_FOUND", "UNSUPPORTED_RUNTIME", "DATA_REQUIRED_FAILED", "DATA_SOURCE_FAILED",
+	"REVISION_NOT_FOUND", "OPERATION_UNKNOWN", "OPERATION_NOT_BOUND", "ARGS_INVALID", "IDEMPOTENCY_REQUIRED",
+	"IDEMPOTENCY_MISMATCH", "CALL_IN_FLIGHT", "UNAUTHENTICATED", "INTERNAL", "NOT_FOUND", "CONFLICT"}
 
 func New(cfg Config) (*Server, error) {
 	s := &Server{Config: cfg, themes: map[string]theme{}, templates: map[string][]byte{}}
@@ -68,9 +71,14 @@ func New(cfg Config) (*Server, error) {
 	if err := readJSON(filepath.Join(cfg.ContractDir, "errors.json"), &errFile); err != nil {
 		return nil, err
 	}
-	s.errs = maps.Clone(extraErrs)
+	s.errs = map[string]errInfo{}
 	for code, e := range errFile.Codes {
 		s.errs[code] = errInfo(e)
+	}
+	for _, code := range usedCodes {
+		if _, ok := s.errs[code]; !ok {
+			return nil, fmt.Errorf("contract errors.json: code %s is missing", code)
+		}
 	}
 	files, _ := filepath.Glob(filepath.Join(cfg.ContractDir, "tokens", "*.json"))
 	for _, f := range files {
@@ -85,7 +93,7 @@ func New(cfg Config) (*Server, error) {
 		sum := sha256.Sum256(b)
 		t := theme{version: hex.EncodeToString(sum[:8])}
 		m["version"], _ = json.Marshal(t.version)
-		t.body, _ = json.Marshal(m)
+		t.body, _ = encode(m)
 		s.themes[strings.TrimSuffix(filepath.Base(f), ".json")] = t
 	}
 	if _, ok := s.themes["korpu"]; !ok {
@@ -128,7 +136,7 @@ func (s *Server) Handler() http.Handler {
 			s.fail(w, "NOT_FOUND", "preview session not found")
 		}
 	})
-	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(filepath.Join(s.ContractDir, "assets")))))
+	mux.HandleFunc("GET /assets/", s.asset)
 
 	admin := func(pattern string, h http.HandlerFunc) { mux.HandleFunc(pattern, s.auth(h)) }
 	admin("GET /admin/api/screens", s.listScreens)
@@ -149,7 +157,7 @@ func (s *Server) Handler() http.Handler {
 			s.fail(w, "NOT_FOUND", "preview session not found")
 		}
 	})
-	mux.HandleFunc("GET /admin/api/", func(w http.ResponseWriter, r *http.Request) { s.fail(w, "NOT_FOUND", "no such admin API route") })
+	admin("GET /admin/api/", func(w http.ResponseWriter, r *http.Request) { s.fail(w, "NOT_FOUND", "no such admin API route") })
 	mux.HandleFunc("GET /admin/", s.spa)
 	mux.Handle("GET /admin", http.RedirectHandler("/admin/", http.StatusMovedPermanently))
 	return logRequests(mux)
@@ -185,12 +193,34 @@ func (s *Server) spa(w http.ResponseWriter, r *http.Request) {
 	http.ServeFileFS(w, r, fsys, name)
 }
 
+// asset serves contract/assets files; directories are not listed.
+func (s *Server) asset(w http.ResponseWriter, r *http.Request) {
+	fsys := os.DirFS(filepath.Join(s.ContractDir, "assets"))
+	name := strings.TrimPrefix(r.URL.Path, "/assets/")
+	if st, err := fs.Stat(fsys, name); err != nil || st.IsDir() {
+		s.fail(w, "NOT_FOUND", "asset not found")
+		return
+	}
+	http.ServeFileFS(w, r, fsys, name)
+}
+
 var screenID = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
 
 // --- responses ---
 
+// encode is json.Marshal without HTML escaping: embedded documents keep the exact bytes their ETag hashes.
+func encode(v any) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
-	b, err := json.Marshal(v)
+	b, err := encode(v)
 	if err != nil {
 		slog.Error("encode response", "err", err)
 		status, b = 500, []byte(`{"error":{"code":"INTERNAL","message":"encode","retryable":true}}`)

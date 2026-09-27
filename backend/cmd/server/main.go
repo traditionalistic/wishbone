@@ -83,15 +83,19 @@ func run(ctx context.Context, addr, contractDir, adminDir string) error {
 	}
 
 	hs := &http.Server{Addr: addr, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
+	stopped := make(chan error, 1)
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = hs.Shutdown(shutdown)
+		stopped <- hs.Shutdown(shutdown)
 	}()
 	slog.Info("listening", "addr", addr, "contract", contractDir, "templates", len(c.Templates))
 	if err := hs.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
-	return nil
+	// in-flight requests finish before the deferred st.Close()
+	err = <-stopped
+	slog.Info("stopped", "err", err)
+	return err
 }

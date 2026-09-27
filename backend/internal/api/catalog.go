@@ -54,7 +54,7 @@ func (s *Server) buildCatalog() ([]byte, error) {
 		o := opsFile.Operations[id]
 		opList = append(opList, op{id, o.Kind, o.Args, o.Result})
 	}
-	return json.Marshal(struct {
+	return encode(struct {
 		Primitives json.RawMessage     `json:"primitives"`
 		Stdlib     json.RawMessage     `json:"stdlib"`
 		Templates  []template          `json:"templates"`

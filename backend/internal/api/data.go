@@ -194,7 +194,7 @@ func (s *Server) result(r ops.Result) ops.Result {
 	return r
 }
 
-// runtimeOK reports whether the client runtime (semver, prerelease ignored; missing = 1.0.0) is ≥ min.
+// runtimeOK reports whether the client runtime (semver, prerelease and build metadata ignored; missing = 1.0.0) is ≥ min.
 func runtimeOK(have, min string) bool {
 	if have == "" {
 		have = "1.0.0"
@@ -213,6 +213,7 @@ func runtimeOK(have, min string) bool {
 }
 
 func semver(v string) (out [3]int, ok bool) {
+	v, _, _ = strings.Cut(v, "+")
 	v, _, _ = strings.Cut(v, "-")
 	parts := strings.Split(v, ".")
 	if len(parts) > 3 {

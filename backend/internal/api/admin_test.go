@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"wishbone/backend/internal/compile"
+	"wishbone/backend/internal/preview"
 )
 
 func TestAdminAuth(t *testing.T) {
@@ -204,31 +207,62 @@ func TestAdminSPA(t *testing.T) {
 	if code, _, b := e.do("GET", "/admin/", nil); code != 404 || !strings.Contains(string(b), "npm run build") {
 		t.Fatalf("missing build: %d %s", code, b)
 	}
-	if code, _, b := e.do("GET", "/admin/api/nope", nil, "Authorization", "Bearer "+password); code != 404 || strings.Contains(string(b), "npm") {
-		t.Fatalf("unknown admin API route: %d %s", code, b)
-	}
+	code, _, b := e.do("GET", "/admin/api/nope", nil, "Authorization", "Bearer "+password)
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, _, b = e.do("GET", "/admin/api/nope", nil)
+	wantErr(t, code, b, 401, "UNAUTHENTICATED")
 }
 
-const chipScreen = `{"id": "t.chip", "title": "Chip", "script": "", "timelines": [], "root": {"type": "stack", "id": "root", "children": [{"type": "Chip", "id": "c", "props": {"title": "Hi"}}]}}`
+const (
+	chipScreen  = `{"id": "t.chip", "title": "Chip", "script": "", "timelines": [], "root": {"type": "stack", "id": "root", "children": [{"type": "Chip", "id": "c", "props": {"title": "Hi"}}]}}`
+	chip2Screen = `{"id": "t.chip2", "title": "Chip 2", "script": "", "timelines": [], "root": {"type": "stack", "id": "root", "children": [{"type": "Chip", "id": "c", "props": {"title": "Hi", "selected": true}}]}}`
+)
 
-func TestSeedAndRecompile(t *testing.T) {
+func TestSeed(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
+	// t.seed exists but was never published (a crash between create and publish)
+	if code, b := e.admin("POST", "/screens", map[string]string{"id": "t.seed", "title": "Seed"}); code != 201 {
+		t.Fatalf("%d %s", code, b)
+	}
 	for range 2 {
 		if err := e.srv.Seed(ctx); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if code, _, b := e.do("GET", "/v1/screens/t.seed", nil); code != 200 || obj(t, b)["revision"] != 1 {
-		t.Fatalf("seeded screen is published once: %d %s", code, b)
+		t.Fatalf("a seeded screen without a revision is published, once: %d %s", code, b)
 	}
+}
 
+func TestRecompile(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
 	rev := e.publish(chipScreen)
+	rev2 := e.publish(chip2Screen)
+	live := func(e *env, id string) any {
+		t.Helper()
+		_, _, b := e.do("GET", "/v1/screens/"+id, nil)
+		return obj(t, b)["revision"]
+	}
 	if err := e.srv.Recompile(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, b := e.do("GET", "/v1/screens/t.chip", nil); obj(t, b)["revision"] != rev {
-		t.Fatalf("unchanged templates must not create revisions: %s", b)
+	if live(e, "t.chip") != rev || live(e, "t.chip2") != rev2 {
+		t.Fatal("unchanged templates must not create revisions")
+	}
+
+	// Chip changes its expansion (t.chip would republish) and drops `selected` (t.chip2 breaks)
+	dir, err := makeContract(strings.Replace(chipV2, `param selected: bool = false\n`, "", 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e3 := newEnvWith(t, dir)
+	if err := e3.srv.Recompile(ctx); err == nil || !strings.Contains(err.Error(), "t.chip2") || strings.Contains(err.Error(), "t.chip ") {
+		t.Fatalf("a screen that no longer compiles must stop the server: %v", err)
+	}
+	if live(e3, "t.chip") != rev {
+		t.Fatal("nothing may be republished when any screen is broken")
 	}
 
 	v2, err := makeContract(chipV2)
@@ -240,16 +274,24 @@ func TestSeedAndRecompile(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, _, b := e2.do("GET", "/v1/screens/t.chip", nil)
-	if m := obj(t, b); m["revision"] != rev+1 || !strings.Contains(string(b), `"op","+"`) {
+	if obj(t, b)["revision"] != rev+1 || !strings.Contains(string(b), `"op","+"`) || live(e2, "t.chip2") != rev2+1 {
 		t.Fatalf("a changed template republishes its screens: %s", b)
 	}
+}
 
-	broken, err := makeContract(chipBroken)
+func TestNewRequiresErrorCodes(t *testing.T) {
+	dir, err := makeContract(chipV1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e3 := newEnvWith(t, broken)
-	if err := e3.srv.Recompile(ctx); err == nil || !strings.Contains(err.Error(), "t.chip") {
-		t.Fatalf("a screen that no longer compiles must stop the server: %v", err)
+	if err := write(dir, "errors.json", `{"codes": {"INTERNAL": {"http": 500, "retryable": true}}}`); err != nil {
+		t.Fatal(err)
+	}
+	c, err := compile.LoadContract(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(Config{Contract: c, ContractDir: dir, Hub: preview.New()}); err == nil || !strings.Contains(err.Error(), "SCREEN_NOT_FOUND") {
+		t.Fatalf("errors.json without a code the server uses: %v", err)
 	}
 }

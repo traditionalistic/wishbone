@@ -176,7 +176,7 @@ func (s *Server) postCall(w http.ResponseWriter, r *http.Request) {
 		s.internal(w, r, err)
 		return
 	}
-	body, _ := json.Marshal(res)
+	body, _ := encode(res)
 	if err := s.Store.Complete(ctx, req.Key, req.Op, body); err != nil {
 		slog.Error("store call response", "op", req.Op, "err", err)
 	}

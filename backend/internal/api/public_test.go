@@ -1,10 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -77,7 +80,7 @@ func TestScreenFetch(t *testing.T) {
 func TestUnsupportedRuntime(t *testing.T) {
 	e := newEnv(t)
 	e.publish(promoScreen)
-	for runtime, want := range map[string]int{"1.0.0": 200, "": 200, "1.2.0": 200, "2.0.0-beta": 200, "0.9.9": 409, "junk": 409} {
+	for runtime, want := range map[string]int{"1.0.0": 200, "": 200, "1.2.0": 200, "2.0.0-beta": 200, "1.0.0+build.5": 200, "1.1.0-rc.1+b7": 200, "0.9.9": 409, "0.9.0+b": 409, "junk": 409} {
 		code, _, b := e.do("GET", "/v1/screens/t.promo", nil, "X-Wishbone-Runtime", runtime)
 		if code != want {
 			t.Errorf("runtime %q: %d %s", runtime, code, b)
@@ -261,7 +264,31 @@ func TestAssets(t *testing.T) {
 	if code, _, b := e.do("GET", "/assets/hello.txt", nil); code != 200 || string(b) != "hello asset" {
 		t.Fatalf("%d %s", code, b)
 	}
-	if code, _, _ := e.do("GET", "/assets/nope.png", nil); code != 404 {
-		t.Fatalf("missing asset: %d", code)
+	if code, _, b := e.do("GET", "/assets/sub/x.txt", nil); code != 200 || string(b) != "x" {
+		t.Fatalf("nested asset: %d %s", code, b)
+	}
+	for _, p := range []string{"/assets/nope.png", "/assets/", "/assets/sub", "/assets/sub/"} {
+		code, _, b := e.do("GET", p, nil)
+		wantErr(t, code, b, 404, "NOT_FOUND")
+	}
+}
+
+const htmlScreen = `{"id": "t.html", "title": "<&>", "script": "", "timelines": [], "root": {"type": "stack", "id": "root", "children": [{"type": "text", "id": "t", "props": {"text": "a < b && c > d"}}]}}`
+
+func TestServedDocumentMatchesETag(t *testing.T) {
+	e := newEnv(t)
+	e.publish(htmlScreen)
+	_, _, b := e.do("GET", "/v1/screens/t.html", nil)
+	var resp struct {
+		ETag     string
+		Revision int
+		Document json.RawMessage
+	}
+	if err := json.Unmarshal(b, &resp); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(resp.Document)
+	if want := fmt.Sprintf("%d-%x", resp.Revision, sum[:8]); resp.ETag != want || !bytes.Contains(resp.Document, []byte("a < b && c > d")) {
+		t.Fatalf("served document bytes must be the hashed bytes: etag %s, hash of served %s\n%s", resp.ETag, want, resp.Document)
 	}
 }

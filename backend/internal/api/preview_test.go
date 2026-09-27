@@ -11,7 +11,7 @@ import (
 )
 
 const previewSrc = `{"id": "t.prev", "title": "Превью", "script": "data me = demo.profile()\nhandler go() { call demo.claimOffer({id: \"o1\"}) }", "timelines": [{"name": "intro", "tracks": [{"target": "root", "prop": "opacity", "keys": [{"t": 0, "v": 0}, {"t": 300, "v": 1}]}]}],
- "root": {"type": "stack", "id": "root", "on": {"tap": "go()"}, "children": []}}`
+ "root": {"type": "stack", "id": "root", "on": {"tap": "go()"}, "children": [{"type": "text", "id": "x", "props": {"text": "a<b"}}]}}`
 
 func (e *env) ws(path string) *websocket.Conn {
 	e.t.Helper()
@@ -25,13 +25,18 @@ func (e *env) ws(path string) *websocket.Conn {
 
 func recv(t *testing.T, c *websocket.Conn) map[string]any {
 	t.Helper()
+	return obj(t, recvRaw(t, c))
+}
+
+func recvRaw(t *testing.T, c *websocket.Conn) []byte {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_, b, err := c.Read(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return obj(t, b)
+	return b
 }
 
 func say(t *testing.T, c *websocket.Conn, msg string) {
@@ -67,11 +72,15 @@ func TestPreviewSession(t *testing.T) {
 		t.Fatalf("devices: %v", devs)
 	}
 
-	code, b = e.admin("POST", "/preview/"+session+"/document", map[string]any{"source": json.RawMessage(previewSrc)})
+	code, _, b = e.do("POST", "/admin/api/preview/"+session+"/document", `{"source": `+previewSrc+`}`, "Authorization", "Bearer "+password) // raw: keep "<"
 	if m := obj(t, b); code != 200 || m["ok"] != true || len(m["diags"].([]any)) != 0 {
 		t.Fatalf("push: %d %s", code, b)
 	}
-	doc := recv(t, dev)
+	raw := recvRaw(t, dev)
+	if !strings.Contains(string(raw), `"a<b"`) {
+		t.Fatalf("the device document is not HTML-escaped: %s", raw)
+	}
+	doc := obj(t, raw)
 	if doc["type"] != "document" || doc["screen"] != "t.prev" || get(doc, "document", "revision") != 0 || get(doc, "document", "root", "id") != "root" {
 		t.Fatalf("device document: %v", doc)
 	}

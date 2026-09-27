@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+
 	"wishbone/backend/internal/compile"
 	"wishbone/backend/internal/ops"
 	"wishbone/backend/internal/preview"
@@ -77,7 +79,7 @@ func makeContract(chip string) (string, error) {
 			return "", err
 		}
 	}
-	for rel, s := range map[string]string{"templates/Chip.json": chip, "screens/t.seed.json": seedScreen, "assets/hello.txt": "hello asset"} {
+	for rel, s := range map[string]string{"templates/Chip.json": chip, "screens/t.seed.json": seedScreen, "assets/hello.txt": "hello asset", "assets/sub/x.txt": "x"} {
 		if err := write(dir, rel, s); err != nil {
 			return "", err
 		}
@@ -99,7 +101,25 @@ type env struct {
 	url string
 }
 
-func newEnv(t *testing.T) *env { return newEnvWith(t, contractDir) }
+// newEnv starts every test from empty tables (so -count=N reruns see no earlier state).
+func newEnv(t *testing.T) *env {
+	t.Helper()
+	ctx := context.Background()
+	st, err := store.Open(ctx, testURL) // applies migrations on a fresh database
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Close()
+	c, err := pgx.Connect(ctx, testURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close(ctx)
+	if _, err := c.Exec(ctx, `TRUNCATE screens, revisions, idempotency, audit`); err != nil {
+		t.Fatal(err)
+	}
+	return newEnvWith(t, contractDir)
+}
 
 func newEnvWith(t *testing.T, dir string) *env {
 	t.Helper()
@@ -177,7 +197,8 @@ func (e *env) publish(src string) int {
 	if code, b := e.admin("POST", "/screens", map[string]string{"id": head.ID, "title": head.Title}); code != 201 && code != 409 {
 		e.t.Fatalf("create %s: %d %s", head.ID, code, b)
 	}
-	if code, b := e.admin("PUT", "/screens/"+head.ID, map[string]any{"draft": json.RawMessage(src)}); code != 200 {
+	// raw body: json.Marshal would HTML-escape the source
+	if code, _, b := e.do("PUT", "/admin/api/screens/"+head.ID, `{"draft": `+src+`}`, "Authorization", "Bearer "+password); code != 200 {
 		e.t.Fatalf("save %s: %d %s", head.ID, code, b)
 	}
 	code, b := e.admin("POST", "/screens/"+head.ID+"/publish", nil)

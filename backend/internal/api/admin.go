@@ -251,7 +251,7 @@ func (s *Server) previewDocument(w http.ResponseWriter, r *http.Request) {
 		meta := newMeta(doc, m)
 		// devices see their own host in place of preview.Base
 		data, _ := s.resolve(r.Context(), "anon", preview.Base, meta.Data, meta.Params, nil)
-		msg, _ := json.Marshal(struct {
+		msg, _ := encode(struct {
 			Type     string          `json:"type"`
 			Screen   string          `json:"screen"`
 			Document json.RawMessage `json:"document"`
