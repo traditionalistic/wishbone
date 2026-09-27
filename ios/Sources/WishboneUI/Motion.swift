@@ -94,10 +94,11 @@ struct DragSpec: Equatable {
     var movesX: Bool { axis == "x" || axis == "both" }
     var movesY: Bool { axis == "y" || axis == "both" }
 
-    /// Finger translation → node translation along the allowed axes, clamped to `bounds`.
-    func follow(_ t: CGSize) -> CGSize {
+    /// Finger translation from the resting `origin` → node translation along the allowed axes,
+    /// clamped to `bounds`.
+    func follow(_ t: CGSize, from origin: CGSize = .zero) -> CGSize {
         func clamp(_ v: Double) -> Double { bounds.map { min(max(v, $0.lowerBound), $0.upperBound) } ?? v }
-        return CGSize(width: movesX ? clamp(t.width) : 0, height: movesY ? clamp(t.height) : 0)
+        return CGSize(width: movesX ? clamp(origin.width + t.width) : 0, height: movesY ? clamp(origin.height + t.height) : 0)
     }
 
     /// Axis lock on the first move: an `x` drag ignores mostly-vertical swipes (the scroll keeps them).

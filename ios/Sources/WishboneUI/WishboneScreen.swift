@@ -145,12 +145,16 @@ final class ScreenModel {
     @ObservationIgnored let route: Route
     @ObservationIgnored let navigator: Navigator
     @ObservationIgnored private var cached: ScreenResponse?
+    /// Handler runs of this screen's stores; cancelled when a store is replaced or the screen goes away.
+    @ObservationIgnored let tasks = TaskBag()
 
     init(wishbone: Wishbone, route: Route, navigator: Navigator) {
         self.wishbone = wishbone
         self.route = route
         self.navigator = navigator
     }
+
+    deinit { tasks.cancelAll() }
 
     var store: Store? { if case let .ready(s) = phase { s } else { nil } }
 
@@ -192,7 +196,9 @@ final class ScreenModel {
     private func apply(throwing r: ScreenResponse) throws {
         guard let json = r.document else { throw WishboneError.decode("no document") }
         let doc = try Document(json: json)
-        phase = .ready(Store(document: doc, params: route.params, data: r.data, wishbone: wishbone, navigator: navigator, previous: store))
+        tasks.cancelAll()
+        phase = .ready(Store(document: doc, params: route.params, data: r.data, wishbone: wishbone, navigator: navigator,
+                             previous: store, tasks: tasks))
     }
 
     private func fail(_ error: Error) {

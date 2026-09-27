@@ -21,7 +21,7 @@ struct EventModifier: ViewModifier {
             content
                 .contentShape(BoxShape(corner: corner))
                 .modifier(TapIfNeeded(enabled: tap) { fire("tap") })
-                .onLongPressGesture { fire("longPress") }
+                .onLongPressGesture(perform: { fire("longPress") }, onPressingChanged: onPress)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(tap ? .isButton : [])
                 .accessibilityAction(named: Text(verbatim: "longPress")) { fire("longPress") }
@@ -58,37 +58,53 @@ struct NodeButtonStyle: ButtonStyle {
     }
 }
 
-/// `drag: {axis, snap, bounds}`: the node follows the finger (per materialized instance), springs to
-/// the nearest snap point on release, then fires `dragEnd {x, y, vx, vy}` (translation at release).
+/// `drag: {axis, snap, bounds}`: the node follows the finger from where it rests (per materialized
+/// instance), springs to the nearest snap point on release and fires `dragEnd {x, y, vx, vy}` at once
+/// (translation at release); a cancelled gesture just settles.
 struct DragModifier: ViewModifier {
     let node: Node
     let ctx: RenderContext
     let spec: DragSpec
     /// nil until the first move decides whether this gesture is ours (axis lock), then true/false.
     @State private var claimed: Bool?
+    /// The node's offset when the gesture was claimed (a second drag continues from its resting point).
+    @State private var origin = CGSize.zero
+    /// Resets by itself when the gesture ends *or is cancelled* (onEnded only runs on a real release).
+    @GestureState private var active = false
 
     func body(content: Content) -> some View {
         let key = "drag:\(node.id)\(ctx.idSuffix)"
         let x = ctx.store.driver(key + ":x"), y = ctx.store.driver(key + ":y")
-        content
+        func current() -> CGSize {
+            func n(_ c: Cell) -> Double { if case let .number(v) = c.value { v } else { 0 } }
+            return CGSize(width: n(x), height: n(y))
+        }
+        func settle(_ t: CGSize) {
+            let theme = ctx.store.wishbone.theme
+            withAnimation(theme.animation(.record(["$motion": .string("interactive")])) ?? .spring) {
+                x.value = .number(spec.movesX ? spec.rest(t.width) : 0)
+                y.value = .number(spec.movesY ? spec.rest(t.height) : 0)
+            }
+        }
+        return content
             .simultaneousGesture(
                 DragGesture(minimumDistance: 8, coordinateSpace: .global)
+                    .updating($active) { _, state, _ in state = true }
                     .onChanged { v in
-                        if claimed == nil { claimed = spec.claims(v.translation) }
+                        if claimed == nil {
+                            claimed = spec.claims(v.translation)
+                            origin = current()
+                        }
                         guard claimed == true else { return }
-                        let t = spec.follow(v.translation)
+                        let t = spec.follow(v.translation, from: origin)
                         x.value = .number(t.width)
                         y.value = .number(t.height)
                     }
                     .onEnded { v in
                         defer { claimed = nil }
                         guard claimed == true else { return }
-                        let t = spec.follow(v.translation)
-                        let theme = ctx.store.wishbone.theme
-                        withAnimation(theme.animation(.record(["$motion": .string("interactive")])) ?? .spring) {
-                            x.value = .number(spec.movesX ? spec.rest(t.width) : 0)
-                            y.value = .number(spec.movesY ? spec.rest(t.height) : 0)
-                        }
+                        let t = spec.follow(v.translation, from: origin)
+                        settle(t)
                         guard let stmts = node.on["dragEnd"] else { return }
                         let event: Value = .record([
                             "x": .number(t.width), "y": .number(t.height),
@@ -97,6 +113,19 @@ struct DragModifier: ViewModifier {
                         ctx.store.fire(stmts, ctx: ctx, event: event)
                     }
             )
+            .onChange(of: active) { _, isActive in
+                guard !isActive else { return }
+                // Cancelled (no onEnded): settle from wherever the finger left the node.
+                Task { @MainActor in
+                    await Task.yield()
+                    if claimed == true {
+                        claimed = nil
+                        settle(current())
+                    } else if claimed == false {
+                        claimed = nil
+                    }
+                }
+            }
             .onDisappear {
                 // An instance that leaves the tree comes back at rest.
                 x.value = .number(0)

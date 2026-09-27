@@ -9,8 +9,12 @@ struct NodeView: View {
 
     var body: some View {
         if let rep = node.rep {
-            ForEach(RepeatItem.items(rep, ctx: ctx)) { item in
+            let items = RepeatItem.items(rep, ctx: ctx)
+            let keys = items.map(\.id)
+            let fallback = NodeBody.transitionFallback(node, ctx: ctx)
+            ForEach(items) { item in
                 NodeBody(node: node, ctx: item.ctx)
+                    .modifier(WhenTransaction(visible: keys, fallback: fallback))
             }
         } else {
             NodeBody(node: node, ctx: ctx)
@@ -89,7 +93,12 @@ struct NodeBody: View {
 
     /// A `when` flip outside a transaction still animates: the node's `animate["*"]`, else @motion.smooth.
     private func whenFallback(_ ctx: RenderContext) -> Animation? {
-        guard node.when != nil, node.transitionIn != nil || node.transitionOut != nil else { return nil }
+        node.when == nil ? nil : Self.transitionFallback(node, ctx: ctx)
+    }
+
+    /// Motion of an enter/exit that isn't inside `animate(m) {}` (nil when the node has no transition).
+    static func transitionFallback(_ node: Node, ctx: RenderContext) -> Animation? {
+        guard node.transitionIn != nil || node.transitionOut != nil else { return nil }
         let theme = ctx.store.wishbone.theme
         return node.animate["*"].flatMap { ctx.eval($0) }.flatMap(theme.animation)
             ?? theme.animation(.record(["$motion": .string("smooth")])) ?? .easeInOut

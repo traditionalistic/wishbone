@@ -18,7 +18,10 @@ final class Timelines {
     @ObservationIgnored private var tokens: [String: UUID] = [:]
     @ObservationIgnored let reduceMotion: () -> Bool
 
-    init(_ timelines: [String: Timeline], now: Date = Date(), reduceMotion: @escaping () -> Bool = { false }) {
+    /// `previous` — the registry of the same screen before a document reload: timelines that still
+    /// exist keep their start (a new revision doesn't replay the entrance).
+    init(_ timelines: [String: Timeline], now: Date = Date(), previous: Timelines? = nil,
+         reduceMotion: @escaping () -> Bool = { false }) {
         self.timelines = timelines
         self.reduceMotion = reduceMotion
         var byTarget: [String: [String]] = [:]
@@ -26,7 +29,13 @@ final class Timelines {
             for target in Set(t.tracks.map(\.target)) { byTarget[target, default: []].append(name) }
         }
         self.byTarget = byTarget.mapValues { $0.sorted() }
-        for (name, t) in timelines where t.autoplay { play(name, at: now) }
+        for (name, t) in timelines {
+            if let start = previous?.started[name] {
+                play(name, at: start)
+            } else if t.autoplay {
+                play(name, at: now)
+            }
+        }
     }
 
     func isTarget(_ id: String) -> Bool { byTarget[id] != nil }
@@ -44,12 +53,30 @@ final class Timelines {
         guard !reduceMotion() else { running.remove(name); return }
         running.insert(name)
         guard timeline.repeatCount != -1 else { return }
-        let ms = duration(name)
+        // Instances materialize after `play` (autoplay runs before the first render), so the end is
+        // re-evaluated after every sleep: stop ticking only once every instance has finished.
         Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(Int(min(ms, 86_400_000)) + 16))
-            guard let self, self.tokens[name] == token else { return }
-            self.running.remove(name)
+            while let left = self?.pendingEnd(name, token: token) {
+                try? await Task.sleep(for: .milliseconds(Int(min(left, 86_400_000)) + 16))
+            }
         }
+    }
+
+    /// ms still to wait for this run of `name`, or nil (restarted, stopped, or finished — then it
+    /// leaves `running`).
+    private func pendingEnd(_ name: String, token: UUID) -> Double? {
+        guard tokens[name] == token, let left = remaining(name) else { return nil }
+        guard left > 0 else {
+            running.remove(name)
+            return nil
+        }
+        return left
+    }
+
+    /// ms left until every materialized instance of `name` finished (nil when not started).
+    func remaining(_ name: String, now: Date = Date()) -> Double? {
+        guard let start = started[name] else { return nil }
+        return duration(name) - now.timeIntervalSince(start) * 1000
     }
 
     func stop(_ name: String) {

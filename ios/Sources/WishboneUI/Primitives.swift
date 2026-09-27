@@ -11,7 +11,9 @@ struct Children: View {
     let axis: String?
 
     var body: some View {
-        ForEach(node.children, id: \.id) { NodeView(node: $0, ctx: ctx.child(axis: axis)) }
+        ForEach(Array(node.children.enumerated()), id: \.element.id) { i, child in
+            NodeView(node: child, ctx: ctx.child(axis: axis, sibling: i))
+        }
     }
 }
 
@@ -39,7 +41,7 @@ struct ScrollNode: View {
 
     var body: some View {
         let horizontal = props.string("axis") == "h"
-        let store = ctx.store, id = node.id
+        let cells = (x: ctx.store.driver("scroll:\(node.id):x"), y: ctx.store.driver("scroll:\(node.id):y"))
         ScrollView(horizontal ? .horizontal : .vertical, showsIndicators: props.bool("indicators")) {
             content(horizontal: horizontal)
         }
@@ -48,10 +50,8 @@ struct ScrollNode: View {
             ScrollDriver.offset(contentOffset: geo.contentOffset, insets: geo.contentInsets)
         } action: { _, offset in
             // scroll.<id>.x|y cells; nodes reading them re-render every frame, nothing else does.
-            for (axis, v) in [("x", offset.x), ("y", offset.y)] {
-                let cell = store.driver("scroll:\(id):\(axis)")
-                if cell.value != .number(v) { cell.value = .number(v) }
-            }
+            if cells.x.value != .number(offset.x) { cells.x.value = .number(offset.x) }
+            if cells.y.value != .number(offset.y) { cells.y.value = .number(offset.y) }
         }
     }
 

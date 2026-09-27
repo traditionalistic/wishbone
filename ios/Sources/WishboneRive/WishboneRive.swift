@@ -50,16 +50,17 @@ struct RiveNode: View {
 
     var body: some View {
         let url = ctx.url()?.absoluteString ?? ""
+        let artboard = ctx.string("artboard") ?? "", stateMachine = ctx.string("stateMachine") ?? ""
         ZStack {
             Color.clear // keeps the view (and its .task) alive before the model exists
             if let model { model.view() }
         }
         .allowsHitTesting(false)
-        .task(id: url) {
+        .task(id: [url, artboard, stateMachine]) {
             guard !url.isEmpty else { return }
             let m = RiveNodeModel(
-                webURL: url, stateMachineName: ctx.string("stateMachine").flatMap { $0.isEmpty ? nil : $0 },
-                artboardName: ctx.string("artboard").flatMap { $0.isEmpty ? nil : $0 }
+                webURL: url, stateMachineName: stateMachine.isEmpty ? nil : stateMachine,
+                artboardName: artboard.isEmpty ? nil : artboard
             )
             let fire = ctx.fire
             m.onEvent = { name in fire("event", .record(["name": .string(name)])) }

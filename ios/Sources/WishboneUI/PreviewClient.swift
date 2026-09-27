@@ -41,6 +41,12 @@ public final class PreviewClient {
         self.code = code
     }
 
+    /// A dropped client stops reconnecting and closes its socket.
+    isolated deinit {
+        loop?.cancel()
+        socket?.cancel(with: .goingAway, reason: nil)
+    }
+
     public static func sessions(_ wishbone: Wishbone) async throws -> [PreviewSession] {
         let (body, _) = try await API.send(API.sessions(await wishbone.requestInfo()))
         do {

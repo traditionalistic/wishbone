@@ -1,6 +1,22 @@
 import Foundation
 import Observation
+import Synchronization
 import WishboneCore
+
+/// Handler runs of one screen, cancelled when its store is discarded (an `await play` of an
+/// infinite timeline, a long `wait`, … must not outlive the screen).
+final class TaskBag: Sendable {
+    private let tasks = Mutex<[UUID: Task<Void, Never>]>([:])
+
+    func add(_ id: UUID, _ task: Task<Void, Never>) { tasks.withLock { $0[id] = task } }
+    func remove(_ id: UUID) { _ = tasks.withLock { $0.removeValue(forKey: id) } }
+    var count: Int { tasks.withLock { $0.count } }
+
+    func cancelAll() {
+        let running = tasks.withLock { t in defer { t.removeAll() }; return Array(t.values) }
+        running.forEach { $0.cancel() }
+    }
+}
 
 /// One observable value per state key: views re-render only for the cells their expressions read.
 @MainActor @Observable
@@ -48,16 +64,19 @@ final class Store {
 
     /// `previous` — the store of the same screen before a document reload: state keys that still
     /// exist keep their values.
+    let tasks: TaskBag
+
     init(document: Document, params: [String: Value], data results: [String: Value], wishbone: Wishbone,
-         navigator: Navigator? = nil, previous: Store? = nil) {
+         navigator: Navigator? = nil, previous: Store? = nil, tasks: TaskBag = TaskBag()) {
         self.document = document
+        self.tasks = tasks
         self.wishbone = wishbone
         self.navigator = navigator
         geometry = navigator?.geometry ?? ScreenGeometry()
         interpreter = Interpreter(document: document)
         previousInstances = previous?.instances ?? [:]
         let env = wishbone.env
-        timelines = Timelines(document.timelines, reduceMotion: { env.reduceMotion })
+        timelines = Timelines(document.timelines, previous: previous?.timelines, reduceMotion: { env.reduceMotion })
         func anyDrag(_ n: Node) -> Bool { n.drag != nil || n.children.contains(where: anyDrag) }
         hasDrag = anyDrag(document.root)
         let root = RenderContext(store: self)
@@ -132,10 +151,18 @@ final class Store {
     func fire(_ stmts: [Stmt], ctx: RenderContext, event: Value) -> Task<Void, Never> {
         let locals = Locals(name: "event", value: event, parent: ctx.locals)
         let effects = StoreEffects(store: self)
-        return Task { await interpreter.runStatements(stmts, scope: ctx, locals: locals, effects: effects) }
+        let id = UUID(), bag = tasks
+        // Main-actor task: its body can't start before `add` below, so `remove` always follows it.
+        let task = Task { [interpreter] in
+            await interpreter.runStatements(stmts, scope: ctx, locals: locals, effects: effects)
+            bag.remove(id)
+        }
+        bag.add(id, task)
+        return task
     }
 
     func call(op: String, args: Value, awaited: Bool) async -> Value {
+        guard !Task.isCancelled else { return API.callFailure(WishboneError.network("cancelled")) }
         guard awaited else {
             Task { _ = await self.sendCall(op: op, args: args) }
             return .null

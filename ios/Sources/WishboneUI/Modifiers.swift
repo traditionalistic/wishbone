@@ -141,9 +141,10 @@ struct ContentAnimation: ViewModifier {
     }
 }
 
-/// A `when` flip made outside `animate(m) {}` still runs the node's transition with its fallback motion.
-struct WhenTransaction: ViewModifier {
-    let visible: Bool
+/// A `when` flip (or a repeat's item set changing) outside `animate(m) {}` still runs the node's
+/// transition with its fallback motion.
+struct WhenTransaction<V: Equatable>: ViewModifier {
+    let visible: V
     let fallback: Animation?
     func body(content: Content) -> some View {
         if let fallback {
@@ -168,6 +169,7 @@ struct TransformModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let base = content.modifier(DragIfNeeded(node: node, ctx: ctx))
+        let order = Double(ctx.siblingIndex) * 1e-3 + Double(ctx.repeatIndex) * 1e-6
         let drag = node.drag == nil ? .zero : dragOffset
         let timelines = ctx.store.timelines
         if timelines.isTarget(node.id) {
@@ -175,10 +177,10 @@ struct TransformModifier: ViewModifier {
             let running = timelines.isRunning(node.id)
             TimelineView(.animation(minimumInterval: nil, paused: !running)) { tv in
                 let sample = timelines.sample(node.id, index: ctx.repeatIndex, at: running ? tv.date : Date())
-                base.modifier(OuterModifier(box: box, anim: anim, theme: theme, dark: dark, sample: sample, drag: drag))
+                base.modifier(OuterModifier(box: box, anim: anim, theme: theme, dark: dark, sample: sample, drag: drag, order: order))
             }
         } else {
-            base.modifier(OuterModifier(box: box, anim: anim, theme: theme, dark: dark, sample: TimelineSample(), drag: drag))
+            base.modifier(OuterModifier(box: box, anim: anim, theme: theme, dark: dark, sample: TimelineSample(), drag: drag, order: order))
         }
     }
 
@@ -206,23 +208,25 @@ struct OuterModifier: ViewModifier {
     let dark: Bool
     let sample: TimelineSample
     let drag: CGSize
+    /// Sibling paint order (see `RenderContext.siblingIndex`).
+    let order: Double
 
     func body(content: Content) -> some View {
         content
             .modifier(ShadowModifier(shadow: box.shadow.flatMap { s in
                 theme.color(s.color, dark: dark).map { ($0.color, s.radius, s.x, s.y) }
             }))
-            // Prop values animate with their implicit specs; timeline/drag layers on top follow frames.
+            // Timeline opacity/scale/rotation (per frame) innermost, then the prop values with their
+            // implicit specs, then all translations — so no rotation ever turns an offset.
+            .opacity(sample.opacity)
+            .scaleEffect(sample.scale)
+            .rotationEffect(.degrees(sample.rotation))
             .animated(anim["opacity"], OpacityModifier(value: box.opacity))
             .animated(anim["scale"], ScaleModifier(value: box.scale))
             .animated(anim["rotation"], RotationModifier(degrees: box.rotation))
             .animated(anim.any("offsetX", "offsetY"), OffsetModifier(x: box.offsetX, y: box.offsetY))
-            // ponytail: a timeline rotation also turns the prop offset above; compose into one layer if it matters.
-            .opacity(sample.opacity)
-            .scaleEffect(sample.scale)
-            .rotationEffect(.degrees(sample.rotation))
             .offset(x: sample.offsetX + drag.width, y: sample.offsetY + drag.height)
-            .zIndex(box.zIndex)
+            .zIndex(box.zIndex + order)
     }
 }
 

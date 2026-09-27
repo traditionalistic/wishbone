@@ -17,6 +17,9 @@ struct RenderContext: Scope {
     var isRoot = false
     /// Index of the innermost enclosing `repeat` item (timeline stagger).
     var repeatIndex = 0
+    /// Position among the container's children: keeps paint order stable while a child leaves
+    /// (a removed view would otherwise drop below its equal-zIndex sibling mid-transition).
+    var siblingIndex = 0
     /// `matchId` scope: the whole screen.
     var namespace: Namespace.ID?
     /// Node being rendered (eval errors are logged once per node + message).
@@ -56,8 +59,9 @@ struct RenderContext: Scope {
         }
     }
 
-    func child(locals: Locals? = nil, instance: InstanceScope? = nil, idSuffix: String = "", axis: String?) -> RenderContext {
+    func child(locals: Locals? = nil, instance: InstanceScope? = nil, idSuffix: String = "", axis: String?, sibling: Int = 0) -> RenderContext {
         var c = self
+        c.siblingIndex = sibling
         if let locals { c.locals = locals }
         if let instance { c.instance = instance }
         c.idSuffix += idSuffix
@@ -89,6 +93,7 @@ extension Store {
         func str(_ i: Int) -> String? { if i < args.count, case let .string(s) = args[i] { s } else { nil } }
         func rec(_ i: Int) -> [String: Value] { if i < args.count, case let .record(r) = args[i] { r } else { [:] } }
         let host = wishbone.host
+        guard !Task.isCancelled else { return } // the screen is gone: no more effects
         switch effect {
         case "navigate":
             guard let id = str(0) else { return }
@@ -123,12 +128,13 @@ extension Store {
         case "play":
             guard let name = str(0) else { return }
             timelines.play(name)
-            if awaited {
-                guard timelines.timelines[name]?.repeatCount != -1 else {
-                    while true { try? await Task.sleep(for: .seconds(3600)) } // contract: never resumes
-                }
-                try? await Task.sleep(for: .milliseconds(Int(min(timelines.duration(name), 86_400_000))))
+            guard awaited, !wishbone.env.reduceMotion else { return } // reduce motion: already at the end
+            guard timelines.timelines[name]?.repeatCount != -1 else {
+                // Contract: never resumes — until the screen (and with it this run) is discarded.
+                while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
+                return
             }
+            try? await Task.sleep(for: .milliseconds(Int(min(timelines.duration(name), 86_400_000))))
         case "stop":
             if let name = str(0) { timelines.stop(name) }
         default:
