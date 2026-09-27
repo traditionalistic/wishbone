@@ -49,8 +49,6 @@ internal fun Modifier.boxOuter(node: Node, b: BoxProps, p: Map<String, Value>, c
     if (b.zIndex != 0.0) m = m.zIndex(b.zIndex.toFloat())
     val store = ctx.store
     val timeline = store.timelines.isTarget(node.id)
-    // stagger-aware durations also for targets nested inside a repeated item
-    if (timeline) store.timelines.counts[node.id] = maxOf(store.timelines.counts[node.id] ?: 0, ctx.index + 1)
     val drag = store.extras[node.id]?.drag
     val dx = drag?.let { store.driverCell("drag", node.id + ctx.keyPath, "x") }
     val dy = drag?.let { store.driverCell("drag", node.id + ctx.keyPath, "y") }

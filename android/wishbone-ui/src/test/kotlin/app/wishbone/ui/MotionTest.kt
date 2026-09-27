@@ -129,7 +129,7 @@ class MotionTest {
         assertEquals(360.0, r.transform("s", 0, 250 * ms, true).rotation, 1e-3) // reduceMotion: end state
 
         r.play("list", 0)
-        r.counts["item"] = 4
+        for (i in 0 until 4) r.register("item", "item.k$i", i)
         assertEquals(200.0 + 3 * 100.0, r.duration("list"))
         assertEquals(0.5, r.transform("item", 2, 300 * ms, false).scale, 1e-9) // u = 300 − 2·100
         assertEquals(0.0, r.transform("item", 3, 250 * ms, false).scale, 1e-9)
@@ -155,4 +155,19 @@ class MotionTest {
           "fade":{"duration":400,"repeat":1,"autoreverse":false,"autoplay":false,"tracks":[{"target":"a","prop":"opacity","stagger":0,"keys":[{"t":0,"v":0},{"t":400,"v":1}]}]},
           "dim":{"duration":100,"repeat":1,"autoreverse":false,"autoplay":true,"tracks":[{"target":"a","prop":"opacity","stagger":0,"keys":[{"t":0,"v":1},{"t":100,"v":0.5}]}]}}}""",
     ).timelines
+
+    @Test
+    fun instanceCountFollowsLiveInstances() {
+        val r = registry()
+        assertEquals(200.0, r.duration("list")) // no instances composed: 1
+        for (i in 0 until 5) r.register("item", "item.k$i", i)
+        assertEquals(200.0 + 4 * 100.0, r.duration("list"))
+        r.unregister("item", "item.k4") // the list shrinks
+        r.unregister("item", "item.k3")
+        assertEquals(200.0 + 2 * 100.0, r.duration("list"))
+        r.register("item", "item.k1", 0) // an instance re-indexed after a removal
+        r.unregister("item", "item.k2")
+        r.unregister("item", "item.k0")
+        assertEquals(200.0, r.duration("list"))
+    }
 }

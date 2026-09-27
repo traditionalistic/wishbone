@@ -4,6 +4,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,15 @@ internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Mo
     if (ctx.store.extras[node.id]?.drag != null) {
         ctx.store.driverCell("drag", node.id + ctx.keyPath, "x")
         ctx.store.driverCell("drag", node.id + ctx.keyPath, "y")
+    }
+    // live instances of a timeline target (direct repeat or nested in one) → stagger-aware `await play` durations
+    if (ctx.store.timelines.isTarget(node.id)) {
+        val timelines = ctx.store.timelines
+        val instance = node.id + ctx.keyPath
+        DisposableEffect(instance, ctx.index) {
+            timelines.register(node.id, instance, ctx.index)
+            onDispose { timelines.unregister(node.id, instance) }
+        }
     }
     val source = if (node.on["tap"] != null || node.on["longPress"] != null) remember { MutableInteractionSource() } else null
     if (source != null) ctx = ctx.copy(pressed = source.collectIsPressedAsState())

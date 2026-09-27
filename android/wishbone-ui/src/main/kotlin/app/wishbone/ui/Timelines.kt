@@ -47,8 +47,19 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
         .flatMap { (name, t) -> t.tracks.map { tr -> tr.target to TargetTrack(name, tr.prop, t.copy(tracks = listOf(tr))) } }
         .groupBy({ it.first }, { it.second })
 
-    /** Materialized instance count per repeated target node (reported by the renderer), for stagger-aware durations. */
-    val counts = HashMap<String, Int>()
+    /** Live materialized instances per target node id: instance key (id + key path) → repeat index. */
+    private val live = HashMap<String, HashMap<String, Int>>()
+
+    fun register(id: String, instance: String, index: Int) {
+        live.getOrPut(id) { HashMap() }[instance] = index
+    }
+
+    fun unregister(id: String, instance: String) {
+        live[id]?.remove(instance)
+    }
+
+    /** Instances for stagger-aware durations: highest live repeat index + 1 (1 when none is composed). */
+    fun count(id: String): Int = live[id]?.values?.maxOrNull()?.plus(1) ?: 1
 
     /** Autoplay timelines not yet rebased onto the first rendered frame. */
     private val pendingAutoplay = HashSet<String>()
@@ -88,7 +99,7 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
     /** ms until every instance has finished; +∞ for `repeat: -1`. */
     fun duration(name: String): Double {
         val t = timelines[name] ?: return 0.0
-        return TimelineSampler.duration(t, t.tracks.maxOfOrNull { counts[it.target] ?: 1 } ?: 1)
+        return TimelineSampler.duration(t, t.tracks.maxOfOrNull { count(it.target) } ?: 1)
     }
 
     /** Whether any active timeline still changes values at [now] (the frame loop runs only then; never under reduceMotion). */

@@ -121,7 +121,6 @@ internal class RenderContext(
                 continue
             }
             val items = (evalOrNull(rep.over) as? Value.ListV)?.items ?: continue
-            store.timelines.counts[node.id] = items.size
             items.forEachIndexed { i, item ->
                 val c = copy(locals = locals.bind(rep.asName, item).bind(rep.indexName, Value.Num(i.toDouble())), index = i)
                 val k = rep.key?.let { c.evalOrNull(it) }?.let { Format.str(it) } ?: i.toString()
