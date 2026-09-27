@@ -2,19 +2,85 @@
   "version": "1.0.0",
   "rule": "retryable=false is never retried automatically (including pull-to-refresh of the same request). message is a localized, display-ready string.",
   "codes": {
-    "SCREEN_NOT_FOUND":     { "http": 404, "retryable": false, "client": "native fallback screen" },
-    "UNSUPPORTED_RUNTIME":  { "http": 409, "retryable": false, "client": "native fallback, telemetry 'client outdated'" },
-    "DATA_REQUIRED_FAILED": { "http": 503, "retryable": true,  "client": "show cache; no cache => fallback with retry" },
-    "DATA_SOURCE_FAILED":   { "http": 200, "retryable": true,  "client": "per-source {ok:false}; value reads as null" },
-    "REVISION_NOT_FOUND":   { "http": 409, "retryable": true,  "client": "refetch the screen" },
-    "OPERATION_UNKNOWN":    { "http": 400, "retryable": false, "client": "assert in debug, silent in release" },
-    "OPERATION_NOT_BOUND":  { "http": 403, "retryable": false, "client": "assert in debug, silent in release" },
-    "ARGS_INVALID":         { "http": 400, "retryable": false, "client": "fieldErrors if present, else generic banner" },
-    "IDEMPOTENCY_REQUIRED": { "http": 400, "retryable": false, "client": "client bug" },
-    "IDEMPOTENCY_MISMATCH": { "http": 409, "retryable": false, "client": "client bug" },
-    "CALL_IN_FLIGHT":       { "http": 409, "retryable": true,  "client": "wait, do not duplicate" },
-    "UNAUTHENTICATED":      { "http": 401, "retryable": true,  "client": "host refreshes auth, one retry" },
-    "NETWORK":              { "http": 0,   "retryable": true,  "client": "client-side only: transport failure surfaced to call results" },
-    "INTERNAL":             { "http": 500, "retryable": true,  "client": "generic banner + retry" }
+    "SCREEN_NOT_FOUND": {
+      "http": 404,
+      "retryable": false,
+      "client": "native fallback screen"
+    },
+    "UNSUPPORTED_RUNTIME": {
+      "http": 409,
+      "retryable": false,
+      "client": "native fallback, telemetry 'client outdated'"
+    },
+    "DATA_REQUIRED_FAILED": {
+      "http": 503,
+      "retryable": true,
+      "client": "show cache; no cache => fallback with retry"
+    },
+    "DATA_SOURCE_FAILED": {
+      "http": 200,
+      "retryable": true,
+      "client": "per-source {ok:false}; value reads as null"
+    },
+    "REVISION_NOT_FOUND": {
+      "http": 409,
+      "retryable": true,
+      "client": "refetch the screen"
+    },
+    "OPERATION_UNKNOWN": {
+      "http": 400,
+      "retryable": false,
+      "client": "assert in debug, silent in release"
+    },
+    "OPERATION_NOT_BOUND": {
+      "http": 403,
+      "retryable": false,
+      "client": "assert in debug, silent in release"
+    },
+    "ARGS_INVALID": {
+      "http": 400,
+      "retryable": false,
+      "client": "fieldErrors if present, else generic banner"
+    },
+    "IDEMPOTENCY_REQUIRED": {
+      "http": 400,
+      "retryable": false,
+      "client": "client bug"
+    },
+    "IDEMPOTENCY_MISMATCH": {
+      "http": 409,
+      "retryable": false,
+      "client": "client bug"
+    },
+    "CALL_IN_FLIGHT": {
+      "http": 409,
+      "retryable": true,
+      "client": "wait, do not duplicate"
+    },
+    "UNAUTHENTICATED": {
+      "http": 401,
+      "retryable": true,
+      "client": "host refreshes auth, one retry"
+    },
+    "NETWORK": {
+      "http": 0,
+      "retryable": true,
+      "client": "client-side only: transport failure surfaced to call results"
+    },
+    "INTERNAL": {
+      "http": 500,
+      "retryable": true,
+      "client": "generic banner + retry"
+    },
+    "NOT_FOUND": {
+      "http": 404,
+      "retryable": false,
+      "client": "admin/preview: unknown session, template or route"
+    },
+    "CONFLICT": {
+      "http": 409,
+      "retryable": false,
+      "client": "admin: screen id already exists"
+    }
   }
 }

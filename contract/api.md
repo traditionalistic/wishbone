@@ -24,6 +24,9 @@
 Статика из `contract/assets/`.
 
 ### Превью (устройства)
+
+Документы, пришедшие по превью, несут `revision: 0`: `/v1/call` и `/v1/data` с `revision: 0` адресуются к последнему документу живой превью-сессии этого экрана (операции и источники берутся из него).
+
 - `GET /v1/preview/sessions` → `[{"code": "K7Q2", "screen": "showcase.promo", "title": "Промо", "devices": 1, "updatedAt": "RFC3339"}]` (только живые сессии: последняя активность < 2 ч).
 - `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.0.0"}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`.
 
@@ -41,7 +44,7 @@
 | `GET /admin/api/screens/{id}/revisions` | → `[{"revision", "etag", "publishedAt", "runtimeMin"}]` (новые сверху) |
 | `POST /admin/api/screens/{id}/rollback/{rev}` | → `{"revision", "etag"}` — исходник ревизии `rev` публикуется новой ревизией и становится черновиком |
 | `POST /admin/api/compile` | `{"source": <исходник>}` → `{"ok": bool, "diags": [Diag], "document": {…} \| null}` |
-| `GET /admin/api/catalog` | → `{"primitives": <primitives.json>, "stdlib": <stdlib.json>, "templates": [{"name", "params": [{"name", "type", "default"?}], "events": ["tap"], "slot": bool}], "tokens": {"color": [..], "type": [..], "space": [..], "radius": [..], "motion": [..]}, "icons": [..], "ops": [{"id", "kind", "args", "result"}], "brands": ["korpu", "kz"]}` |
+| `GET /admin/api/catalog` | (`templates[].params[].default` — в формате значения исходника §3.1: JSON-литерал, `@token` или `=выражение`) → `{"primitives": <primitives.json>, "stdlib": <stdlib.json>, "templates": [{"name", "params": [{"name", "type", "default"?}], "events": ["tap"], "slot": bool}], "tokens": {"color": [..], "type": [..], "space": [..], "radius": [..], "motion": [..]}, "icons": [..], "ops": [{"id", "kind", "args", "result"}], "brands": ["korpu", "kz"]}` |
 | `GET /admin/api/templates/{name}` | → исходник шаблона (только чтение) |
 | `POST /admin/api/preview` | `{"screen": "id"?}` → `{"code": "K7Q2"}` |
 | `POST /admin/api/preview/{code}/document` | `{"source": <исходник>}` → `{"ok", "diags": [Diag]}`; при `ok` документ (с данными) рассылается устройствам сессии |
