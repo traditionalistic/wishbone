@@ -1,0 +1,129 @@
+{
+ "id": "showcase.promo",
+ "title": "Промо недели",
+ "script": "// Промо (spec §9.2): скролл-драйвер scroll.page.y — параллакс и схлопывание героя в верхнюю панель, заголовок\n// панели проявляется через interpolate; сетка офферов из data со stagger-таймлайном; свайп-карточки заданий (drag +\n// dragEnd убирают их из стейта tasks); countdown от env.now до until оффера; Rive-кнопка, вход state machine которой —\n// стейт live; «Забрать» → call demo.claimOffer, счётчик билетов из demo.profile обновляет refresh(me).\ndata me = demo.profile()\ndata offers = demo.offers()\nstate claimed: list<string> = []\nstate claiming = \"\"\nstate live = false\nstate tasks = seedTasks()\nfn seedTasks(): list<{id: string, title: string, text: string, icon: icon}> = [\n  {id: \"invite\", title: \"Пригласите друга\", text: \"+5 билетов за каждого нового участника\", icon: @icon.user},\n  {id: \"streak\", title: \"Заходите 7 дней подряд\", text: \"Серия приносит +10 билетов\", icon: @icon.star},\n  {id: \"share\", title: \"Поделитесь розыгрышем\", text: \"+1 билет за каждый репост\", icon: @icon.share},\n  {id: \"mail\", title: \"Подпишитесь на рассылку\", text: \"Узнавайте об акциях первыми\", icon: @icon.mail}\n]\nlet heroH = 300 + env.safeTop\nlet y = scroll.page.y\nlet featured = offers.first\nlet tickets = me.tickets ?? 0\nlet ticketsText = plural(tickets, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})\nhandler claim(id: string) {\n  claiming = id\n  let r = await call demo.claimOffer({id: id})\n  claiming = \"\"\n  if r.ok {\n    animate(@motion.bouncy) { claimed = claimed.append(id) }\n    haptic(\"success\")\n    refresh(me)\n    play(bump)\n  } else {\n    haptic(\"error\")\n  }\n}\nhandler dismissTask(id: string) {\n  haptic(\"light\")\n  animate(@motion.smooth) { tasks = tasks.filter(t => t.id != id) }\n}\nhandler toggleLive() {\n  haptic(\"selection\")\n  animate(@motion.snappy) { live = !live }\n}",
+ "timelines": [
+  {"name": "offersIn", "autoplay": true, "tracks": [
+   {"target": "offer", "prop": "opacity", "stagger": 80, "keys": [{"t": 0, "v": 0}, {"t": 360, "v": 1, "ease": "easeOut"}]},
+   {"target": "offer", "prop": "offsetY", "stagger": 80, "keys": [{"t": 0, "v": 28}, {"t": 560, "v": 0, "ease": "spring"}]},
+   {"target": "offer", "prop": "scale", "stagger": 80, "keys": [{"t": 0, "v": 0.94}, {"t": 560, "v": 1, "ease": "spring"}]}
+  ]},
+  {"name": "bump", "tracks": [
+   {"target": "ticketsPill", "prop": "scale", "keys": [{"t": 0, "v": 1}, {"t": 140, "v": 1.3, "ease": "easeOut"}, {"t": 460, "v": 1, "ease": "spring"}]}
+  ]}
+ ],
+ "root": {"type": "stack", "id": "root", "props": {"axis": "z", "align": "top", "width": "fill", "height": "fill", "background": "@color.bg1", "ignoreSafeArea": "top"}, "children": [
+
+  {"type": "scroll", "id": "page", "props": {"width": "fill", "height": "fill"}, "children": [
+
+   {"type": "stack", "id": "hero", "props": {"axis": "z", "align": "bottomStart", "width": "fill", "height": "=heroH", "clip": true}, "children": [
+    {"type": "image", "id": "heroImg", "a11y": {"hidden": true},
+     "props": {"url": "=featured.image ?? \"\"", "width": "fill", "height": "=heroH", "placeholder": "@color.accentTertiary",
+      "offsetY": "=max(y, 0) * 0.5", "scale": "=interpolate(y, [-200, 0], [1.4, 1])"}},
+    {"type": "shape", "id": "heroShade", "props": {"fill": "=gradient([alpha(@color.bg1, 0), @color.bg1], 180)", "width": "fill", "height": 200}},
+    {"type": "stack", "id": "heroText", "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.lg",
+     "opacity": "=interpolate(y, [0, 160], [1, 0])", "offsetY": "=max(y, 0) * 0.3"}, "children": [
+     {"type": "Badge", "id": "heroBadge", "props": {"title": "Неделя подарков", "style": "accent"}},
+     {"type": "text", "id": "heroTitle", "props": {"text": "Промо недели", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
+     {"type": "text", "id": "heroSub", "props": {"text": "Забирайте предложения партнёров и получайте билеты в розыгрыш", "style": "@type.body", "color": "@color.el12"}},
+     {"type": "stack", "id": "heroTimer", "when": "featured != null", "props": {"axis": "h", "align": "center", "spacing": "@space.xs"}, "children": [
+      {"type": "icon", "id": "heroClock", "props": {"name": "@icon.clock", "size": 16, "color": "@color.accentPrimary"}},
+      {"type": "text", "id": "heroTimerLabel", "props": {"text": "=\"«\" + (featured.title ?? \"\") + \"» — ещё\"", "style": "@type.bodySmall", "color": "@color.el9"}},
+      {"type": "Countdown", "id": "heroCountdown", "props": {"until": "=featured.until ?? 0", "font": "@type.bodySmallStrong"}}
+     ]}
+    ]}
+   ]},
+
+   {"type": "stack", "id": "content", "props": {"spacing": "@space.xl", "width": "fill", "padding": "={h: @space.lg, top: @space.sm, bottom: 40}"}, "children": [
+
+    {"type": "stack", "id": "greeting", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill"}, "children": [
+     {"type": "Avatar", "id": "avatar", "props": {"name": "=me.name ?? \"\"", "url": "=me.avatar ?? \"\"", "size": 48}},
+     {"type": "stack", "id": "greetText", "props": {"spacing": 2, "width": "fill"}, "children": [
+      {"type": "text", "id": "hello", "props": {"text": "=\"Привет, \" + (me.name ?? \"друг\") + \"!\"", "style": "@type.headingSmall"}},
+      {"type": "text", "id": "level", "props": {"text": "=\"Уровень \" + str(me.level ?? 1) + \" · \" + ticketsText", "style": "@type.bodySmall", "color": "@color.el9"}}
+     ]}
+    ]},
+
+    {"type": "stack", "id": "offersBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+     {"type": "stack", "id": "offersHead", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill"}, "children": [
+      {"type": "text", "id": "offersTitle", "props": {"text": "Предложения", "style": "@type.headingSmall"}, "a11y": {"role": "header"}},
+      {"type": "Badge", "id": "offersCount", "when": "offers != null", "props": {"title": "=str(offers.count ?? 0)"}}
+     ]},
+     {"type": "Banner", "id": "offersError", "when": "offers == null", "props": {"title": "Не удалось загрузить предложения", "style": "error"}},
+     {"type": "grid", "id": "offersGrid", "props": {"columns": 2, "spacing": "@space.md", "rowSpacing": "@space.md", "width": "fill"}, "children": [
+      {"type": "stack", "id": "offer", "repeat": {"over": "offers", "key": "item.id"},
+       "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.sm", "background": "@color.bg1Elevated", "corner": "@radius.lg"}, "children": [
+       {"type": "stack", "id": "offerMedia", "props": {"axis": "z", "align": "topStart", "width": "fill"}, "children": [
+        {"type": "image", "id": "offerImg", "props": {"url": "=item.image", "width": "fill", "height": 108, "corner": "@radius.md"}, "a11y": {"hidden": true}},
+        {"type": "Badge", "id": "offerPrice", "props": {"title": "=str(item.price) + \" ₽\"", "size": "sm", "offsetX": 8, "offsetY": 8}}
+       ]},
+       {"type": "stack", "id": "offerText", "props": {"spacing": 2, "width": "fill", "padding": "={h: @space.xs}"}, "children": [
+        {"type": "text", "id": "offerTitle", "props": {"text": "=item.title", "style": "@type.bodySmallStrong", "maxLines": 1}},
+        {"type": "text", "id": "offerSub", "props": {"text": "=item.subtitle", "style": "@type.caption", "color": "@color.el9", "maxLines": 2}}
+       ]},
+       {"type": "stack", "id": "offerTimer", "props": {"axis": "h", "align": "center", "spacing": "@space.xs", "padding": "={h: @space.xs}"}, "children": [
+        {"type": "icon", "id": "offerClock", "props": {"name": "@icon.clock", "size": 14, "color": "@color.el9"}},
+        {"type": "Countdown", "id": "offerCountdown", "props": {"until": "=item.until", "font": "@type.captionStrong"}}
+       ]},
+       {"type": "Button", "id": "claimBtn", "props": {"title": "=claimed.contains(item.id) ? \"Получено\" : \"Забрать\"", "size": "compact", "width": "fill",
+        "enabled": "=!claimed.contains(item.id)", "loading": "=claiming == item.id"}, "on": {"tap": "claim(item.id)"}}
+      ]}
+     ]}
+    ]},
+
+    {"type": "Card", "id": "liveCard", "props": {"width": "fill"}, "on": {"tap": "toggleLive()"}, "a11y": {"label": "live ? \"Прямой эфир, идёт. Поставить на паузу\" : \"Прямой эфир. Смотреть\"", "role": "button"}, "children": [
+     {"type": "stack", "id": "liveRow", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill"}, "children": [
+      {"type": "rive", "id": "liveButton", "props": {"url": "/assets/rive/play_pause.riv", "stateMachine": "State Machine 1", "inputs": "={Play: live}", "width": 56, "height": 56}},
+      {"type": "stack", "id": "liveText", "props": {"spacing": 2, "width": "fill"}, "children": [
+       {"type": "stack", "id": "liveHead", "props": {"axis": "h", "align": "center", "spacing": "@space.sm"}, "children": [
+        {"type": "text", "id": "liveTitle", "props": {"text": "Прямой эфир", "style": "@type.bodyStrong"}},
+        {"type": "Badge", "id": "liveBadge", "when": "live", "transition": {"in": "fade + scale(0.6)", "out": "fade"}, "props": {"title": "LIVE", "style": "error", "size": "sm"}}
+       ]},
+       {"type": "text", "id": "liveSub", "props": {"text": "=live ? \"Идёт розыгрыш «Лотерея дня» · 1 248 зрителей\" : \"Нажмите, чтобы смотреть розыгрыш\"", "style": "@type.bodySmall", "color": "@color.el9"}}
+      ]},
+      {"type": "lottie", "id": "livePulse", "props": {"url": "/assets/lottie/pulse.json", "playing": "=live", "width": 44, "height": 44, "opacity": "=live ? 1 : 0.35"}, "animate": {"opacity": "@motion.smooth"}, "a11y": {"hidden": true}}
+     ]}
+    ]},
+
+    {"type": "stack", "id": "tasksBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+     {"type": "stack", "id": "tasksHead", "props": {"spacing": 2}, "children": [
+      {"type": "text", "id": "tasksTitle", "props": {"text": "Задания", "style": "@type.headingSmall"}, "a11y": {"role": "header"}},
+      {"type": "text", "id": "tasksHint", "props": {"text": "Смахните карточку в сторону, чтобы скрыть её", "style": "@type.caption", "color": "@color.el9"}}
+     ]},
+     {"type": "Card", "id": "task", "repeat": {"over": "tasks", "key": "item.id"}, "drag": {"axis": "x", "snap": [-420, 0, 420]},
+      "transition": {"out": "fade + scale(0.9)"}, "props": {"width": "fill"},
+      "on": {"dragEnd": "if abs(event.x) > 210 || abs(event.vx) > 1000 { dismissTask(item.id) }"}, "children": [
+      {"type": "stack", "id": "taskRow", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill"}, "children": [
+       {"type": "stack", "id": "taskIcon", "props": {"axis": "z", "width": 40, "height": 40, "corner": "@radius.pill", "background": "=alpha(@color.accentPrimary, 0.12)"}, "children": [
+        {"type": "icon", "id": "taskGlyph", "props": {"name": "=item.icon", "size": 20, "color": "@color.accentPrimary"}}
+       ]},
+       {"type": "stack", "id": "taskText", "props": {"spacing": 2, "width": "fill"}, "children": [
+        {"type": "text", "id": "taskTitle", "props": {"text": "=item.title", "style": "@type.bodyStrong"}},
+        {"type": "text", "id": "taskSub", "props": {"text": "=item.text", "style": "@type.bodySmall", "color": "@color.el9"}}
+       ]}
+      ]}
+     ]},
+     {"type": "EmptyState", "id": "tasksDone", "when": "tasks.isEmpty", "transition": {"in": "fade + scale(0.95)"},
+      "props": {"icon": "@icon.gift", "title": "Все задания скрыты", "subtitle": "Новые появятся завтра утром", "actionTitle": "Вернуть задания", "width": "fill"},
+      "on": {"action": "animate(@motion.smooth) { tasks = seedTasks() }"}}
+    ]}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "topBar", "props": {"axis": "z", "width": "fill", "height": "=56 + env.safeTop"}, "children": [
+   {"type": "shape", "id": "barBg", "props": {"fill": "@color.bg1Elevated", "width": "fill", "height": "fill", "shadow": "={color: @color.shadow, radius: 12}",
+    "opacity": "=interpolate(y, [heroH - 140, heroH - 70], [0, 1])"}},
+   {"type": "stack", "id": "barRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill", "height": "fill", "padding": "={h: @space.sm, top: env.safeTop}"}, "children": [
+    {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "size": "small"}, "on": {"tap": "back()"}},
+    {"type": "text", "id": "barTitle", "props": {"text": "Промо недели", "style": "@type.headingSmall",
+     "opacity": "=interpolate(y, [heroH - 100, heroH - 50], [0, 1])", "offsetY": "=interpolate(y, [heroH - 100, heroH - 50], [10, 0])"}},
+    {"type": "spacer", "id": "barGap"},
+    {"type": "stack", "id": "ticketsPill", "props": {"axis": "h", "align": "center", "spacing": "@space.xs", "height": 32, "padding": "={h: @space.md}",
+     "background": "@color.bg1Elevated", "corner": "@radius.pill", "border": "={color: @color.el3, width: 1}"}, "a11y": {"label": "ticketsText"}, "children": [
+     {"type": "icon", "id": "ticketsIcon", "props": {"name": "@icon.ticket", "size": 16, "color": "@color.accentPrimary"}},
+     {"type": "text", "id": "ticketsCount", "props": {"text": "=str(tickets)", "style": "@type.bodySmallStrong"}}
+    ]}
+   ]}
+  ]}
+ ]}
+}

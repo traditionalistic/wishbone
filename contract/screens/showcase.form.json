@@ -1,0 +1,112 @@
+{
+ "id": "showcase.form",
+ "title": "Оформление подписки",
+ "script": "// Форма подписки (spec §9.3): валидация полей через computed, чипы тарифа из data plans, строки расчёта и итог через\n// filter/reduce, проверка промокода `await call demo.checkPromo`, отправка demo.subscribe с fieldErrors под полями;\n// успех — нижняя карточка раскрывается в экран через matchId между двумя ветками when + haptic(\"success\").\ndata plans = demo.plans()\nstate name = \"\"\nstate email = \"\"\nstate plan = \"pro\"\nstate promo = \"\"\nstate promoStatus = \"\"\nstate promoNote = \"\"\nstate discount = 0\nstate tried = false\nstate sending = false\nstate nameServerError = \"\"\nstate emailServerError = \"\"\nstate formError = \"\"\nstate order: {id: string, total: number}? = null\nlet nameOk = name.trim().length >= 2\nlet emailOk = email.trim().matches(\"[^@ ]+@[^@ ]+[.][^@ ]+\")\nlet nameError = nameServerError != \"\" ? nameServerError : tried && !nameOk ? \"Как к вам обращаться? Нужно хотя бы 2 буквы\" : \"\"\nlet emailError = emailServerError != \"\" ? emailServerError : tried && !emailOk ? \"Проверьте адрес — например, name@mail.ru\" : \"\"\nlet selected = plans.find(p => p.id == plan)\nlet monthly = selected.monthly ?? 0\nlet lines = [\n  {title: \"Тариф «\" + (selected.title ?? \"—\") + \"»\", amount: monthly},\n  {title: \"Промокод \" + promo.trim().upper() + \" (−\" + str(discount) + \"%)\", amount: -monthly * discount / 100}\n].filter(l => l.amount != 0)\nlet total = lines.reduce(0, (sum, l) => sum + l.amount)\nfn rub(x: number): string = formatNumber(x, x == floor(x) ? 0 : 2).replace(\".\", \",\") + \" ₽\"\nhandler editPromo(v: string) {\n  promo = v\n  if promoStatus != \"\" {\n    animate(@motion.smooth) {\n      discount = 0\n      promoStatus = \"\"\n      promoNote = \"\"\n    }\n  }\n}\nhandler checkPromo() {\n  if promo.trim() != \"\" && promoStatus != \"checking\" {\n    promoStatus = \"checking\"\n    let r = await call demo.checkPromo({code: promo.trim().upper()})\n    let ok = r.ok && (r.value.valid ?? false)\n    animate(@motion.smooth) {\n      discount = ok ? r.value.discount ?? 0 : 0\n      promoStatus = ok ? \"ok\" : \"bad\"\n      promoNote = r.value.message ?? r.error.message ?? \"Не удалось проверить промокод\"\n    }\n    if ok { haptic(\"success\") } else { haptic(\"error\") }\n  }\n}\nhandler submit() {\n  animate(@motion.smooth) {\n    tried = true\n    nameServerError = \"\"\n    emailServerError = \"\"\n    formError = \"\"\n  }\n  if !(nameOk && emailOk) {\n    haptic(\"warning\")\n  } else {\n    sending = true\n    let r = await call demo.subscribe({email: email.trim(), name: name.trim(), plan: plan, promo: promoStatus == \"ok\" ? promo.trim().upper() : \"\"})\n    sending = false\n    if r.ok {\n      haptic(\"success\")\n      animate(@motion.bouncy) { order = r.value }\n    } else {\n      animate(@motion.smooth) {\n        nameServerError = r.fieldErrors[\"name\"] ?? \"\"\n        emailServerError = r.fieldErrors[\"email\"] ?? \"\"\n        formError = r.error.message ?? \"Не получилось оформить подписку\"\n      }\n      haptic(\"error\")\n    }\n  }\n}\nhandler restart() {\n  animate(@motion.smooth) {\n    order = null\n    tried = false\n  }\n}",
+ "root": {"type": "stack", "id": "root", "props": {"axis": "z", "align": "bottom", "width": "fill", "height": "fill", "background": "@color.bg1", "ignoreSafeArea": "bottom"}, "children": [
+
+  {"type": "scroll", "id": "form", "props": {"width": "fill", "height": "fill"}, "children": [
+   {"type": "stack", "id": "formContent", "props": {"spacing": "@space.xl", "width": "fill", "padding": "={h: @space.lg, top: @space.sm, bottom: 220 + env.safeBottom}"}, "children": [
+
+    {"type": "stack", "id": "header", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
+     {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "style": "plain", "size": "small"}, "on": {"tap": "back()"}},
+     {"type": "text", "id": "title", "props": {"text": "Подписка", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
+     {"type": "text", "id": "lead", "props": {"text": "Билеты каждую неделю и доступ к закрытым розыгрышам. Отменить можно в любой момент.", "style": "@type.body", "color": "@color.el9"}}
+    ]},
+
+    {"type": "stack", "id": "about", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+     {"type": "text", "id": "aboutTitle", "props": {"text": "О вас", "style": "@type.headingSmall"}, "a11y": {"role": "header"}},
+     {"type": "TextInput", "id": "nameInput", "props": {"label": "Имя", "value": "=name", "placeholder": "Как к вам обращаться", "error": "=nameError"},
+      "on": {"change": "name = event.value\nnameServerError = \"\""}},
+     {"type": "TextInput", "id": "emailInput", "props": {"label": "E-mail", "value": "=email", "placeholder": "name@mail.ru", "keyboard": "email",
+      "hint": "=emailOk ? \"Пришлём чек на этот адрес\" : \"Для чека и напоминаний о розыгрышах\"", "error": "=emailError"},
+      "on": {"change": "email = event.value\nemailServerError = \"\""}}
+    ]},
+
+    {"type": "stack", "id": "plansBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+     {"type": "text", "id": "plansTitle", "props": {"text": "Тариф", "style": "@type.headingSmall"}, "a11y": {"role": "header"}},
+     {"type": "Banner", "id": "plansError", "when": "plans == null", "props": {"title": "Не удалось загрузить тарифы", "style": "error"}},
+     {"type": "stack", "id": "planChips", "props": {"axis": "h", "spacing": "@space.sm"}, "children": [
+      {"type": "Chip", "id": "planChip", "repeat": {"over": "plans", "key": "item.id"}, "props": {"title": "=item.title", "selected": "=plan == item.id"},
+       "on": {"tap": "animate(@motion.smooth) { plan = item.id }"}}
+     ]},
+     {"type": "stack", "id": "planCard", "when": "selected != null", "props": {"spacing": "@space.md", "width": "fill", "padding": "@space.lg", "background": "@color.bg1Elevated", "corner": "@radius.card"}, "children": [
+      {"type": "stack", "id": "planPrice", "props": {"axis": "h", "align": "center", "spacing": "@space.xs"}, "children": [
+       {"type": "text", "id": "planMonthly", "props": {"text": "=rub(monthly)", "style": "@type.title"}},
+       {"type": "text", "id": "planPer", "props": {"text": "в месяц", "style": "@type.bodySmall", "color": "@color.el9"}}
+      ]},
+      {"type": "stack", "id": "perk", "repeat": {"over": "selected.perks", "as": "perk", "key": "perk"}, "transition": {"in": "fade + offset(0, 8)", "out": "fade"},
+       "props": {"axis": "h", "align": "center", "spacing": "@space.sm"}, "children": [
+       {"type": "icon", "id": "perkIcon", "props": {"name": "@icon.check", "size": 18, "color": "@color.success"}},
+       {"type": "text", "id": "perkText", "props": {"text": "=perk", "style": "@type.bodyMedium"}}
+      ]}
+     ]}
+    ]},
+
+    {"type": "stack", "id": "promoBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+     {"type": "text", "id": "promoTitle", "props": {"text": "Промокод", "style": "@type.headingSmall"}, "a11y": {"role": "header"}},
+     {"type": "stack", "id": "promoRow", "props": {"axis": "h", "align": "start", "spacing": "@space.sm", "width": "fill"}, "children": [
+      {"type": "TextInput", "id": "promoInput", "props": {"value": "=promo", "placeholder": "Например, WB10",
+       "hint": "=promoStatus == \"ok\" ? promoNote : \"Попробуйте WB10 или WB25\"", "error": "=promoStatus == \"bad\" ? promoNote : \"\""},
+       "on": {"change": "editPromo(event.value)", "submit": "checkPromo()"}},
+      {"type": "stack", "id": "applyWrap", "props": {"padding": "={top: 4}"}, "children": [
+       {"type": "Button", "id": "applyBtn", "props": {"title": "Применить", "size": "compact", "style": "secondary",
+        "enabled": "=promo.trim() != \"\"", "loading": "=promoStatus == \"checking\""}, "on": {"tap": "checkPromo()"}}
+      ]}
+     ]}
+    ]},
+
+    {"type": "stack", "id": "receipt", "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.lg", "background": "@color.bg1Elevated", "corner": "@radius.card"}, "children": [
+     {"type": "text", "id": "receiptTitle", "props": {"text": "Расчёт", "style": "@type.bodyStrong"}},
+     {"type": "stack", "id": "line", "repeat": {"over": "lines", "key": "item.title"}, "transition": {"in": "fade", "out": "fade"},
+      "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill"}, "children": [
+      {"type": "text", "id": "lineTitle", "props": {"text": "=item.title", "style": "@type.bodySmall", "color": "@color.el9", "width": "fill"}},
+      {"type": "text", "id": "lineAmount", "props": {"text": "=(item.amount < 0 ? \"−\" : \"\") + rub(abs(item.amount))", "style": "@type.bodySmallStrong",
+       "color": "=item.amount < 0 ? @color.success : @color.el16"}}
+     ]},
+     {"type": "Divider", "id": "receiptDivider"},
+     {"type": "stack", "id": "totalRow", "props": {"axis": "h", "align": "center", "width": "fill"}, "children": [
+      {"type": "text", "id": "totalLabel", "props": {"text": "Итого в месяц", "style": "@type.bodyStrong", "width": "fill"}},
+      {"type": "text", "id": "totalValue", "props": {"text": "=rub(total)", "style": "@type.headingSmall"}}
+     ]}
+    ]}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "checkout", "when": "order == null", "matchId": "\"checkout\"", "transition": {"in": "fade", "out": "fade"},
+   "props": {"spacing": "@space.md", "width": "fill", "padding": "={h: @space.lg, top: @space.lg, bottom: @space.lg + env.safeBottom}", "background": "@color.bg1Elevated", "corner": "@radius.card",
+    "shadow": "={color: @color.shadow, radius: 24, y: -4}"}, "children": [
+   {"type": "stack", "id": "payRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill"}, "children": [
+    {"type": "stack", "id": "payText", "props": {"spacing": 2, "width": "fill"}, "children": [
+     {"type": "text", "id": "payLabel", "props": {"text": "К оплате в месяц", "style": "@type.caption", "color": "@color.el9"}},
+     {"type": "text", "id": "payTotal", "props": {"text": "=rub(total)", "style": "@type.title"}}
+    ]},
+    {"type": "Badge", "id": "payDiscount", "when": "discount > 0", "transition": {"in": "fade + scale(0.6)", "out": "fade"},
+     "props": {"title": "=\"−\" + str(discount) + \"%\"", "style": "success", "size": "lg"}}
+   ]},
+   {"type": "text", "id": "formError", "when": "formError != \"\"", "transition": {"in": "fade", "out": "fade"},
+    "props": {"text": "=formError", "style": "@type.caption", "color": "@color.error"}},
+   {"type": "Button", "id": "submitBtn", "props": {"title": "Оформить подписку", "loading": "=sending", "width": "fill"}, "on": {"tap": "submit()"}}
+  ]},
+
+  {"type": "stack", "id": "done", "when": "order != null", "matchId": "\"checkout\"", "transition": {"in": "fade", "out": "fade"},
+   "props": {"align": "center", "spacing": "@space.lg", "width": "fill", "height": "fill", "padding": "={h: @space.xl, top: @space.xl, bottom: @space.xl + env.safeBottom}", "background": "@color.bg1Elevated", "corner": "@radius.card"}, "children": [
+   {"type": "spacer", "id": "doneTop"},
+   {"type": "lottie", "id": "doneCheck", "props": {"url": "/assets/lottie/check.json", "loop": false, "width": 140, "height": 140}, "a11y": {"hidden": true}},
+   {"type": "text", "id": "doneTitle", "props": {"text": "Подписка оформлена", "style": "@type.largeTitle", "textAlign": "center"}, "a11y": {"role": "header"}},
+   {"type": "text", "id": "doneSub", "props": {"text": "=\"Тариф «\" + (selected.title ?? \"—\") + \"» — \" + rub(order.total ?? 0) + \" в месяц\"", "style": "@type.body", "color": "@color.el9", "textAlign": "center"}},
+   {"type": "stack", "id": "doneFacts", "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.lg", "background": "@color.bg1", "corner": "@radius.lg"}, "children": [
+    {"type": "stack", "id": "factOrder", "props": {"axis": "h", "spacing": "@space.sm", "width": "fill"}, "children": [
+     {"type": "text", "id": "factOrderLabel", "props": {"text": "Номер заказа", "style": "@type.bodySmall", "color": "@color.el9", "width": "fill"}},
+     {"type": "text", "id": "factOrderValue", "props": {"text": "=order.id ?? \"\"", "style": "@type.bodySmallStrong"}}
+    ]},
+    {"type": "stack", "id": "factMail", "props": {"axis": "h", "spacing": "@space.sm", "width": "fill"}, "children": [
+     {"type": "text", "id": "factMailLabel", "props": {"text": "Чек отправим на", "style": "@type.bodySmall", "color": "@color.el9", "width": "fill"}},
+     {"type": "text", "id": "factMailValue", "props": {"text": "=email.trim()", "style": "@type.bodySmallStrong", "maxLines": 1}}
+    ]}
+   ]},
+   {"type": "spacer", "id": "doneBottom"},
+   {"type": "Button", "id": "doneBtn", "props": {"title": "Готово", "width": "fill"}, "on": {"tap": "back()"}},
+   {"type": "Button", "id": "againBtn", "props": {"title": "Оформить ещё раз", "style": "ghost"}, "on": {"tap": "restart()"}}
+  ]}
+ ]}
+}
