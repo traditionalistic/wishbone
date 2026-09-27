@@ -52,10 +52,18 @@ func (c *ctx) stmt(s Stmt) {
 	case *ExprStmt:
 		c.exprStmt(s)
 	case *EmitStmt:
-		if !c.p.Env.Template {
+		ev, ok := c.p.decls[s.Name].(*EventDecl)
+		switch {
+		case !c.p.Env.Template:
 			c.errf(s.P, "emit is only allowed in templates")
-		} else if _, ok := c.p.decls[s.Name].(*EventDecl); !ok {
+		case !ok:
 			c.errf(s.P, "emit of undeclared event '%s'", s.Name)
+		case ev.Payload == nil && s.Arg != nil:
+			c.errf(s.Arg.Pos(), "event '%s' has no payload; emit it as `emit %s`", s.Name, s.Name)
+		case ev.Payload != nil && s.Arg == nil:
+			c.errf(s.P, "emit %s needs a payload %s: emit %s({…})", s.Name, ev.Payload, s.Name)
+		case s.Arg != nil:
+			c.want(s.Arg, ev.Payload, "payload of "+s.Name)
 		}
 	}
 }

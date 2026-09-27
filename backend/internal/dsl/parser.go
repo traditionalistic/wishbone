@@ -487,7 +487,13 @@ func (p *parser) stmt() Stmt {
 		case "emit":
 			p.next()
 			name, _ := p.name()
-			return &EmitStmt{P: t.pos, Name: name}
+			e := &EmitStmt{P: t.pos, Name: name}
+			if p.is("(") && !p.peek().nl {
+				p.next()
+				e.Arg = p.expr()
+				p.expect(")")
+			}
+			return e
 		case "call":
 			if isCall(0) {
 				p.next()
@@ -608,7 +614,17 @@ func (p *parser) decl() Decl {
 		case "event":
 			p.next()
 			name, np := p.name()
-			return &EventDecl{P: np, Name: name}
+			d := &EventDecl{P: np, Name: name}
+			if p.is("(") && !p.peek().nl {
+				d.Fields = p.params()
+				d.Payload = &Type{Kind: KRecord}
+				for _, f := range d.Fields {
+					if d.Payload.field(f.Name) == nil {
+						d.Payload.Fields = append(d.Payload.Fields, Field{Name: f.Name, T: f.T})
+					}
+				}
+			}
+			return d
 		}
 	}
 	p.fail(t.pos, "expected a declaration (state, let, fn, handler, data, param, event), found %s", desc(t))

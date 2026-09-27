@@ -1,0 +1,3 @@
+{"id": "Form", "title": "Form", "script": "event submit(text: string)\nstate draft = \"\"", "root": {"type": "stack", "id": "root", "children": [
+ {"type": "Field", "id": "in", "on": {"change": "draft = event.value\nemit submit({text: event.value})"}}
+]}}

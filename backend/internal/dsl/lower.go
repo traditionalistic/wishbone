@@ -230,6 +230,9 @@ func (l lowerer) stmt(s Stmt) json.RawMessage {
 		}
 		return enc([]any{"do", s.Call.Name, args, s.Await})
 	case *EmitStmt:
+		if s.Arg != nil {
+			return enc([]any{"emit", s.Name, l.expr(s.Arg)})
+		}
 		return enc([]any{"emit", s.Name})
 	}
 	panic(fmt.Sprintf("dsl: cannot lower %T", s))

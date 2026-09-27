@@ -17,9 +17,10 @@ type Env struct {
 
 // Scope is the per-node context of an expression or an on.* body.
 type Scope struct {
-	Locals map[string]*Type // repeat vars etc., read as ["l", name]
-	Event  *Type            // payload type inside on.*; nil = `event` is not available
-	Self   bool             // self.pressed is available (node has on.tap)
+	Locals    map[string]*Type // repeat vars etc., read as ["l", name]
+	Event     *Type            // payload type inside on.*; nil = `event` is not available
+	NoPayload string           // instance handler of this payload-less template event (for the error message)
+	Self      bool             // self.pressed is available (node has on.tap)
 }
 
 // Program is a checked script: the environment for node expressions and the input of lowering.
@@ -51,8 +52,11 @@ func Check(s *Script, env *Env) (*Program, []Diag) {
 			p.errf(d.Pos(), "duplicate declaration '%s'", name)
 			continue
 		}
-		if _, ok := d.(*EventDecl); ok && !env.Template {
-			p.errf(d.Pos(), "event declarations are only allowed in templates")
+		if ev, ok := d.(*EventDecl); ok {
+			if !env.Template {
+				p.errf(d.Pos(), "event declarations are only allowed in templates")
+			}
+			p.ctx(visNone, &p.diags).paramVars(ev.Fields) // duplicate payload fields
 		}
 		if _, ok := d.(*StateDecl); ok {
 			p.stateN[name] = len(p.stateN)
@@ -154,7 +158,7 @@ func (p *Program) scopeCtx(sc *Scope, diags *[]Diag) *ctx {
 	c := p.ctx(visAll, diags)
 	if sc != nil {
 		c = c.push(sc.Locals)
-		c.event, c.self = sc.Event, sc.Self
+		c.event, c.self, c.noPayload = sc.Event, sc.Self, sc.NoPayload
 	}
 	return c
 }
@@ -242,13 +246,14 @@ var visWhy = [...]string{
 }
 
 type ctx struct {
-	p      *Program
-	diags  *[]Diag
-	sc     *scope
-	vis    vis
-	stateN int // visState: states declared before this index are visible
-	event  *Type
-	self   bool
+	p         *Program
+	diags     *[]Diag
+	sc        *scope
+	vis       vis
+	stateN    int // visState: states declared before this index are visible
+	event     *Type
+	noPayload string
+	self      bool
 }
 
 type scope struct {
@@ -386,7 +391,11 @@ func (c *ctx) ident(e *Ident) *Type {
 			e.Ref = RefLocal
 			return c.event
 		}
-		c.errf(e.P, "'event' is only available inside on.* handlers")
+		if c.noPayload != "" {
+			c.errf(e.P, "template event '%s' has no payload; declare it as `event %s(name: Type)` and emit it with a payload", c.noPayload, c.noPayload)
+		} else {
+			c.errf(e.P, "'event' is only available inside on.* handlers")
+		}
 		return nil
 	}
 	hidden := func() *Type {

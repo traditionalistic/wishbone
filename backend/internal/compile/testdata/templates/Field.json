@@ -1,0 +1,1 @@
+{"id": "Field", "title": "Field", "script": "param hint: string = \"\"\nevent change(value: string)", "root": {"type": "textField", "id": "root", "props": {"placeholder": "=hint"}, "on": {"change": "emit change({value: event.value})"}}}

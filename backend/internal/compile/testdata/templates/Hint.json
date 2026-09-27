@@ -1,0 +1,5 @@
+{"id": "Hint", "title": "Hint", "script": "param show: bool = true\nparam text: string",
+ "timelines": [{"name": "blink", "autoplay": true, "tracks": [{"target": "bubble", "prop": "opacity", "keys": [{"t": 0, "v": 0}, {"t": 200, "v": 1}]}]}],
+ "root": {"type": "stack", "id": "root", "on": {"tap": "play(blink)\nhaptic(\"light\")"}, "children": [
+  {"type": "text", "id": "bubble", "when": "show", "props": {"text": "=text"}}
+ ]}}

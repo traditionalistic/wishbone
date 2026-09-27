@@ -14,7 +14,7 @@ import (
 type Template struct {
 	Name      string
 	Params    []TemplateParam
-	Events    map[string]bool
+	Events    map[string]*dsl.Type // declared events → payload record (nil = no payload)
 	Slot      bool
 	Root      *Node
 	Computed  map[string]json.RawMessage
@@ -71,19 +71,19 @@ func compileTemplate(c *Contract, name string, src []byte) (*Template, []Diag) {
 		return nil, u.diags
 	}
 	q := &rewriter{qualify: name}
-	t := &Template{Name: name, Events: map[string]bool{}, Slot: u.slots > 0, Computed: map[string]json.RawMessage{},
+	t := &Template{Name: name, Events: map[string]*dsl.Type{}, Slot: u.slots > 0, Computed: map[string]json.RawMessage{},
 		Handlers: map[string]dsl.Body{}, Fns: map[string]dsl.Body{}, Timelines: u.tls}
 	for _, d := range u.prog.Script.Decls {
-		if p, ok := d.(*dsl.ParamDecl); ok {
-			tp := TemplateParam{Name: p.Name, Type: p.T}
-			if p.Default != nil {
-				tp.Default = decls.Params[p.Name]
+		switch d := d.(type) {
+		case *dsl.ParamDecl:
+			tp := TemplateParam{Name: d.Name, Type: d.T}
+			if d.Default != nil {
+				tp.Default = decls.Params[d.Name]
 			}
 			t.Params = append(t.Params, tp)
+		case *dsl.EventDecl:
+			t.Events[d.Name] = d.Payload
 		}
-	}
-	for _, e := range decls.Events {
-		t.Events[e] = true
 	}
 	for k, v := range decls.Computed {
 		t.Computed[k] = q.exprRaw(v)
@@ -153,7 +153,7 @@ func (u *unit) instance(n *srcNode, locals map[string]*dsl.Type) *Node {
 	sc := &dsl.Scope{Locals: locals}
 	// modifiers land on the expanded root, so self.pressed works there when the root is pressable (ruling);
 	// params are substituted into arbitrary inner nodes and never see self
-	pressable := func(ev string) bool { return hasKey(t.Root.On, ev) || hasKey(n.On, ev) && !t.Events[ev] }
+	pressable := func(ev string) bool { return hasKey(t.Root.On, ev) || hasKey(n.On, ev) && !hasKey(t.Events, ev) }
 	modSc := &dsl.Scope{Locals: locals, Self: pressable("tap") || pressable("longPress")}
 
 	params := map[string]json.RawMessage{}
@@ -190,8 +190,12 @@ func (u *unit) instance(n *srcNode, locals map[string]*dsl.Type) *Node {
 	for _, ev := range sortedKeys(n.On) {
 		path := n.path + "/on/" + ev
 		switch {
-		case t.Events[ev]: // template events carry no payload
-			emits[ev] = u.stmts(n.On[ev], sc, path)
+		case hasKey(t.Events, ev): // `event` is the declared payload record, if any
+			esc := &dsl.Scope{Locals: locals, Event: t.Events[ev]}
+			if esc.Event == nil {
+				esc.NoPayload = ev
+			}
+			emits[ev] = u.stmts(n.On[ev], esc, path)
 		case rootEvents[ev] != nil:
 			u.setOn(w, ev, u.stmts(n.On[ev], &dsl.Scope{Locals: locals, Event: rootEvents[ev]}, path))
 		default:
@@ -466,12 +470,23 @@ func (r *rewriter) stmts(ss []any) []any {
 			}
 			out = append(out, in.stmts(asList(decode(h.Body)))...)
 		case "emit":
-			if !r.expand {
+			switch body := r.emits[a[1].(string)]; {
+			case !r.expand && len(a) > 2:
+				out = append(out, []any{"emit", a[1], r.expr(a[2])})
+			case !r.expand:
 				out = append(out, a)
-				continue
-			}
-			for _, st := range r.emits[a[1].(string)] {
-				out = append(out, decode(st))
+			case len(a) > 2 && len(body) > 0:
+				// bind the payload to a hygienic local so the instance's `event` cannot clash with the event of
+				// the template handler that emits (e.g. a textField change inside the template)
+				local := r.fresh(r.tmpl) + "event"
+				out = append(out, []any{"let", local, r.expr(a[2])})
+				for _, st := range body {
+					out = append(out, renameEvent(decode(st), local))
+				}
+			default:
+				for _, st := range body {
+					out = append(out, decode(st))
+				}
 			}
 		default:
 			panic(fmt.Sprintf("compile: unknown wire statement %v", a[0]))
@@ -521,4 +536,26 @@ func (r *rewriter) exprMap(m map[string]json.RawMessage) map[string]json.RawMess
 		out[k] = r.exprRaw(v)
 	}
 	return out
+}
+
+// renameEvent rewrites the local ["l", "event"] of outer statements to the emit's payload local. Literal
+// payloads (["v", …]) are the only other place such an array could appear, so they are skipped.
+func renameEvent(v any, to string) any {
+	switch x := v.(type) {
+	case []any:
+		if len(x) == 2 && x[0] == "l" && x[1] == "event" {
+			return []any{"l", to}
+		}
+		if len(x) > 0 && x[0] == "v" {
+			return x
+		}
+		for i := range x {
+			x[i] = renameEvent(x[i], to)
+		}
+	case map[string]any:
+		for k := range x {
+			x[k] = renameEvent(x[k], to)
+		}
+	}
+	return v
 }

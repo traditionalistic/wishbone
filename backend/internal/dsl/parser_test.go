@@ -97,6 +97,9 @@ func sxStmt(s Stmt) string {
 		}
 		return "(do " + sx(s.Call) + ")"
 	case *EmitStmt:
+		if s.Arg != nil {
+			return "(emit " + s.Name + " " + sx(s.Arg) + ")"
+		}
 		return "(emit " + s.Name + ")"
 	}
 	return fmt.Sprintf("<%T>", s)
@@ -138,6 +141,9 @@ func sxDecl(d Decl) string {
 		}
 		return r
 	case *EventDecl:
+		if d.Payload != nil {
+			return "event " + d.Name + params(d.Fields) + " " + d.Payload.String()
+		}
 		return "event " + d.Name
 	}
 	return fmt.Sprintf("<%T>", d)
@@ -239,12 +245,20 @@ func TestParseStmts(t *testing.T) {
 		{"animate(@motion.snappy) { x = 1\n y = 2 }", "(anim @motion.snappy [(set x 1) (set y 2)])"},
 		{"await play(intro)", "(await (call play intro))"},
 		{"emit tap", "(emit tap)"},
+		{"emit change({value: x})", "(emit change {value: x})"},
+		{"emit tap\n(x)", "<error>"},
 		{"add(2, 3)\nadd(1, 1)", "(do (call add 2 3)) (do (call add 1 1))"},
 		{"a = 1; b = 2;", "(set a 1) (set b 2)"},
 		{"", ""},
 	}
 	for _, c := range cases {
 		ss, diags := ParseStmts(c.src)
+		if c.want == "<error>" {
+			if len(diags) == 0 {
+				t.Errorf("%q: expected a syntax error", c.src)
+			}
+			continue
+		}
 		if len(diags) > 0 {
 			t.Errorf("%q: unexpected diags %v", c.src, diags)
 			continue
@@ -287,7 +301,8 @@ data me = demo.profile()
 data offer = demo.offer({id: id}) required
 param id: string = ""
 param mode: "a" | "b"
-event tap`
+event tap
+event change(value: string, n: number)`
 	want := []string{
 		"state count: number = 0",
 		"let total = (call (. (call (. items map) (=> [i] (. i price))) sum))",
@@ -299,6 +314,7 @@ event tap`
 		`param id: string = ""`,
 		`param mode: "a" | "b"`,
 		"event tap",
+		"event change(value: string, n: number) {value: string, n: number}",
 	}
 	s, diags := ParseScript(src)
 	if len(diags) > 0 {

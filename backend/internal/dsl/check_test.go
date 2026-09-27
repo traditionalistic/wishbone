@@ -463,6 +463,43 @@ func TestCheckTemplate(t *testing.T) {
 	}
 }
 
+func TestCheckTypedEvents(t *testing.T) {
+	env := contractEnv(t)
+	env.Template = true
+	script := "event change(value: string)\nevent tap\nhandler go(v: string) {\n emit change({value: v})\n emit tap\n}"
+	_, prog, diags := compile(t, env, script, "", nil)
+	if len(diags) > 0 {
+		t.Fatalf("unexpected diags %v", diags)
+	}
+	if got := string(prog.Lower().Handlers["go"].Body); got != `[["emit","change",["rec",{"value":["l","v"]}]],["emit","tap"]]` {
+		t.Errorf("lowered: %s", got)
+	}
+	ss, _ := ParseStmts(`emit change({value: event.value})`)
+	if d := prog.CheckStmts(ss, &Scope{Event: mustType(t, "{value: string}")}); len(d) > 0 {
+		t.Errorf("payload from the node's own event: %v", d)
+	}
+	bad := map[string]string{
+		"handler go() { emit change }":                       "payload",
+		"handler go() { emit tap({a: 1}) }":                  "no payload",
+		"handler go() { emit change({value: 1}) }":           "type",
+		"handler go() { emit change({value: \"a\", x: 1}) }": "x",
+	}
+	for body, want := range bad {
+		if _, _, d := compile(t, env, "event change(value: string)\nevent tap\n"+body, "", nil); !hasDiag(d, want) {
+			t.Errorf("%s: diags %v, want %q", body, d, want)
+		}
+	}
+	if _, _, d := compile(t, env, "event e(a: number, a: string)", "", nil); !hasDiag(d, "duplicate") {
+		t.Errorf("duplicate payload field: %v", d)
+	}
+	// an instance handler of a payload-less template event
+	_, prog, _ = compile(t, contractEnv(t), "state s = 0", "", nil)
+	ss, _ = ParseStmts("s = event.x")
+	if d := prog.CheckStmts(ss, &Scope{NoPayload: "tap"}); !hasDiag(d, "template event 'tap' has no payload") {
+		t.Errorf("no-payload message: %v", d)
+	}
+}
+
 // on.* bodies as in contract/conformance/events.json (payload types from primitives.json).
 func TestCheckEventBodies(t *testing.T) {
 	env := contractEnv(t)

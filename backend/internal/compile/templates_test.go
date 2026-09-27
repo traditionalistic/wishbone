@@ -159,7 +159,7 @@ func TestTemplateDefinitionErrors(t *testing.T) {
 		t.Errorf("recursive templates: %v", err)
 	}
 	b := c.Templates["Button"]
-	if b == nil || len(b.Params) != 2 || b.Params[0].Name != "title" || b.Params[0].Default != nil || string(b.Params[1].Default) != `["v","primary"]` || !b.Events["tap"] || b.Slot {
+	if b == nil || len(b.Params) != 2 || b.Params[0].Name != "title" || b.Params[0].Default != nil || string(b.Params[1].Default) != `["v","primary"]` || !hasKey(b.Events, "tap") || b.Slot {
 		t.Errorf("Button signature: %+v", b)
 	}
 	if !c.Templates["Card"].Slot {
@@ -226,4 +226,60 @@ func TestTemplateSelfInModifiers(t *testing.T) {
 		"root/c/1/p/opacity": `["if",["self","pressed"],["v",0.5],["v",1]]`,
 		"root/c/1/on/tap":    `[["do","back",[],false]]`,
 	})
+}
+
+// Typed template events: the payload is bound to a hygienic local at the emit site, so the instance handler's
+// `event` cannot clash with the textField's own `event` inside the template.
+func TestTemplateTypedEvents(t *testing.T) {
+	root := `{"type": "stack", "id": "root", "children": [
+	  {"type": "Field", "id": "f", "on": {"change": "email = event.value"}},
+	  {"type": "Form", "id": "form", "on": {"submit": "last = event.text"}},
+	  {"type": "Field", "id": "quiet"}
+	]}`
+	doc, _ := compileOK(t, src("state email = \"\"\nstate last = \"\"", root, ""))
+	expect(t, doc, map[string]string{
+		"root/c/0/t":             `"textField"`,
+		"root/c/0/on/change":     `[["let","Field#2.event",["rec",{"value":["get",["l","event"],"value"]}]],["set","s","email",[],["get",["l","Field#2.event"],"value"]]]`,
+		"root/c/1/c/0/id":        `"form/in"`,
+		"root/c/1/c/0/on/change": `[["let","Form#3.Field#2.event",["rec",{"value":["get",["l","event"],"value"]}]],["set","i","Form.draft",[],["get",["l","Form#3.Field#2.event"],"value"]],["let","Form#4.event",["rec",{"text":["get",["l","Form#3.Field#2.event"],"value"]}]],["set","s","last",[],["get",["l","Form#4.event"],"text"]]]`,
+		"root/c/2/on/change":     `[]`,
+	})
+	bad := map[string]string{
+		`{"type": "Field", "id": "root", "on": {"change": "x = event.nope"}}`:                     "nope",
+		`{"type": "Button", "id": "root", "props": {"title": "a"}, "on": {"tap": "x = event.x"}}`: "template event 'tap' has no payload",
+	}
+	for node, want := range bad {
+		_, _, diags := Screen(contract(t), src("state x = 0", node, ""), 1)
+		if len(diags) == 0 || diags[0].Path != "root/on/"+map[bool]string{true: "change", false: "tap"}[strings.Contains(node, "Field")] || !strings.Contains(diags[0].Msg, want) {
+			t.Errorf("%s: diags %v, want %q", node, diags, want)
+		}
+	}
+}
+
+// Nodes whose `when` is the literal false after substitution are removed with their timeline tracks; an emptied
+// timeline is dropped along with play/stop of it; a literal-true `when` is omitted.
+func TestPruning(t *testing.T) {
+	root := `{"type": "stack", "id": "root", "children": [
+	  {"type": "Hint", "id": "h1", "props": {"text": "a", "show": false}},
+	  {"type": "Hint", "id": "h2", "props": {"text": "b"}},
+	  {"type": "text", "id": "off", "when": "false", "props": {"text": "x"}},
+	  {"type": "text", "id": "on", "when": "true", "props": {"text": "y"}}
+	]}`
+	tls := `[{"name": "fade", "tracks": [{"target": "off", "prop": "opacity", "keys": [{"t": 0, "v": 0}]}]}]`
+	doc, _ := compileOK(t, src("handler go() {\n if true { stop(fade) }\n play(fade)\n}", root, tls))
+	expect(t, doc, map[string]string{
+		"root/c/0/id":       `"h1"`,
+		"root/c/0/c":        `null`,
+		"root/c/0/on/tap":   `[["do","haptic",[["v","light"]],false]]`,
+		"root/c/1/c/0/id":   `"h2/bubble"`,
+		"root/c/1/c/0/when": `null`,
+		"root/c/1/on/tap":   `[["do","play",[["v","h2/blink"]],false],["do","haptic",[["v","light"]],false]]`,
+		"root/c/2/id":       `"on"`,
+		"root/c/2/when":     `null`,
+		"handlers/go/body":  `[["if",["v",true],[],[]]]`,
+	})
+	tl := doc["timelines"].(map[string]any)
+	if len(tl) != 1 || tl["h2/blink"] == nil || js(at(tl["h2/blink"], "autoplay")) != "true" {
+		t.Errorf("timelines: %s", js(tl))
+	}
 }

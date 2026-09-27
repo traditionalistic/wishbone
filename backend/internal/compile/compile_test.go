@@ -323,6 +323,7 @@ func FuzzScreen(f *testing.F) {
 		`{"type": "Row", "id": "r", "props": {"code": "x"}, "on": {"pick": "n = 0"}}`,
 		`{"type": "textField", "id": "root", "props": {"bind": "e"}, "drag": {"axis": "x"}, "on": {"dragEnd": "n = event.x"}}`,
 		`{"type": "stack", "id": "root", "transition": {"in": "fade + slide(bottom) + scale(0.9)", "out": "offset(0, 20)"}, "when": "n > 0"}`,
+		`{"type": "stack", "id": "root", "children": [{"type": "Form", "id": "f", "on": {"submit": "e = event.text"}}, {"type": "Hint", "id": "h", "props": {"text": "a", "show": false}}, {"type": "spacer", "id": "x", "when": "false"}]}`,
 	} {
 		f.Add(string(src("state n = 0\nstate e = \"\"", s, `[{"name": "t", "tracks": [{"target": "root", "prop": "opacity", "keys": [{"t": 0, "v": 0, "ease": "spring"}]}]}]`)))
 	}

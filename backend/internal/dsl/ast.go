@@ -181,9 +181,11 @@ type (
 		Call  *Call
 		Await bool
 	}
+	// EmitStmt is `emit name` or, for an event with a payload, `emit name(payloadRecord)`.
 	EmitStmt struct {
 		P    Pos
 		Name string
+		Arg  Expr
 	}
 )
 
@@ -248,9 +250,12 @@ type (
 		T       *Type
 		Default Expr // nil = required
 	}
+	// EventDecl is `event tap` (Payload nil) or `event change(value: string)` (Payload = record of Fields).
 	EventDecl struct {
-		P    Pos
-		Name string
+		P       Pos
+		Name    string
+		Fields  []ParamDef
+		Payload *Type
 	}
 )
 

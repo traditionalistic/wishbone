@@ -115,6 +115,7 @@ func compileScreen(c *Contract, src []byte, rev int) (*unit, *Document) {
 	doc := &Document{Format: 1, RuntimeMin: runtimeMin(), Screen: s.ID, Revision: rev, Params: decls.Params,
 		State: decls.State, Computed: decls.Computed, Fns: decls.Fns, Handlers: decls.Handlers, Data: decls.Data,
 		Timelines: u.tls, Root: root}
+	prune(doc)
 	nodes, depth := count(root, 1)
 	if nodes > maxNodes {
 		u.errf("root", "limit: %d nodes after template expansion, the maximum is %d", nodes, maxNodes)
@@ -126,6 +127,81 @@ func compileScreen(c *Contract, src []byte, rev int) (*unit, *Document) {
 		return u, nil
 	}
 	return u, doc
+}
+
+// prune removes nodes whose `when` is the literal false after template expansion (with their subtrees), drops
+// literal-true `when`, then timeline tracks on removed nodes, timelines left without tracks and play/stop of those.
+func prune(doc *Document) {
+	ids := map[string]bool{}
+	var walk func(n *Node)
+	walk = func(n *Node) {
+		ids[n.ID] = true
+		kept := n.C[:0]
+		for _, c := range n.C {
+			switch string(c.When) {
+			case `["v",false]`:
+				continue
+			case `["v",true]`:
+				c.When = nil
+			}
+			walk(c)
+			kept = append(kept, c)
+		}
+		n.C = kept
+	}
+	if string(doc.Root.When) == `["v",true]` {
+		doc.Root.When = nil
+	}
+	walk(doc.Root)
+	dropped := map[string]bool{}
+	for name, tl := range doc.Timelines {
+		kept := tl.Tracks[:0]
+		for _, tr := range tl.Tracks {
+			if ids[tr.Target] {
+				kept = append(kept, tr)
+			}
+		}
+		if tl.Tracks = kept; len(kept) == 0 {
+			delete(doc.Timelines, name)
+			dropped[name] = true
+		}
+	}
+	if len(dropped) == 0 {
+		return
+	}
+	var drop func(ss []any) []any
+	drop = func(ss []any) []any {
+		out := []any{}
+		for _, s := range ss {
+			a := asList(s)
+			switch a[0] {
+			case "do":
+				if (a[1] == "play" || a[1] == "stop") && dropped[asList(asList(a[2])[0])[1].(string)] {
+					continue
+				}
+			case "if":
+				a = []any{"if", a[1], drop(asList(a[2])), drop(asList(a[3]))}
+			case "anim":
+				a = []any{"anim", a[1], drop(asList(a[2]))}
+			}
+			out = append(out, a)
+		}
+		return out
+	}
+	for name, h := range doc.Handlers {
+		h.Body = encode(drop(asList(decode(h.Body))))
+		doc.Handlers[name] = h
+	}
+	var nodes func(n *Node)
+	nodes = func(n *Node) {
+		for ev, body := range n.On {
+			n.On[ev] = encode(drop(asList(decode(body))))
+		}
+		for _, c := range n.C {
+			nodes(c)
+		}
+	}
+	nodes(doc.Root)
 }
 
 // runtimeMin is the oldest runtime that understands the document.
