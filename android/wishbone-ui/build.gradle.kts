@@ -23,7 +23,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":wishbone-core"))
+    api(project(":wishbone-core"))
 
     implementation(libs.androidx.core.ktx)
     implementation(platform(libs.androidx.compose.bom))
@@ -33,6 +33,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.coil.compose)
 
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)

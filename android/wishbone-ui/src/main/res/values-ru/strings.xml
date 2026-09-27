@@ -1,0 +1,5 @@
+<resources>
+    <string name="wb_error">Не удалось загрузить экран</string>
+    <string name="wb_retry">Повторить</string>
+    <string name="wb_waiting">ждём документ…</string>
+</resources>

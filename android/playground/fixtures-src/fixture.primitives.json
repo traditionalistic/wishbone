@@ -1,0 +1,65 @@
+{
+  "id": "fixture.primitives",
+  "title": "Primitives",
+  "script": "state count = 0\nstate name = \"\"\nstate free = \"\"\nstate showExtra = true\nstate items = [{id: \"a\", title: \"Alpha\"}, {id: \"b\", title: \"Beta\"}, {id: \"c\", title: \"Gamma\"}, {id: \"d\", title: \"Delta\"}, {id: \"e\", title: \"Epsilon\"}]\nlet icons = [@icon.star, @icon.heart, @icon.gift, @icon.ticket, @icon.clock, @icon.sparkles, @icon.check]\nhandler inc() { count = count + 1 }\nhandler remove(id: string) { items = items.filter(i => i.id != id) }",
+  "root": {"type": "scroll", "id": "page", "props": {"width": "fill", "height": "fill", "padding": "@space.lg", "spacing": "@space.lg", "background": "@color.bg1"}, "children": [
+    {"type": "text", "id": "h1", "props": {"text": "Primitives", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
+    {"type": "stack", "id": "counter", "props": {"axis": "h", "align": "center", "width": "fill"}, "children": [
+      {"type": "text", "id": "countText", "props": {"text": "=\"Count: ${count}\"", "style": "@type.bodyStrong"}},
+      {"type": "spacer", "id": "counterGap"},
+      {"type": "stack", "id": "incBtn", "props": {"axis": "z", "padding": {"h": 16, "v": 8}, "background": "@color.accentPrimary", "corner": "@radius.pill"}, "on": {"tap": "inc()\nhaptic(\"light\")"}, "a11y": {"label": "\"Increment\"", "role": "button"}, "children": [
+        {"type": "text", "id": "incLabel", "props": {"text": "+1", "style": "@type.bodyStrong", "color": "@color.onAccent"}}
+      ]}
+    ]},
+    {"type": "shape", "id": "grad", "props": {"height": 64, "corner": "@radius.lg", "fill": "=gradient([@color.accentPrimary, @color.accentSecondary, @color.accentTertiary], 90)"}},
+    {"type": "stack", "id": "zbox", "props": {"axis": "z", "width": "fill", "height": 120, "background": "=gradient([@color.accentSecondary, @color.bg3], 180)", "corner": "@radius.md", "clip": true}, "children": [
+      {"type": "shape", "id": "ball", "props": {"kind": "circle", "width": 70, "height": 70, "fill": "@color.accentPrimary", "offsetX": -60}},
+      {"type": "stack", "id": "glass", "props": {"material": "regular", "padding": 12, "corner": "@radius.sm"}, "children": [
+        {"type": "text", "id": "glassText", "props": {"text": "material: regular", "style": "@type.captionStrong"}}
+      ]},
+      {"type": "stack", "id": "badge", "props": {"axis": "z", "padding": {"h": 8, "v": 4}, "background": "@color.error", "corner": "@radius.pill", "rotation": -8, "offsetX": 120, "offsetY": -34}, "children": [
+        {"type": "text", "id": "badgeText", "props": {"text": "NEW", "style": "@type.captionStrong", "color": "@color.onAccent"}}
+      ]}
+    ]},
+    {"type": "text", "id": "gridH", "props": {"text": "=\"Grid (tap to remove) · ${items.count()}\"", "style": "@type.headingSmall"}},
+    {"type": "grid", "id": "grid", "props": {"columns": 3, "spacing": 8, "rowSpacing": 8}, "children": [
+      {"type": "stack", "id": "cell", "repeat": {"over": "items", "as": "item", "key": "item.id"}, "props": {"width": "fill", "padding": 12, "spacing": 4, "background": "@color.bg1Elevated", "corner": "@radius.md", "border": "={color: @color.el3, width: 1}", "shadow": "={color: @color.shadow, radius: 8, y: 2}"}, "on": {"tap": "remove(item.id)"}, "children": [
+        {"type": "icon", "id": "cellIcon", "props": {"name": "@icon.star", "size": 18, "color": "@color.accentPrimary"}},
+        {"type": "text", "id": "cellTitle", "props": {"text": "=item.title", "style": "@type.bodySmallStrong"}}
+      ]}
+    ]},
+    {"type": "stack", "id": "iconRow", "props": {"axis": "h", "spacing": 12}, "children": [
+      {"type": "icon", "id": "ic", "repeat": {"over": "icons", "as": "ic"}, "props": {"name": "=ic", "size": 28, "color": "=index % 2 == 0 ? @color.accentPrimary : @color.el12"}}
+    ]},
+    {"type": "text", "id": "lazyH", "props": {"text": "Lazy row", "style": "@type.headingSmall"}},
+    {"type": "scroll", "id": "lazy", "props": {"axis": "h", "lazy": true, "spacing": 8, "height": 72}, "children": [
+      {"type": "stack", "id": "chip", "repeat": {"over": "range(12)", "as": "n"}, "props": {"axis": "z", "width": 72, "height": 72, "background": "=n % 2 == 0 ? @color.el3 : @color.bg2", "corner": "@radius.md"}, "children": [
+        {"type": "text", "id": "chipText", "props": {"text": "=str(n)", "style": "@type.title"}}
+      ]}
+    ]},
+    {"type": "text", "id": "pagerH", "props": {"text": "Paging", "style": "@type.headingSmall"}},
+    {"type": "scroll", "id": "pager", "props": {"axis": "h", "paging": true, "height": 100}, "children": [
+      {"type": "stack", "id": "pg", "repeat": {"over": "[\"accentPrimary\", \"accentSecondary\", \"accentTertiary\"]", "as": "c"}, "props": {"axis": "z", "width": "fill", "height": "fill", "background": "=c == \"accentPrimary\" ? @color.accentPrimary : c == \"accentSecondary\" ? @color.accentSecondary : @color.accentTertiary", "corner": "@radius.lg"}, "children": [
+        {"type": "text", "id": "pgText", "props": {"text": "=\"Page ${index + 1}\"", "style": "@type.title", "color": "@color.onAccent"}}
+      ]}
+    ]},
+    {"type": "text", "id": "fieldsH", "props": {"text": "Text fields", "style": "@type.headingSmall"}},
+    {"type": "textField", "id": "nameField", "props": {"bind": "name", "placeholder": "Controlled (bind name)", "width": "fill", "padding": 12, "background": "@color.bgInput", "corner": "@radius.sm", "border": "={color: @color.el4, width: 1}"}, "on": {"submit": "track(\"submit\", {value: event.value})"}},
+    {"type": "textField", "id": "freeField", "props": {"placeholder": "Uncontrolled", "keyboard": "email", "width": "fill", "padding": 12, "background": "@color.bgInput", "corner": "@radius.sm", "border": "={color: @color.el4, width: 1}"}, "on": {"change": "free = event.value"}},
+    {"type": "textField", "id": "pinField", "props": {"secure": true, "keyboard": "number", "placeholder": "Secure", "width": "fill", "padding": 12, "background": "@color.bgInput", "corner": "@radius.sm", "border": "={color: @color.el4, width: 1}"}},
+    {"type": "text", "id": "echo", "props": {"text": "=\"name=${name} · free=${free}\"", "style": "@type.caption", "color": "@color.el10", "maxLines": 1}},
+    {"type": "image", "id": "photo", "props": {"url": "https://picsum.photos/id/1015/800/400", "height": 140, "corner": "@radius.md", "clip": true}},
+    {"type": "stack", "id": "toggleRow", "props": {"axis": "h", "spacing": 8, "align": "center"}, "on": {"tap": "showExtra = !showExtra"}, "a11y": {"role": "button", "label": "\"Toggle extra\""}, "children": [
+      {"type": "icon", "id": "chev", "props": {"name": "=showExtra ? @icon.chevronDown : @icon.chevronRight", "size": 20}},
+      {"type": "text", "id": "toggleText", "props": {"text": "=showExtra ? \"Hide extra\" : \"Show extra\"", "style": "@type.bodyMedium"}}
+    ]},
+    {"type": "text", "id": "extra", "when": "showExtra", "props": {"text": "Long text that is centered and clipped to two lines so that maxLines and textAlign are visible in one place on both platforms.", "textAlign": "center", "maxLines": 2, "width": "fill", "style": "@type.body", "color": "@color.el12"}},
+    {"type": "native", "id": "nat", "props": {"name": "demo", "props": "={count: count}", "width": "fill", "height": 44}},
+    {"type": "text", "id": "navH", "props": {"text": "Navigation & effects", "style": "@type.headingSmall"}},
+    {"type": "stack", "id": "navCol", "props": {"spacing": 8, "width": "fill"}, "children": [
+      {"type": "stack", "id": "navBtn", "repeat": {"over": "[\"push\", \"fade\", \"present\", \"open\", \"host\", \"back\"]", "as": "k", "key": "k"}, "props": {"axis": "z", "width": "fill", "height": 44, "background": "@color.bg2", "corner": "@radius.pill"}, "on": {"tap": "if k == \"push\" { navigate(\"showcase.catalog\") } else if k == \"fade\" { navigate(\"showcase.catalog\", {}, \"fade\") } else if k == \"present\" { present(\"showcase.catalog\") } else if k == \"open\" { open(\"https://example.com\") } else if k == \"host\" { host(\"hello\", {count: count}) } else { back() }"}, "a11y": {"role": "button"}, "children": [
+        {"type": "text", "id": "navText", "props": {"text": "=k", "style": "@type.bodyStrong"}}
+      ]}
+    ]}
+  ]}
+}

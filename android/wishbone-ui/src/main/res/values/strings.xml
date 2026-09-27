@@ -1,0 +1,5 @@
+<resources>
+    <string name="wb_error">Couldn\'t load the screen</string>
+    <string name="wb_retry">Retry</string>
+    <string name="wb_waiting">waiting for a document…</string>
+</resources>
