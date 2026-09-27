@@ -30,9 +30,32 @@ private val NUM_PATTERN: Pattern = Pattern.compile("^[+-]?(\\d+\\.?\\d*|\\.\\d+)
 /** `matches(s, re)` compiles a lot of the same small regexes repeatedly (e.g. inside a `map`); cache them. */
 private val patternCache = java.util.concurrent.ConcurrentHashMap<String, Pattern>()
 
+/**
+ * Compiles [re] with [flags], falling back to compiling with no flags at all if the runtime
+ * rejects [flags] outright. Android's (ICU-based) `Pattern.compile` throws `IllegalArgumentException`
+ * for `Pattern.UNICODE_CHARACTER_CLASS` — desktop Java supports it, so every JVM unit test passed
+ * while this threw on-device for every `matches()` call. ICU's `\d \w \s` are already
+ * Unicode-aware by default, so the flag isn't needed there anyway.
+ *
+ * `PatternSyntaxException` (`re` itself is bad) is NOT treated as a flag problem — it IS-A
+ * `IllegalArgumentException`, so it must be caught first and rethrown, or a genuinely bad regex
+ * would silently retry (and still fail, just with a less clear stack) instead of surfacing as-is.
+ *
+ * `flags` is a parameter (rather than hardcoding `Pattern.UNICODE_CHARACTER_CLASS` inside) so a
+ * unit test can force the fallback branch on any JVM by passing a flag bit no platform accepts.
+ */
+internal fun compileWithFallback(re: String, flags: Int): Pattern =
+    try {
+        Pattern.compile(re, flags)
+    } catch (e: PatternSyntaxException) {
+        throw e
+    } catch (e: IllegalArgumentException) {
+        Pattern.compile(re)
+    }
+
 private fun compiledPattern(re: String): Pattern = patternCache.getOrPut(re) {
     try {
-        Pattern.compile(re, Pattern.UNICODE_CHARACTER_CLASS)
+        compileWithFallback(re, Pattern.UNICODE_CHARACTER_CLASS)
     } catch (e: PatternSyntaxException) {
         throw InterpreterException.EvalError("invalid regex '$re': ${e.message}")
     }
