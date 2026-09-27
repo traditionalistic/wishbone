@@ -1,0 +1,14 @@
+{
+ "id": "Badge",
+ "title": "Badge",
+ "script": "// Badge (ds-metrics §6): capsule; size sm / md / lg = 20 / 24 / 28 high, padding h 6 / 8 / 10, captionMedium /\n// captionStrong / bodySmallStrong. neutral = el3 + el16; tinted styles = the tone color on a 14% fill of itself.\nparam title: string\nparam style: \"neutral\" | \"accent\" | \"success\" | \"warning\" | \"error\" = \"neutral\"\nparam size: \"sm\" | \"md\" | \"lg\" = \"md\"\nlet tone = style == \"accent\" ? @color.accentPrimary : style == \"success\" ? @color.success : style == \"warning\" ? @color.warning : @color.error",
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "h", "align": "center", "height": "=size == \"sm\" ? 20 : size == \"lg\" ? 28 : 24",
+   "padding": "={h: size == \"sm\" ? 6 : size == \"lg\" ? 10 : 8}", "corner": "@radius.pill",
+   "background": "=style == \"neutral\" ? @color.el3 : alpha(tone, 0.14)"},
+  "children": [
+   {"type": "text", "id": "title", "props": {"text": "=title", "maxLines": 1,
+    "style": "=size == \"sm\" ? @type.captionMedium : size == \"lg\" ? @type.bodySmallStrong : @type.captionStrong",
+    "color": "=style == \"neutral\" ? @color.el16 : tone"}}
+  ]}
+}

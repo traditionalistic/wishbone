@@ -1,0 +1,18 @@
+{
+ "id": "Button",
+ "title": "Button",
+ "script": "// Button (ds-metrics §1 — MainButton / LinkButton): capsule 52 (standard) / 42 (compact) high, padding h md,\n// label displayAction / displayActionCompact. primary = accent fill, secondary = bg1Elevated + el12, ghost = text only,\n// disabled = bg3 + el6. Press: scale 0.96 + opacity 0.9 on self.pressed (@motion.press). loading keeps the width\n// (label fades out) and shows a 24pt Loader in the label color; taps are ignored while loading or disabled.\nparam title: string\nparam style: \"primary\" | \"secondary\" | \"ghost\" = \"primary\"\nparam size: \"standard\" | \"compact\" = \"standard\"\nparam icon: icon? = null\nparam loading: bool = false\nparam enabled: bool = true\nevent tap\n// the theme has no onAccent token: white in both schemes\nlet onAccent = env.colorScheme == \"dark\" ? @color.el16 : @color.el1\nlet fill = style == \"ghost\" ? alpha(@color.bg1, 0) : !enabled ? @color.bg3 : style == \"primary\" ? @color.accentPrimary : @color.bg1Elevated\nlet ink = !enabled ? @color.el6 : style == \"primary\" ? onAccent : style == \"secondary\" ? @color.el12 : @color.el16\nlet live = enabled && !loading",
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "z", "height": "=size == \"compact\" ? 42 : 52", "padding": "={h: @space.md}", "background": "=fill", "corner": "@radius.pill",
+   "scale": "=live && self.pressed ? 0.96 : 1", "opacity": "=live && self.pressed ? 0.9 : 1"},
+  "animate": {"scale": "@motion.press", "opacity": "@motion.press", "background": "@motion.smooth"},
+  "on": {"tap": "if live {\n  if style == \"primary\" { haptic(\"medium\") } else { haptic(\"light\") }\n  emit tap\n}"},
+  "a11y": {"label": "title", "role": "button"},
+  "children": [
+   {"type": "stack", "id": "content", "props": {"axis": "h", "align": "center", "spacing": "@space.xs", "opacity": "=loading ? 0 : 1"}, "animate": {"opacity": "@motion.fast"}, "children": [
+    {"type": "icon", "id": "icon", "when": "icon != null", "props": {"name": "=icon ?? @icon.plus", "size": 20, "color": "=ink"}, "animate": {"color": "@motion.smooth"}},
+    {"type": "text", "id": "title", "props": {"text": "=title", "style": "=size == \"compact\" ? @type.displayActionCompact : @type.displayAction", "color": "=ink", "maxLines": 1}, "animate": {"color": "@motion.smooth"}}
+   ]},
+   {"type": "Loader", "id": "spinner", "when": "loading", "props": {"size": 24, "color": "=ink"}, "transition": {"in": "fade", "out": "fade"}}
+  ]}
+}

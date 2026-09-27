@@ -1,0 +1,14 @@
+{
+ "id": "Segment",
+ "title": "Segment",
+ "script": "// Segment — one SegmentedTabs item (ds-metrics §17): takes an equal share of the track; selected = accentPrimary pill\n// (radius 20 = 24 − inset) + white text, otherwise el9 text; cross-fades with @motion.smooth (DS accentPill: spring 0.3 s).\n// Emits `tap` only when not already selected.\nparam title: string\nparam selected: bool = false\nevent tap\n// the theme has no onAccent token: white in both schemes\nlet onAccent = env.colorScheme == \"dark\" ? @color.el16 : @color.el1",
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "z", "width": "fill", "height": "fill", "padding": "={h: @space.md}", "corner": 20,
+   "background": "=selected ? @color.accentPrimary : alpha(@color.accentPrimary, 0)"},
+  "animate": {"background": "@motion.smooth"},
+  "on": {"tap": "if !selected {\n  haptic(\"selection\")\n  emit tap\n}"},
+  "a11y": {"label": "title", "role": "button"},
+  "children": [
+   {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyMedium", "color": "=selected ? onAccent : @color.el9", "maxLines": 1}, "animate": {"color": "@motion.smooth"}}
+  ]}
+}

@@ -1,0 +1,11 @@
+{
+ "id": "ProgressBar",
+ "title": "ProgressBar",
+ "script": "// ProgressBar (ds-metrics §7, linear): 6pt capsule, el3 track, accentPrimary fill of value × width (value clamped to\n// 0…1); the fill width animates with @motion.smooth. Primitives have no fractional sizes, so the bar takes a numeric\n// `width` param (it shadows the common width prop; e.g. \"width\": \"=env.screenWidth - 32\").\nparam value: number\nparam width: number = 240",
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "z", "align": "start", "width": "=width", "height": 6, "corner": "@radius.pill", "background": "@color.el3", "clip": true},
+  "a11y": {"label": "str(round(clamp(value, 0, 1) * 100)) + \"%\""},
+  "children": [
+   {"type": "shape", "id": "fill", "props": {"kind": "capsule", "width": "=width * clamp(value, 0, 1)", "height": 6, "fill": "@color.accentPrimary"}, "animate": {"width": "@motion.smooth"}}
+  ]}
+}

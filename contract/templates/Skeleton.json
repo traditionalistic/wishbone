@@ -1,0 +1,17 @@
+{
+ "id": "Skeleton",
+ "title": "Skeleton",
+ "script": "// Skeleton (ds-metrics §8A — SkeletonView): bg2 block with a white highlight band (55% light / 16% dark) sweeping\n// left → right, 1.3 s linear, forever (autoplay timeline). Size and corner come from the instance (defaults: fill × 16,\n// radius md); a circle = equal width/height + corner @radius.pill. Reduce Motion ends the timeline (band parked off-edge).\n// ponytail: the band travels a fixed -120…360pt (timeline keys are numbers), so blocks wider than ~360pt get a partial\n// sweep; add a width param driving offsetX (implicit animation) if wide skeletons show up.\nlet dark = env.colorScheme == \"dark\"\nlet white = dark ? @color.el16 : @color.el1",
+ "timelines": [
+  {"name": "shimmer", "repeat": -1, "autoplay": true, "tracks": [
+   {"target": "sweep", "prop": "offsetX", "keys": [{"t": 0, "v": -120}, {"t": 1300, "v": 360}]}
+  ]}
+ ],
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "z", "align": "start", "width": "fill", "height": 16, "corner": "@radius.md", "background": "@color.bg2", "clip": true},
+  "a11y": {"hidden": true},
+  "children": [
+   {"type": "shape", "id": "sweep", "props": {"width": 120, "height": "fill",
+    "fill": "=gradient([alpha(white, 0), alpha(white, dark ? 0.16 : 0.55), alpha(white, 0)], 90)"}}
+  ]}
+}

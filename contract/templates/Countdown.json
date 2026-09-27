@@ -1,0 +1,12 @@
+{
+ "id": "Countdown",
+ "title": "Countdown",
+ "script": "// Countdown (ds-metrics §14 — CountdownLabel): formatDuration(until − env.now) in `font` (default title, el16) + optional\n// caption label (caption, el9), gap xs; env.now ticks every second while read. `expire` fires once when the time is\n// up: a zero-size sentinel appears when nothing is left (also right away if `until` is already past).\nparam until: number\nparam format: \"hms\" | \"ms\" | \"dhms\" = \"hms\"\nparam label: string = \"\"\nparam font: textStyle = @type.title\nevent expire\nlet left = max(until - env.now, 0)",
+ "root": {"type": "stack", "id": "root", "props": {"axis": "z", "align": "start"}, "children": [
+  {"type": "stack", "id": "body", "props": {"spacing": "@space.xs"}, "children": [
+   {"type": "text", "id": "value", "props": {"text": "=formatDuration(left, format)", "style": "=font"}},
+   {"type": "text", "id": "label", "when": "label != \"\"", "props": {"text": "=label", "style": "@type.caption", "color": "@color.el9"}}
+  ]},
+  {"type": "spacer", "id": "expired", "when": "left == 0", "props": {"width": 0, "height": 0}, "on": {"appear": "emit expire"}}
+ ]}
+}

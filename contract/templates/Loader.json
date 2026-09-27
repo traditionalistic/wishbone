@@ -1,0 +1,14 @@
+{
+ "id": "Loader",
+ "title": "Loader",
+ "script": "// Spinner (ds-metrics §9 — Android Loader.kt; the iOS DS has none): a 25% ring of `color` with a head segment,\n// spinning 360° every 1100 ms (autoplay timeline, forever). Stroke = size / 6.4 (5pt at the default 32).\n// No partial-arc primitive, so the head is a short capsule riding the top of the ring.\nparam size: number = 32\nparam color: color = @color.accentPrimary\nlet stroke = size / 6.4",
+ "timelines": [
+  {"name": "spin", "repeat": -1, "autoplay": true, "tracks": [
+   {"target": "root", "prop": "rotation", "keys": [{"t": 0, "v": 0}, {"t": 1100, "v": 360}]}
+  ]}
+ ],
+ "root": {"type": "stack", "id": "root", "props": {"axis": "z", "align": "top", "width": "=size", "height": "=size"}, "children": [
+  {"type": "shape", "id": "track", "props": {"kind": "circle", "width": "=size", "height": "=size", "stroke": "={color: alpha(color, 0.25), width: stroke}"}},
+  {"type": "shape", "id": "head", "props": {"kind": "capsule", "width": "=size * 0.45", "height": "=stroke", "fill": "=color"}}
+ ]}
+}

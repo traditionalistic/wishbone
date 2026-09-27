@@ -1,0 +1,12 @@
+{
+ "id": "PageDots",
+ "title": "PageDots",
+ "script": "// PageDots (ds-metrics §18 — PageDotsIndicator): 6pt capsule dots, gap 6, el16 active / 40% inactive. The active dot\n// stretches to 18 (spec §9 onboarding) and width/fill animate with @motion.interactive, the DS pager spring.\n// No windowing (maxVisibleDots) — fine for onboarding-sized counts.\nparam count: number\nparam index: number = 0",
+ "root": {"type": "stack", "id": "root", "props": {"axis": "h", "align": "center", "spacing": 6},
+  "a11y": {"label": "str(index + 1) + \" / \" + str(count)"},
+  "children": [
+   {"type": "shape", "id": "dot", "repeat": {"over": "range(count)", "as": "page", "index": "i"},
+    "props": {"kind": "capsule", "width": "=page == index ? 18 : 6", "height": 6, "fill": "=page == index ? @color.el16 : alpha(@color.el16, 0.4)"},
+    "animate": {"width": "@motion.interactive", "fill": "@motion.interactive"}}
+  ]}
+}

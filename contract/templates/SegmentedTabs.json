@@ -1,0 +1,8 @@
+{
+ "id": "SegmentedTabs",
+ "title": "SegmentedTabs",
+ "script": "// SegmentedTabs (ds-metrics §17 — accentPill / flatPill): 48pt track, inset 4, gap 4, radius 24 (no token), bg2.\n// Segments are `Segment` children the screen repeats, owning the selection — template events carry no payload, so a\n// tabs template could not report which index was tapped:\n//   {\"type\": \"SegmentedTabs\", \"id\": \"tabs\", \"children\": [{\"type\": \"Segment\", \"id\": \"tab\", \"repeat\": {\"over\": \"tabs\"},\n//     \"props\": {\"title\": \"=item\", \"selected\": \"=tab == index\"}, \"on\": {\"tap\": \"tab = index\"}}]}",
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "h", "spacing": 4, "width": "fill", "height": 48, "padding": 4, "corner": 24, "background": "@color.bg2"},
+  "children": [{"type": "slot"}]}
+}

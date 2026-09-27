@@ -1,0 +1,162 @@
+{
+ "id": "showcase.catalog",
+ "title": "Каталог DS",
+ "script": "// Every DS template (contract/templates) in its main states — compile check + on-device eyeballing.\nstate loading = false\nstate push = true\nstate plan = \"month\"\nstate tab = 0\nstate progress = 0.35\nstate page = 0\nstate email = \"\"\nstate promo = \"\"\nstate showBanner = true\nstate until = env.now + 90 * 60 * 1000\nstate expired = false\nlet plans = [{id: \"week\", title: \"Неделя\"}, {id: \"month\", title: \"Месяц\"}, {id: \"year\", title: \"Год\"}]\nlet tabs = [\"Все\", \"Активные\", \"Архив\"]\nlet emailError = email != \"\" && !email.contains(\"@\") ? \"Нужен e-mail\" : \"\"\nhandler buy() {\n  loading = true\n  wait(1500ms)\n  loading = false\n}",
+ "root": {"type": "scroll", "id": "page", "props": {"spacing": "@space.xl", "padding": "@space.lg", "background": "@color.bg1", "width": "fill", "height": "fill"}, "children": [
+  {"type": "text", "id": "h1", "props": {"text": "Каталог DS", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
+
+  {"type": "stack", "id": "buttons", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+   {"type": "text", "id": "buttonsH", "props": {"text": "Button", "style": "@type.headingSmall"}},
+   {"type": "Button", "id": "btnPrimary", "props": {"title": "Участвовать", "loading": "=loading", "width": "fill"}, "on": {"tap": "buy()"}},
+   {"type": "Button", "id": "btnSecondary", "props": {"title": "Подробнее", "style": "secondary", "width": "fill"}},
+   {"type": "Button", "id": "btnGhost", "props": {"title": "Пропустить", "style": "ghost", "width": "fill"}},
+   {"type": "stack", "id": "btnRow", "props": {"axis": "h", "spacing": "@space.sm"}, "children": [
+    {"type": "Button", "id": "btnIcon", "props": {"title": "Подарок", "size": "compact", "icon": "@icon.gift"}},
+    {"type": "Button", "id": "btnLoading", "props": {"title": "Жди", "size": "compact", "style": "secondary", "loading": true}},
+    {"type": "Button", "id": "btnOff", "props": {"title": "Нельзя", "size": "compact", "enabled": false}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "iconButtons", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "iconButtonsH", "props": {"text": "IconButton", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "ibRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm"}, "children": [
+    {"type": "IconButton", "id": "ibSolid", "props": {"icon": "@icon.close"}, "a11y": {"label": "\"Закрыть\""}},
+    {"type": "IconButton", "id": "ibGlass", "props": {"icon": "@icon.share", "style": "glass"}, "a11y": {"label": "\"Поделиться\""}},
+    {"type": "IconButton", "id": "ibOutline", "props": {"icon": "@icon.heart", "style": "outline"}, "a11y": {"label": "\"В избранное\""}},
+    {"type": "IconButton", "id": "ibPlain", "props": {"icon": "@icon.back", "style": "plain"}, "a11y": {"label": "\"Назад\""}},
+    {"type": "IconButton", "id": "ibSmall", "props": {"icon": "@icon.plus", "size": "small"}, "a11y": {"label": "\"Добавить\""}},
+    {"type": "IconButton", "id": "ibOff", "props": {"icon": "@icon.lock", "enabled": false}, "a11y": {"label": "\"Закрыто\""}}
+   ]}
+  ]},
+
+  {"type": "Card", "id": "card", "props": {"width": "fill"}, "children": [
+   {"type": "text", "id": "cardTitle", "props": {"text": "Card", "style": "@type.headingSmall"}},
+   {"type": "text", "id": "cardBody", "props": {"text": "Поверхность со слотом: радиус card, отступ lg, тонкая рамка и мягкая тень.", "style": "@type.bodySmall", "color": "@color.el9"}},
+   {"type": "Button", "id": "cardCta", "props": {"title": "Внутри карточки", "style": "secondary", "size": "compact"}}
+  ]},
+
+  {"type": "stack", "id": "chips", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "chipsH", "props": {"text": "Chip", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "chipRow", "props": {"axis": "h", "spacing": "@space.sm"}, "children": [
+    {"type": "Chip", "id": "chip", "repeat": {"over": "plans", "key": "item.id"}, "props": {"title": "=item.title", "selected": "=plan == item.id"}, "on": {"tap": "plan = item.id"}},
+    {"type": "Chip", "id": "chipIcon", "props": {"title": "Хиты", "icon": "@icon.star"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "toggles", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
+   {"type": "text", "id": "togglesH", "props": {"text": "Toggle", "style": "@type.headingSmall"}},
+   {"type": "Toggle", "id": "tgPush", "props": {"title": "=push ? \"Уведомления включены\" : \"Уведомления выключены\"", "on": "=push", "width": "fill"}, "on": {"change": "push = !push"}},
+   {"type": "Toggle", "id": "tgLocal", "props": {"title": "Без привязки к стейту", "width": "fill"}},
+   {"type": "Toggle", "id": "tgOff", "props": {"title": "Недоступно", "on": true, "enabled": false, "width": "fill"}}
+  ]},
+
+  {"type": "stack", "id": "badges", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "badgesH", "props": {"text": "Badge", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "badgeStyles", "props": {"axis": "h", "spacing": "@space.xs"}, "children": [
+    {"type": "Badge", "id": "bNeutral", "props": {"title": "neutral"}},
+    {"type": "Badge", "id": "bAccent", "props": {"title": "accent", "style": "accent"}},
+    {"type": "Badge", "id": "bSuccess", "props": {"title": "success", "style": "success"}},
+    {"type": "Badge", "id": "bWarning", "props": {"title": "warning", "style": "warning"}},
+    {"type": "Badge", "id": "bError", "props": {"title": "error", "style": "error"}}
+   ]},
+   {"type": "stack", "id": "badgeSizes", "props": {"axis": "h", "align": "center", "spacing": "@space.xs"}, "children": [
+    {"type": "Badge", "id": "bSm", "props": {"title": "sm", "size": "sm", "style": "accent"}},
+    {"type": "Badge", "id": "bMd", "props": {"title": "md", "style": "accent"}},
+    {"type": "Badge", "id": "bLg", "props": {"title": "lg", "size": "lg", "style": "accent"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "progressBlock", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "progressH", "props": {"text": "=\"ProgressBar · \" + str(round(progress * 100)) + \"%\"", "style": "@type.headingSmall"}},
+   {"type": "ProgressBar", "id": "progress", "props": {"value": "=progress", "width": "=env.screenWidth - 32"}},
+   {"type": "stack", "id": "progressRow", "props": {"axis": "h", "spacing": "@space.sm"}, "children": [
+    {"type": "Button", "id": "progressDown", "props": {"title": "−10%", "style": "secondary", "size": "compact"}, "on": {"tap": "progress = clamp(progress - 0.1, 0, 1)"}},
+    {"type": "Button", "id": "progressUp", "props": {"title": "+10%", "style": "secondary", "size": "compact"}, "on": {"tap": "progress = clamp(progress + 0.1, 0, 1)"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "skeletons", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+   {"type": "text", "id": "skeletonsH", "props": {"text": "Skeleton", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "skeletonRow", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill"}, "children": [
+    {"type": "Skeleton", "id": "skAvatar", "props": {"width": 48, "height": 48, "corner": "@radius.pill"}},
+    {"type": "stack", "id": "skLines", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
+     {"type": "Skeleton", "id": "skLine1", "props": {"height": 12}},
+     {"type": "Skeleton", "id": "skLine2", "props": {"width": 160, "height": 12}}
+    ]}
+   ]},
+   {"type": "Skeleton", "id": "skBlock", "props": {"height": 120}}
+  ]},
+
+  {"type": "stack", "id": "loaders", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "loadersH", "props": {"text": "Loader", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "loaderRow", "props": {"axis": "h", "align": "center", "spacing": "@space.lg"}, "children": [
+    {"type": "Loader", "id": "loader"},
+    {"type": "Loader", "id": "loaderSmall", "props": {"size": 24, "color": "@color.el9"}},
+    {"type": "Loader", "id": "loaderError", "props": {"size": 40, "color": "@color.error"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "rows", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
+   {"type": "text", "id": "rowsH", "props": {"text": "ListRow · Divider", "style": "@type.headingSmall"}},
+   {"type": "ListRow", "id": "rowProfile", "props": {"title": "Профиль", "icon": "@icon.user", "value": "Иван"}},
+   {"type": "ListRow", "id": "rowMail", "props": {"title": "Почта", "icon": "@icon.mail"}},
+   {"type": "Divider", "id": "divider", "props": {"padding": "={h: @space.md}"}},
+   {"type": "ListRow", "id": "rowPlain", "props": {"title": "Версия", "value": "1.0.0", "chevron": false}}
+  ]},
+
+  {"type": "EmptyState", "id": "empty", "props": {"icon": "@icon.gift", "title": "Пока нет розыгрышей", "subtitle": "Загляните позже — мы пришлём уведомление", "actionTitle": "Обновить", "width": "fill"}, "on": {"action": "haptic(\"light\")"}},
+
+  {"type": "stack", "id": "banners", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
+   {"type": "text", "id": "bannersH", "props": {"text": "Banner", "style": "@type.headingSmall"}},
+   {"type": "Banner", "id": "bnInfo", "props": {"title": "Итоги подведём в пятницу"}},
+   {"type": "Banner", "id": "bnSuccess", "props": {"title": "Вы участвуете", "style": "success"}},
+   {"type": "Banner", "id": "bnWarning", "props": {"title": "Осталось 3 билета", "style": "warning"}},
+   {"type": "Banner", "id": "bnError", "props": {"title": "Не удалось загрузить", "style": "error", "dismissible": true}, "when": "showBanner", "transition": {"out": "fade + scale(0.95)"}, "on": {"close": "animate(@motion.smooth) { showBanner = false }"}}
+  ]},
+
+  {"type": "stack", "id": "countdowns", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "countdownsH", "props": {"text": "Countdown", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "countdownRow", "props": {"axis": "h", "spacing": "@space.xl"}, "children": [
+    {"type": "Countdown", "id": "cdMain", "props": {"until": "=until", "label": "=expired ? \"Розыгрыш начался\" : \"До розыгрыша\""}, "on": {"expire": "expired = true"}},
+    {"type": "Countdown", "id": "cdDays", "props": {"until": "=until + 3 * 24 * 3600 * 1000", "format": "dhms", "font": "@type.headingSmall", "label": "dhms"}},
+    {"type": "Countdown", "id": "cdPast", "props": {"until": 0, "format": "ms", "font": "@type.headingSmall", "label": "истёк"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "avatars", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "avatarsH", "props": {"text": "Avatar", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "avatarRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm"}, "children": [
+    {"type": "Avatar", "id": "avSmall", "props": {"name": "Иван Грицак", "size": 24}},
+    {"type": "Avatar", "id": "avInitials", "props": {"name": "Иван Грицак"}},
+    {"type": "Avatar", "id": "avHandle", "props": {"name": "\\@korpu"}},
+    {"type": "Avatar", "id": "avEmpty"},
+    {"type": "Avatar", "id": "avPhoto", "props": {"name": "Фото", "url": "https://picsum.photos/id/64/160", "size": 60}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "inputs", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+   {"type": "text", "id": "inputsH", "props": {"text": "TextInput", "style": "@type.headingSmall"}},
+   {"type": "TextInput", "id": "emailInput", "props": {"label": "E-mail", "hint": "Пришлём чек", "error": "=emailError"}, "children": [
+    {"type": "textField", "id": "emailField", "props": {"bind": "email", "placeholder": "you@mail.com", "keyboard": "email", "width": "fill"}}
+   ]},
+   {"type": "TextInput", "id": "promoInput", "props": {"label": "Промокод"}, "children": [
+    {"type": "textField", "id": "promoField", "props": {"bind": "promo", "placeholder": "Необязательно", "width": "fill"}, "on": {"submit": "promo = event.value.trim().upper()"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "tabsBlock", "props": {"spacing": "@space.md", "width": "fill"}, "children": [
+   {"type": "text", "id": "tabsH", "props": {"text": "=\"SegmentedTabs · \" + (tabs[tab] ?? \"\")", "style": "@type.headingSmall"}},
+   {"type": "SegmentedTabs", "id": "tabs", "children": [
+    {"type": "Segment", "id": "tabItem", "repeat": {"over": "tabs"}, "props": {"title": "=item", "selected": "=tab == index"}, "on": {"tap": "tab = index"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "dotsBlock", "props": {"spacing": "@space.md"}, "children": [
+   {"type": "text", "id": "dotsH", "props": {"text": "PageDots", "style": "@type.headingSmall"}},
+   {"type": "stack", "id": "dotsRow", "props": {"axis": "h", "align": "center", "spacing": "@space.lg"}, "children": [
+    {"type": "PageDots", "id": "dots", "props": {"count": 4, "index": "=page"}},
+    {"type": "Button", "id": "dotsNext", "props": {"title": "Дальше", "style": "secondary", "size": "compact", "icon": "@icon.arrowRight"}, "on": {"tap": "page = (page + 1) % 4"}}
+   ]}
+  ]}
+ ]}
+}

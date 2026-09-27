@@ -1,0 +1,15 @@
+{
+ "id": "Chip",
+ "title": "Chip",
+ "script": "// Chip (ds-metrics §4 — FilterChip .filled): capsule 35 high, padding h md, bodyMedium; selected = accentPrimary fill +\n// white text, otherwise bg1Elevated (≈ solidChromeSurface) + el16. Selection is owned by the screen:\n//   {\"type\": \"Chip\", \"repeat\": {\"over\": \"plans\"}, \"props\": {\"title\": \"=item.title\", \"selected\": \"=plan == item.id\"},\n//    \"on\": {\"tap\": \"plan = item.id\"}}\nparam title: string\nparam selected: bool = false\nparam icon: icon? = null\nevent tap\n// the theme has no onAccent token: white in both schemes\nlet onAccent = env.colorScheme == \"dark\" ? @color.el16 : @color.el1\nlet ink = selected ? onAccent : @color.el16",
+ "root": {"type": "stack", "id": "root",
+  "props": {"axis": "h", "align": "center", "spacing": "@space.xs", "height": 35, "padding": "={h: @space.md}", "corner": "@radius.pill",
+   "background": "=selected ? @color.accentPrimary : @color.bg1Elevated"},
+  "animate": {"background": "@motion.fast"},
+  "on": {"tap": "haptic(\"selection\")\nemit tap"},
+  "a11y": {"label": "title", "role": "button"},
+  "children": [
+   {"type": "icon", "id": "icon", "when": "icon != null", "props": {"name": "=icon ?? @icon.check", "size": 16, "color": "=ink"}, "animate": {"color": "@motion.fast"}},
+   {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyMedium", "color": "=ink", "maxLines": 1}, "animate": {"color": "@motion.fast"}}
+  ]}
+}

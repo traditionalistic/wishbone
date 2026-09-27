@@ -1,0 +1,10 @@
+{
+ "id": "Card",
+ "title": "Card",
+ "script": "// Card (ds-metrics §3 — CardSurface): radius card (32), padding lg, bg1Elevated (≈ 80% cardSurface), 1pt el2 hairline\n// (≈ cardBorder), shadow 10% / r20 / y0 light, 25% / r4 / y4 dark. Children go into the slot, stacked vertically.\nparam spacing: number = @space.md\nlet dark = env.colorScheme == \"dark\"\n// shadow ink: black in both schemes (the theme has no shadow token)\nlet shadowInk = dark ? @color.el1 : @color.el16",
+ "root": {"type": "stack", "id": "root",
+  "props": {"spacing": "=spacing", "padding": "@space.lg", "background": "@color.bg1Elevated", "corner": "@radius.card",
+   "border": "={color: @color.el2, width: 1}",
+   "shadow": "={color: alpha(shadowInk, dark ? 0.25 : 0.1), radius: dark ? 4 : 20, y: dark ? 4 : 0}"},
+  "children": [{"type": "slot"}]}
+}

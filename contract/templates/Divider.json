@@ -1,0 +1,6 @@
+{
+ "id": "Divider",
+ "title": "Divider",
+ "script": "// Divider (ds-metrics §10 — DSDivider): 1pt hairline in el3, full width; insets come from the instance's padding.",
+ "root": {"type": "shape", "id": "root", "props": {"width": "fill", "height": 1, "fill": "@color.el3"}, "a11y": {"hidden": true}}
+}
