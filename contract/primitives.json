@@ -10,48 +10,151 @@
     "dragEnd": "{x: number, y: number, vx: number, vy: number}"
   },
   "common": {
-    "width": { "type": "number | \"fill\" | \"wrap\"", "default": "wrap" },
-    "height": { "type": "number | \"fill\" | \"wrap\"", "default": "wrap" },
-    "minWidth": { "type": "number" },
-    "maxWidth": { "type": "number" },
-    "minHeight": { "type": "number" },
-    "maxHeight": { "type": "number" },
-    "aspect": { "type": "number" },
-    "padding": { "type": "number | {top?: number, bottom?: number, start?: number, end?: number, h?: number, v?: number}", "default": 0 },
-    "background": { "type": "paint" },
-    "material": { "type": "\"thin\" | \"regular\" | \"thick\"" },
-    "corner": { "type": "number", "default": 0 },
-    "border": { "type": "{color: color, width: number}" },
-    "clip": { "type": "bool", "default": false },
-    "shadow": { "type": "{color: color, radius: number, x?: number, y?: number}" },
-    "opacity": { "type": "number", "default": 1 },
-    "offsetX": { "type": "number", "default": 0 },
-    "offsetY": { "type": "number", "default": 0 },
-    "scale": { "type": "number", "default": 1 },
-    "rotation": { "type": "number", "default": 0 },
-    "zIndex": { "type": "number", "default": 0 }
+    "width": {
+      "type": "number | \"fill\" | \"wrap\"",
+      "default": "wrap"
+    },
+    "height": {
+      "type": "number | \"fill\" | \"wrap\"",
+      "default": "wrap"
+    },
+    "minWidth": {
+      "type": "number"
+    },
+    "maxWidth": {
+      "type": "number"
+    },
+    "minHeight": {
+      "type": "number"
+    },
+    "maxHeight": {
+      "type": "number"
+    },
+    "aspect": {
+      "type": "number"
+    },
+    "padding": {
+      "type": "number | {top?: number, bottom?: number, start?: number, end?: number, h?: number, v?: number}",
+      "default": 0
+    },
+    "background": {
+      "type": "paint"
+    },
+    "material": {
+      "type": "\"thin\" | \"regular\" | \"thick\""
+    },
+    "corner": {
+      "type": "number",
+      "default": 0
+    },
+    "border": {
+      "type": "{color: color, width: number}"
+    },
+    "clip": {
+      "type": "bool",
+      "default": false
+    },
+    "shadow": {
+      "type": "{color: color, radius: number, x?: number, y?: number}"
+    },
+    "opacity": {
+      "type": "number",
+      "default": 1
+    },
+    "offsetX": {
+      "type": "number",
+      "default": 0
+    },
+    "offsetY": {
+      "type": "number",
+      "default": 0
+    },
+    "scale": {
+      "type": "number",
+      "default": 1
+    },
+    "rotation": {
+      "type": "number",
+      "default": 0
+    },
+    "zIndex": {
+      "type": "number",
+      "default": 0
+    },
+    "ignoreSafeArea": {
+      "type": "\"none\" | \"top\" | \"bottom\" | \"all\"",
+      "default": "none",
+      "doc": "honored on the screen's root node only: by default the root is laid out inside the safe area (its background still extends behind the system bars); top/bottom/all lets content go edge-to-edge on those edges (use env.safeTop/env.safeBottom to pad manually)"
+    }
   },
-  "animatable": ["width", "height", "padding", "background", "corner", "opacity", "offsetX", "offsetY", "scale", "rotation", "color", "fill", "progress"],
-  "timelineProps": ["opacity", "scale", "offsetX", "offsetY", "rotation"],
+  "animatable": [
+    "width",
+    "height",
+    "padding",
+    "background",
+    "corner",
+    "opacity",
+    "offsetX",
+    "offsetY",
+    "scale",
+    "rotation",
+    "color",
+    "fill",
+    "progress"
+  ],
+  "timelineProps": [
+    "opacity",
+    "scale",
+    "offsetX",
+    "offsetY",
+    "rotation"
+  ],
   "primitives": {
     "stack": {
       "children": true,
       "props": {
-        "axis": { "type": "\"v\" | \"h\" | \"z\"", "default": "v" },
-        "spacing": { "type": "number", "default": 0 },
-        "align": { "type": "\"start\" | \"center\" | \"end\" | \"topStart\" | \"top\" | \"topEnd\" | \"bottomStart\" | \"bottom\" | \"bottomEnd\"", "doc": "default: center for axis z, start otherwise; v: horizontal alignment of children, h: vertical, z: 9-way" }
+        "axis": {
+          "type": "\"v\" | \"h\" | \"z\"",
+          "default": "v"
+        },
+        "spacing": {
+          "type": "number",
+          "default": 0
+        },
+        "align": {
+          "type": "\"start\" | \"center\" | \"end\" | \"topStart\" | \"top\" | \"topEnd\" | \"bottomStart\" | \"bottom\" | \"bottomEnd\"",
+          "doc": "default: center for axis z, start otherwise; v: horizontal alignment of children, h: vertical, z: 9-way"
+        }
       },
       "events": {}
     },
     "scroll": {
       "children": true,
       "props": {
-        "axis": { "type": "\"v\" | \"h\"", "default": "v" },
-        "spacing": { "type": "number", "default": 0 },
-        "align": { "type": "\"start\" | \"center\" | \"end\"", "default": "start" },
-        "paging": { "type": "bool", "default": false },
-        "indicators": { "type": "bool", "default": false },
-        "lazy": { "type": "bool", "default": false }
+        "axis": {
+          "type": "\"v\" | \"h\"",
+          "default": "v"
+        },
+        "spacing": {
+          "type": "number",
+          "default": 0
+        },
+        "align": {
+          "type": "\"start\" | \"center\" | \"end\"",
+          "default": "start"
+        },
+        "paging": {
+          "type": "bool",
+          "default": false
+        },
+        "indicators": {
+          "type": "bool",
+          "default": false
+        },
+        "lazy": {
+          "type": "bool",
+          "default": false
+        }
       },
       "events": {},
       "doc": "exposes driver scroll.<id>.x / scroll.<id>.y (content offset, points)"
@@ -59,54 +162,107 @@
     "grid": {
       "children": true,
       "props": {
-        "columns": { "type": "number", "required": true },
-        "spacing": { "type": "number", "default": 0 },
-        "rowSpacing": { "type": "number", "default": 0 }
+        "columns": {
+          "type": "number",
+          "required": true
+        },
+        "spacing": {
+          "type": "number",
+          "default": 0
+        },
+        "rowSpacing": {
+          "type": "number",
+          "default": 0
+        }
       },
       "events": {}
     },
     "spacer": {
       "children": false,
       "props": {
-        "min": { "type": "number", "default": 0 }
+        "min": {
+          "type": "number",
+          "default": 0
+        }
       },
       "events": {}
     },
     "text": {
       "children": false,
       "props": {
-        "text": { "type": "string", "required": true },
-        "style": { "type": "textStyle", "default": "@type.body" },
-        "color": { "type": "color", "default": "@color.el16" },
-        "textAlign": { "type": "\"start\" | \"center\" | \"end\"", "default": "start" },
-        "maxLines": { "type": "number", "default": 0, "doc": "0 = unlimited" }
+        "text": {
+          "type": "string",
+          "required": true
+        },
+        "style": {
+          "type": "textStyle",
+          "default": "@type.body"
+        },
+        "color": {
+          "type": "color",
+          "default": "@color.el16"
+        },
+        "textAlign": {
+          "type": "\"start\" | \"center\" | \"end\"",
+          "default": "start"
+        },
+        "maxLines": {
+          "type": "number",
+          "default": 0,
+          "doc": "0 = unlimited"
+        }
       },
       "events": {}
     },
     "image": {
       "children": false,
       "props": {
-        "url": { "type": "string", "required": true },
-        "fit": { "type": "\"fill\" | \"fit\"", "default": "fill" },
-        "placeholder": { "type": "color", "default": "@color.bg2" }
+        "url": {
+          "type": "string",
+          "required": true
+        },
+        "fit": {
+          "type": "\"fill\" | \"fit\"",
+          "default": "fill"
+        },
+        "placeholder": {
+          "type": "color",
+          "default": "@color.bg2"
+        }
       },
       "events": {}
     },
     "icon": {
       "children": false,
       "props": {
-        "name": { "type": "icon", "required": true },
-        "size": { "type": "number", "default": 24 },
-        "color": { "type": "color", "default": "@color.el16" }
+        "name": {
+          "type": "icon",
+          "required": true
+        },
+        "size": {
+          "type": "number",
+          "default": 24
+        },
+        "color": {
+          "type": "color",
+          "default": "@color.el16"
+        }
       },
       "events": {}
     },
     "shape": {
       "children": false,
       "props": {
-        "kind": { "type": "\"rect\" | \"circle\" | \"capsule\"", "default": "rect" },
-        "fill": { "type": "paint" },
-        "stroke": { "type": "{color: color, width: number}" }
+        "kind": {
+          "type": "\"rect\" | \"circle\" | \"capsule\"",
+          "default": "rect"
+        },
+        "fill": {
+          "type": "paint"
+        },
+        "stroke": {
+          "type": "{color: color, width: number}"
+        }
       },
       "events": {},
       "doc": "rect uses the common `corner` prop"
@@ -114,27 +270,62 @@
     "textField": {
       "children": false,
       "props": {
-        "value": { "type": "string", "default": "" },
-        "placeholder": { "type": "string", "default": "" },
-        "keyboard": { "type": "\"text\" | \"email\" | \"number\" | \"phone\"", "default": "text" },
-        "secure": { "type": "bool", "default": false },
-        "style": { "type": "textStyle", "default": "@type.body" },
-        "color": { "type": "color", "default": "@color.el16" }
+        "value": {
+          "type": "string",
+          "default": ""
+        },
+        "placeholder": {
+          "type": "string",
+          "default": ""
+        },
+        "keyboard": {
+          "type": "\"text\" | \"email\" | \"number\" | \"phone\"",
+          "default": "text"
+        },
+        "secure": {
+          "type": "bool",
+          "default": false
+        },
+        "style": {
+          "type": "textStyle",
+          "default": "@type.body"
+        },
+        "color": {
+          "type": "color",
+          "default": "@color.el16"
+        }
       },
       "events": {
         "change": "{value: string}",
         "submit": "{value: string}"
       },
-      "sugar": { "bind": "state name: value = <name>, on.change += <name> = event.value" }
+      "sugar": {
+        "bind": "state name: value = <name>, on.change += <name> = event.value"
+      }
     },
     "lottie": {
       "children": false,
       "props": {
-        "url": { "type": "string", "required": true },
-        "loop": { "type": "bool", "default": true },
-        "playing": { "type": "bool", "default": true },
-        "progress": { "type": "number", "doc": "0…1; when set, drives the frame instead of playing" },
-        "speed": { "type": "number", "default": 1 }
+        "url": {
+          "type": "string",
+          "required": true
+        },
+        "loop": {
+          "type": "bool",
+          "default": true
+        },
+        "playing": {
+          "type": "bool",
+          "default": true
+        },
+        "progress": {
+          "type": "number",
+          "doc": "0…1; when set, drives the frame instead of playing"
+        },
+        "speed": {
+          "type": "number",
+          "default": 1
+        }
       },
       "events": {
         "end": "{}"
@@ -143,10 +334,21 @@
     "rive": {
       "children": false,
       "props": {
-        "url": { "type": "string", "required": true },
-        "artboard": { "type": "string", "default": "" },
-        "stateMachine": { "type": "string", "default": "" },
-        "inputs": { "type": "map<bool | number>" }
+        "url": {
+          "type": "string",
+          "required": true
+        },
+        "artboard": {
+          "type": "string",
+          "default": ""
+        },
+        "stateMachine": {
+          "type": "string",
+          "default": ""
+        },
+        "inputs": {
+          "type": "map<bool | number>"
+        }
       },
       "events": {
         "event": "{name: string}"
@@ -155,8 +357,13 @@
     "native": {
       "children": false,
       "props": {
-        "name": { "type": "string", "required": true },
-        "props": { "type": "map<any>" }
+        "name": {
+          "type": "string",
+          "required": true
+        },
+        "props": {
+          "type": "map<any>"
+        }
       },
       "events": {}
     }
