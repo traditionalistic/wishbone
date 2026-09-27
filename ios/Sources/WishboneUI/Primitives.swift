@@ -34,13 +34,25 @@ struct ScrollNode: View {
     let node: Node
     let props: Props
     let ctx: RenderContext
+    /// The node's `padding`, applied to the scrolled content.
+    let padding: Insets
 
     var body: some View {
         let horizontal = props.string("axis") == "h"
+        let store = ctx.store, id = node.id
         ScrollView(horizontal ? .horizontal : .vertical, showsIndicators: props.bool("indicators")) {
             content(horizontal: horizontal)
         }
         .modifier(PagingModifier(paging: props.bool("paging")))
+        .onScrollGeometryChange(for: CGPoint.self) { geo in
+            ScrollDriver.offset(contentOffset: geo.contentOffset, insets: geo.contentInsets)
+        } action: { _, offset in
+            // scroll.<id>.x|y cells; nodes reading them re-render every frame, nothing else does.
+            for (axis, v) in [("x", offset.x), ("y", offset.y)] {
+                let cell = store.driver("scroll:\(id):\(axis)")
+                if cell.value != .number(v) { cell.value = .number(v) }
+            }
+        }
     }
 
     @ViewBuilder
@@ -48,11 +60,14 @@ struct ScrollNode: View {
         let spacing = props.number("spacing") ?? 0, align = props.string("align"), lazy = props.bool("lazy")
         if horizontal {
             let a = Align.vertical(align)
-            if lazy {
-                LazyHStack(alignment: a, spacing: spacing) { Children(node: node, ctx: ctx, axis: "h") }
-            } else {
-                HStack(alignment: a, spacing: spacing) { Children(node: node, ctx: ctx, axis: "h") }
+            Group {
+                if lazy {
+                    LazyHStack(alignment: a, spacing: spacing) { Children(node: node, ctx: ctx, axis: "h") }
+                } else {
+                    HStack(alignment: a, spacing: spacing) { Children(node: node, ctx: ctx, axis: "h") }
+                }
             }
+            .padding(padding.edgeInsets)
         } else {
             let a = Align.horizontal(align)
             Group {
@@ -62,6 +77,7 @@ struct ScrollNode: View {
                     VStack(alignment: a, spacing: spacing) { Children(node: node, ctx: ctx, axis: "v") }
                 }
             }
+            .padding(padding.edgeInsets)
             .frame(maxWidth: .infinity, alignment: Alignment(horizontal: a, vertical: .top))
         }
     }

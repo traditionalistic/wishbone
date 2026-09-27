@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import WishboneCore
 
 /// Scope of one materialized node: the screen store plus repeat locals, the enclosing template
@@ -14,6 +15,12 @@ struct RenderContext: Scope {
     var parentAxis: String?
     var pressed = false
     var isRoot = false
+    /// Index of the innermost enclosing `repeat` item (timeline stagger).
+    var repeatIndex = 0
+    /// `matchId` scope: the whole screen.
+    var namespace: Namespace.ID?
+    /// Node being rendered (eval errors are logged once per node + message).
+    var nodeID: String?
 
     init(store: Store) {
         self.store = store
@@ -24,17 +31,29 @@ struct RenderContext: Scope {
     func computed(_ name: String) -> Value { store.computed(name) }
     func data(_ name: String) -> Value { store.dataValue(name) }
     func param(_ name: String) -> Value { store.params[name] ?? .null }
-    func env(_ name: String) -> Value { store.wishbone.env.value(name, clock: store.wishbone.clock, brand: store.wishbone.brand) }
+    func env(_ name: String) -> Value {
+        store.wishbone.env.value(name, clock: store.wishbone.clock, brand: store.wishbone.brand, geometry: store.geometry)
+    }
     func token(_ group: String, _ name: String) -> Value { store.token(group, name) }
-    // ponytail: drivers arrive with motion (phase b).
-    func driver(_ kind: String, _ id: String, _ axis: String) -> Double { 0 }
+    /// Drag state is per materialized instance (id + repeat path); scrolls are looked up by id.
+    func driver(_ kind: String, _ id: String, _ axis: String) -> Double {
+        let key = kind == "drag" ? "drag:\(id)\(idSuffix):\(axis)" : "\(kind):\(id):\(axis)"
+        if case let .number(n) = store.driver(key).value { return n }
+        return 0
+    }
     func selfPressed() -> Bool { pressed }
 
     func set(scope: String, name: String, path: [Value], value: Value, transaction: Value?) {
         guard let cell = scope == "i" ? instance?.cell(name) : store.state[name] else {
             return store.log("assignment to undeclared \(scope == "i" ? "instance " : "")state \(name)")
         }
-        cell.value = cell.value.settingPath(path, to: value)
+        let updated = cell.value.settingPath(path, to: value)
+        // `animate(m) { … }`: every visual change caused by this write animates with m.
+        if let transaction, let animation = store.wishbone.theme.animation(transaction) {
+            withAnimation(animation) { cell.value = updated }
+        } else {
+            cell.value = updated
+        }
     }
 
     func child(locals: Locals? = nil, instance: InstanceScope? = nil, idSuffix: String = "", axis: String?) -> RenderContext {
@@ -83,7 +102,7 @@ extension Store {
             navigator?.dismiss()
         case "open":
             // `/…` is the Wishbone server's own path; otherwise https or a host-allowed scheme.
-            let raw = str(0) ?? "", local = raw.hasPrefix("/")
+            let raw = str(0) ?? "", local = raw.hasPrefix("/") && !raw.hasPrefix("//")
             guard let url = URL(string: raw, relativeTo: wishbone.baseURL)?.absoluteURL, let scheme = url.scheme?.lowercased(),
                   local || scheme == "https" || host.allowedSchemes.contains(scheme)
             else { return log("open: ignored \(raw)", level: "warn") }
@@ -101,8 +120,17 @@ extension Store {
             }
         case "refresh":
             if let name = str(0) { await refresh(name) }
-        case "play", "stop":
-            break // ponytail: timelines arrive with motion (phase b).
+        case "play":
+            guard let name = str(0) else { return }
+            timelines.play(name)
+            if awaited {
+                guard timelines.timelines[name]?.repeatCount != -1 else {
+                    while true { try? await Task.sleep(for: .seconds(3600)) } // contract: never resumes
+                }
+                try? await Task.sleep(for: .milliseconds(Int(min(timelines.duration(name), 86_400_000))))
+            }
+        case "stop":
+            if let name = str(0) { timelines.stop(name) }
         default:
             log("unknown effect \(effect)")
         }

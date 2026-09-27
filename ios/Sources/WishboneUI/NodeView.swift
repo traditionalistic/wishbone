@@ -32,6 +32,7 @@ struct RepeatItem: Identifiable {
             var key = rep.key.flatMap { c.eval($0) }.map(keyString) ?? String(i)
             if !seen.insert(key).inserted { key += "#\(i)" }
             c.idSuffix += "." + key
+            c.repeatIndex = i
             return RepeatItem(id: key, ctx: c)
         }
     }
@@ -44,30 +45,70 @@ struct RepeatItem: Identifiable {
 struct NodeBody: View {
     let node: Node
     let ctx: RenderContext
+    /// Pressed state of this node's tap button (`self.pressed`).
+    @State private var pressed = false
 
     static let builtins: Set<String> = ["stack", "scroll", "grid", "spacer", "text", "image", "icon", "shape", "textField", "native"]
 
     var body: some View {
         let ctx = scoped()
-        if visible(ctx), let props = evaluate(ctx) {
-            if node.type == "spacer" {
-                if node.on.isEmpty {
-                    SpacerNode(props: props, ctx: ctx)
-                } else {
-                    SpacerNode(props: props, ctx: ctx).modifier(EventModifier(node: node, ctx: ctx, corner: 0))
-                }
-            } else if Self.builtins.contains(node.type) || WishboneRenderers.registry[node.type] != nil {
-                decorated(props: props, ctx: ctx)
-            } else {
-                let _ = ctx.store.warnOnce("no renderer for \(node.type) (\(node.id))")
+        let visible = visible(ctx)
+        Group {
+            if visible, let props = evaluate(ctx) {
+                rendered(props: props, ctx: ctx)
+                    .transition(transition(ctx))
             }
+        }
+        .modifier(WhenTransaction(visible: visible, fallback: whenFallback(ctx)))
+    }
+
+    @ViewBuilder
+    private func rendered(props: Props, ctx: RenderContext) -> some View {
+        if node.type == "spacer" {
+            if node.on.isEmpty {
+                SpacerNode(props: props, ctx: ctx)
+            } else {
+                SpacerNode(props: props, ctx: ctx).modifier(EventModifier(node: node, ctx: ctx, corner: 0) { pressed = $0 })
+            }
+        } else if Self.builtins.contains(node.type) || WishboneRenderers.registry[node.type] != nil {
+            decorated(props: props, ctx: ctx)
+        } else {
+            let _ = ctx.store.warnOnce("no renderer for \(node.type) (\(node.id))")
         }
     }
 
+    /// Enter/exit of `when` nodes and repeat items; reduce motion keeps only fades.
+    private func transition(_ ctx: RenderContext) -> AnyTransition {
+        let reduce = ctx.store.wishbone.env.reduceMotion
+        func side(_ wire: Value?) -> AnyTransition {
+            let parts = TransitionPart.parts(wire)
+            return TransitionPart.transition(reduce ? TransitionPart.reduced(parts) : parts)
+        }
+        return .asymmetric(insertion: side(node.transitionIn), removal: side(node.transitionOut))
+    }
+
+    /// A `when` flip outside a transaction still animates: the node's `animate["*"]`, else @motion.smooth.
+    private func whenFallback(_ ctx: RenderContext) -> Animation? {
+        guard node.when != nil, node.transitionIn != nil || node.transitionOut != nil else { return nil }
+        let theme = ctx.store.wishbone.theme
+        return node.animate["*"].flatMap { ctx.eval($0) }.flatMap(theme.animation)
+            ?? theme.animation(.record(["$motion": .string("smooth")])) ?? .easeInOut
+    }
+
+    private func implicit(_ ctx: RenderContext) -> Motion.Implicit {
+        var m = Motion.Implicit()
+        let theme = ctx.store.wishbone.theme
+        for (prop, expr) in node.animate {
+            if let a = ctx.eval(expr).flatMap(theme.animation) { m.specs[prop] = a }
+        }
+        return m
+    }
+
     private func scoped() -> RenderContext {
-        guard !node.instanceState.isEmpty else { return ctx }
         var c = ctx
-        c.instance = ctx.store.instance(node, ctx: ctx)
+        c.nodeID = node.id
+        if !node.instanceState.isEmpty { c.instance = ctx.store.instance(node, ctx: ctx) }
+        c.pressed = node.on["tap"] != nil && pressed
         return c
     }
 
@@ -87,14 +128,20 @@ struct NodeBody: View {
 
     private func decorated(props: Props, ctx: RenderContext) -> some View {
         let wb = ctx.store.wishbone
-        let box = BoxProps(props)
+        var box = BoxProps(props)
+        // `scroll` padding pads the scrolled content, not the viewport.
+        let scrollPadding = node.type == "scroll" ? box.padding : Insets(.null)
+        if node.type == "scroll" { box.padding = Insets(.null) }
         let dark = wb.env.dark
-        return content(props: props, ctx: ctx)
-            .modifier(BoxModifier(box: box, alignment: Align.frame(type: node.type, props: props), theme: wb.theme, dark: dark, extendsBackground: ctx.isRoot))
-            .modifier(EventModifier(node: node, ctx: ctx, corner: box.corner))
+        let anim = implicit(ctx)
+        let match = node.match.flatMap { ctx.eval($0) }.map(RepeatItem.keyString)
+        return content(props: props, ctx: ctx, scrollPadding: scrollPadding)
+            .modifier(ContentAnimation(animation: anim.any("color", "fill", "progress"), value: [props["color"], props["fill"], props["progress"]]))
+            .modifier(BoxModifier(box: box, alignment: Align.frame(type: node.type, props: props), theme: wb.theme, dark: dark,
+                                  extendsBackground: ctx.isRoot, anim: anim, match: match.flatMap { m in ctx.namespace.map { (m, $0) } }))
+            .modifier(EventModifier(node: node, ctx: ctx, corner: box.corner) { pressed = $0 })
             .modifier(A11yModifier(node: node, ctx: ctx))
-            .modifier(OuterModifier(box: box, theme: wb.theme, dark: dark))
-            .ignoresSafeArea(.container, edges: ctx.isRoot ? Self.edges(props.string("ignoreSafeArea")) : [])
+            .modifier(TransformModifier(node: node, ctx: ctx, box: box, anim: anim, theme: wb.theme, dark: dark))
     }
 
     /// `ignoreSafeArea` — honored on the screen root only.
@@ -108,10 +155,10 @@ struct NodeBody: View {
     }
 
     @ViewBuilder
-    private func content(props: Props, ctx: RenderContext) -> some View {
+    private func content(props: Props, ctx: RenderContext, scrollPadding: Insets) -> some View {
         switch node.type {
         case "stack": StackNode(node: node, props: props, ctx: ctx)
-        case "scroll": ScrollNode(node: node, props: props, ctx: ctx)
+        case "scroll": ScrollNode(node: node, props: props, ctx: ctx, padding: scrollPadding)
         case "grid": GridNode(node: node, props: props, ctx: ctx)
         case "text": TextNode(props: props, ctx: ctx)
         case "image": ImageNode(props: props, ctx: ctx)
@@ -126,98 +173,5 @@ struct NodeBody: View {
                 })
             }
         }
-    }
-}
-
-/// `tap` (a `Button`, so it neither blocks scrolling nor loses a11y), `longPress`, `appear`, `disappear`.
-struct EventModifier: ViewModifier {
-    let node: Node
-    let ctx: RenderContext
-    let corner: Double
-
-    func body(content: Content) -> some View {
-        events(content)
-            .onAppear { fire("appear") }
-            .onDisappear { fire("disappear") }
-    }
-
-    @ViewBuilder
-    private func events(_ content: Content) -> some View {
-        let tap = node.on["tap"] != nil, long = node.on["longPress"] != nil
-        if long {
-            content
-                .contentShape(BoxShape(corner: corner))
-                .onTapGesture { fire("tap") }
-                .onLongPressGesture { fire("longPress") }
-                .accessibilityElement(children: .combine)
-                .accessibilityAddTraits(tap ? .isButton : [])
-                .accessibilityAction(named: Text(verbatim: "longPress")) { fire("longPress") }
-        } else if tap {
-            Button { fire("tap") } label: { content.contentShape(BoxShape(corner: corner)) }
-                .buttonStyle(NodeButtonStyle())
-        } else {
-            content
-        }
-    }
-
-    private func fire(_ event: String) {
-        guard let stmts = node.on[event] else { return }
-        ctx.store.fire(stmts, ctx: ctx, event: .record([:]))
-    }
-}
-
-/// Renders the label as is (press visuals come from the DSL via `self.pressed`, phase b).
-struct NodeButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-    }
-}
-
-/// Identifier `wb.<screen>.<nodeId>[.<repeatKey>…]`, `a11y.label/role/hidden`; containers keep
-/// their children visible to UI tests.
-struct A11yModifier: ViewModifier {
-    let node: Node
-    let ctx: RenderContext
-
-    func body(content: Content) -> some View {
-        let id = "wb.\(ctx.store.document.screen).\(node.id)\(ctx.idSuffix)"
-        let label: String? = if case let .string(s)? = node.a11y?.label.flatMap({ ctx.eval($0) }) { s } else { nil }
-        let hidden = node.a11y?.hidden.flatMap { ctx.eval($0) } == .bool(true)
-        let container = !node.children.isEmpty && node.on["tap"] == nil && node.on["longPress"] == nil
-        if hidden {
-            content.accessibilityHidden(true).accessibilityIdentifier(id)
-        } else {
-            grouped(content, container: container, labelled: label != nil)
-                .accessibilityIdentifier(id)
-                .modifier(LabelModifier(label: label))
-                .accessibilityAddTraits(Self.traits(node.a11y?.role))
-        }
-    }
-
-    @ViewBuilder
-    private func grouped(_ content: Content, container: Bool, labelled: Bool) -> some View {
-        if container && labelled {
-            content.accessibilityElement(children: .combine)
-        } else if container {
-            content.accessibilityElement(children: .contain)
-        } else {
-            content
-        }
-    }
-
-    static func traits(_ role: String?) -> AccessibilityTraits {
-        switch role {
-        case "button": .isButton
-        case "header": .isHeader
-        case "image": .isImage
-        default: []
-        }
-    }
-}
-
-struct LabelModifier: ViewModifier {
-    let label: String?
-    func body(content: Content) -> some View {
-        if let label { content.accessibilityLabel(Text(verbatim: label)) } else { content }
     }
 }

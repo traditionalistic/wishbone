@@ -198,7 +198,33 @@ struct BoxShape: InsettableShape {
 struct BoxFrame: Layout {
     var width: Dim, height: Dim
     var minWidth, maxWidth, minHeight, maxHeight: CGFloat?
+    var aspect: CGFloat? = nil
     var alignment: Alignment
+
+    /// `aspect` (w/h) derives the undetermined axis from the determined one (fixed, or fill with a
+    /// concrete offer); with neither determined it takes the largest box of that ratio in the offer.
+    /// nil = aspect doesn't apply (none, both axes determined, or nothing offered).
+    func aspectSize(_ p: ProposedViewSize) -> CGSize? {
+        guard let a = aspect, a > 0 else { return nil }
+        func resolved(_ dim: Dim, _ offer: CGFloat?, _ lo: CGFloat?, _ hi: CGFloat?) -> CGFloat? {
+            switch dim {
+            case let .fixed(n): Self.clamp(n, lo, hi)
+            case .fill: offer.flatMap { $0.isFinite ? Self.clamp($0, lo, hi) : nil }
+            case .wrap: nil
+            }
+        }
+        let w = resolved(width, p.width, minWidth, maxWidth), h = resolved(height, p.height, minHeight, maxHeight)
+        switch (w, h) {
+        case let (w?, nil): return CGSize(width: w, height: Self.clamp(w / a, minHeight, maxHeight))
+        case let (nil, h?): return CGSize(width: Self.clamp(h * a, minWidth, maxWidth), height: h)
+        case (nil, nil):
+            let ow = p.width.flatMap { $0.isFinite ? $0 : nil }, oh = p.height.flatMap { $0.isFinite ? $0 : nil }
+            guard let fw = ow ?? oh.map({ $0 * a }) else { return nil }
+            let fit = oh.map { min(fw, $0 * a) } ?? fw
+            return CGSize(width: fit, height: fit / a)
+        default: return nil
+        }
+    }
 
     static func clamp(_ x: CGFloat, _ lo: CGFloat?, _ hi: CGFloat?) -> CGFloat {
         var v = x
@@ -233,6 +259,7 @@ struct BoxFrame: Layout {
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        if let size = aspectSize(proposal) { return size }
         let child = subviews.reduce(CGSize.zero) { acc, s in
             let size = s.sizeThatFits(childProposal(proposal))
             return CGSize(width: max(acc.width, size.width), height: max(acc.height, size.height))
@@ -246,9 +273,10 @@ struct BoxFrame: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         // wrap re-offers the parent's proposal (not our measured size: re-measuring a text row at its
         // own fractional width truncates the last text); fill/fixed offer the resolved size.
+        let byAspect = aspectSize(proposal) != nil
         let p = ProposedViewSize(
-            width: width == .wrap ? Self.childProposal(width, proposal.width, min: minWidth, max: maxWidth) : bounds.width,
-            height: height == .wrap ? Self.childProposal(height, proposal.height, min: minHeight, max: maxHeight) : bounds.height
+            width: width == .wrap && !byAspect ? Self.childProposal(width, proposal.width, min: minWidth, max: maxWidth) : bounds.width,
+            height: height == .wrap && !byAspect ? Self.childProposal(height, proposal.height, min: minHeight, max: maxHeight) : bounds.height
         )
         for s in subviews {
             let size = s.sizeThatFits(p)

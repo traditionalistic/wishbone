@@ -12,6 +12,18 @@ public struct WishboneNodeContext {
     /// Runs the node's `on[event]` with `event` = payload.
     public func fire(_ event: String, _ payload: Value = .record([:])) { fireEvent(event, payload) }
 
+    public func number(_ key: String) -> Double? {
+        if case let .number(n)? = props[key], n.isFinite { n } else { nil }
+    }
+
+    public func bool(_ key: String) -> Bool? {
+        if case let .bool(b)? = props[key] { b } else { nil }
+    }
+
+    public func string(_ key: String) -> String? {
+        if case let .string(s)? = props[key] { s } else { nil }
+    }
+
     /// Resolves a (possibly relative) `url` prop against the server.
     public func url(_ key: String = "url") -> URL? {
         guard case let .string(s)? = props[key] else { return nil }

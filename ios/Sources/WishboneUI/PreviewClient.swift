@@ -52,17 +52,33 @@ public final class PreviewClient {
 
     public func connect() {
         guard loop == nil else { return }
-        wishbone.onLog = { [weak self] level, message in self?.send(["type": "log", "level": level, "message": message]) }
+        wishbone.previewLog = { [weak self] level, message in self?.send(["type": "log", "level": level, "message": message]) }
+        let hello = Self.json(["type": "hello", "platform": "ios", "device": Self.deviceName, "runtime": WishboneCoreVersion.runtime])
+        // Holds self weakly across awaits so a dropped client stops reconnecting.
         loop = Task { [weak self] in
             var delay = 1.0
             while !Task.isCancelled {
-                guard let self else { return }
+                guard let req = await self?.socketRequest() else { return }
+                let ws = URLSession.shared.webSocketTask(with: req)
+                ws.maximumMessageSize = 4 << 20
+                self?.socket = ws
+                self?.status = .connecting
+                ws.resume()
                 do {
-                    try await session()
-                    delay = 1
+                    try await ws.send(.string(hello))
+                    self?.status = .connected
+                    delay = 1 // connected: the next drop retries quickly again
+                    while !Task.isCancelled {
+                        switch try await ws.receive() {
+                        case let .string(s): self?.handle(Data(s.utf8))
+                        case let .data(d): self?.handle(d)
+                        @unknown default: break
+                        }
+                    }
                 } catch {
-                    status = .disconnected(String(describing: error))
+                    self?.status = .disconnected(String(describing: error))
                 }
+                ws.cancel()
                 try? await Task.sleep(for: .seconds(delay))
                 delay = min(delay * 2, 10)
             }
@@ -74,24 +90,11 @@ public final class PreviewClient {
         loop = nil
         socket?.cancel(with: .goingAway, reason: nil)
         socket = nil
-        wishbone.onLog = nil
+        wishbone.previewLog = nil
     }
 
-    private func session() async throws {
-        status = .connecting
-        let ws = URLSession.shared.webSocketTask(with: API.previewSocket(await wishbone.requestInfo(), code: code))
-        socket = ws
-        ws.resume()
-        defer { ws.cancel() }
-        try await ws.send(.string(Self.json(["type": "hello", "platform": "ios", "device": Self.deviceName, "runtime": WishboneCoreVersion.runtime])))
-        status = .connected
-        while !Task.isCancelled {
-            switch try await ws.receive() {
-            case let .string(s): handle(Data(s.utf8))
-            case let .data(d): handle(d)
-            @unknown default: break
-            }
-        }
+    private func socketRequest() async -> URLRequest {
+        API.previewSocket(await wishbone.requestInfo(), code: code)
     }
 
     func handle(_ message: Data) {

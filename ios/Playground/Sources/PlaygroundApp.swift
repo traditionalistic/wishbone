@@ -1,9 +1,16 @@
 import SwiftUI
+import WishboneLottie
+import WishboneRive
 import WishboneUI
 
 @main
 struct PlaygroundApp: App {
     @State private var model = PlaygroundModel()
+
+    init() {
+        WishboneLottie.register()
+        WishboneRive.register()
+    }
 
     var body: some Scene {
         WindowGroup {

@@ -14,7 +14,9 @@ public struct WishboneScreen: View {
     }
 
     public var body: some View {
+        // A different id/params is a different screen: fresh stack, model and store.
         StackHost(wishbone: wishbone, root: root, presenter: nil)
+            .id("\(root.screen)|\(API.jsonString(.record(root.params)))")
     }
 }
 
@@ -30,6 +32,7 @@ public struct WishbonePreviewScreen: View {
 
     public var body: some View {
         StackHost(wishbone: wishbone, root: root, presenter: nil)
+            .id(ObjectIdentifier(root.preview!))
     }
 }
 
@@ -55,7 +58,7 @@ struct StackHost: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
-        .modifier(EnvReader(env: wishbone.env))
+        .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
         .onAppear { navigator.exit = { dismiss() } }
     }
 }
@@ -98,21 +101,32 @@ struct RouteView: View {
             if !shown { withAnimation(.easeOut(duration: 0.3)) { shown = true } }
         }
         .onDisappear { wishbone.clock.release() }
+        .onChange(of: route.preview?.play?.seq) {
+            if let name = route.preview?.play?.timeline { model.store?.timelines.play(name) }
+        }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
-        .background(SwipeBackEnabler().frame(width: 0, height: 0))
+        .background(SwipeBackEnabler(allowsContentPop: !(model.store?.hasDrag ?? false)).frame(width: 0, height: 0))
         #endif
     }
 }
 
 struct ScreenContent: View {
     let store: Store
+    /// `matchId` scope: the whole screen.
+    @Namespace private var namespace
 
     var body: some View {
         var ctx = RenderContext(store: store)
         ctx.isRoot = true
+        ctx.namespace = namespace
+        // The root's `ignoreSafeArea` widens the whole screen area (not just the root inside a centered frame).
+        let edges = store.document.root.props["ignoreSafeArea"].flatMap { ctx.eval($0) }.flatMap { v -> String? in
+            if case let .string(s) = v { s } else { nil }
+        }
         return NodeView(node: store.document.root, ctx: ctx)
             .frame(maxWidth: .infinity, maxHeight: .infinity) // a wrap-sized root is centered
+            .ignoresSafeArea(.container, edges: NodeBody.edges(edges))
     }
 }
 

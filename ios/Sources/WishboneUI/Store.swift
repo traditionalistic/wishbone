@@ -31,6 +31,8 @@ final class Store {
     let document: Document
     let interpreter: Interpreter
     let navigator: Navigator?
+    /// The stack's geometry, or a default one for a store rendered outside a stack (tests).
+    let geometry: ScreenGeometry
     private(set) var params: [String: Value] = [:]
     private(set) var state: [String: Cell] = [:]
     private var data: [String: Cell] = [:]
@@ -38,6 +40,11 @@ final class Store {
     private var instances: [String: InstanceScope] = [:]
     /// The previous document's instances: values of names that still exist carry over on reload.
     private let previousInstances: [String: InstanceScope]
+    /// `scroll.<id>.x|y` and `drag.<id+repeat path>.x|y` cells, created on first read or write.
+    private var drivers: [String: Cell] = [:]
+    let timelines: Timelines
+    /// The screen has `drag` nodes (the full-width swipe-back would fight them).
+    let hasDrag: Bool
 
     /// `previous` — the store of the same screen before a document reload: state keys that still
     /// exist keep their values.
@@ -46,8 +53,13 @@ final class Store {
         self.document = document
         self.wishbone = wishbone
         self.navigator = navigator
+        geometry = navigator?.geometry ?? ScreenGeometry()
         interpreter = Interpreter(document: document)
         previousInstances = previous?.instances ?? [:]
+        let env = wishbone.env
+        timelines = Timelines(document.timelines, reduceMotion: { env.reduceMotion })
+        func anyDrag(_ n: Node) -> Bool { n.drag != nil || n.children.contains(where: anyDrag) }
+        hasDrag = anyDrag(document.root)
         let root = RenderContext(store: self)
         self.params = params
         for (name, def) in document.params where params[name] == nil { self.params[name] = root.eval(def) ?? .null }
@@ -66,6 +78,13 @@ final class Store {
     }
 
     func dataValue(_ name: String) -> Value { data[name]?.value ?? .null }
+
+    func driver(_ key: String) -> Cell {
+        if let cell = drivers[key] { return cell }
+        let cell = Cell(.number(0))
+        drivers[key] = cell
+        return cell
+    }
 
     /// The instance scope of a node carrying `inst`, created on first render with its initializers.
     /// ponytail: instances of removed repeat items stay for the screen's lifetime.
@@ -97,12 +116,14 @@ final class Store {
         wishbone.log(level, "\(document.screen): \(message)")
     }
 
-    private var warned: Set<String> = []
+    private var logged: Set<String> = []
 
-    /// For conditions every render would repeat (unknown primitive, missing adapter).
-    func warnOnce(_ message: String) {
-        if warned.insert(message).inserted { log(message, level: "warn") }
+    /// For conditions every render would repeat (eval errors, unknown primitive, missing adapter).
+    func logOnce(_ message: String, level: String = "error") {
+        if logged.insert(level + message).inserted { log(message, level: level) }
     }
+
+    func warnOnce(_ message: String) { logOnce(message, level: "warn") }
 
     // MARK: handlers
 
@@ -152,7 +173,7 @@ extension RenderContext {
         do {
             return try store.interpreter.eval(expr, scope: self, locals: locals)
         } catch {
-            store.log(String(describing: error))
+            store.logOnce("\(nodeID.map { "\($0): " } ?? "")\(error)")
             return nil
         }
     }

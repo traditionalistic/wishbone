@@ -26,6 +26,8 @@ final class Navigator {
     @ObservationIgnored weak var presenter: Navigator?
     /// Leaves the SDK at the root (host's `dismiss`).
     @ObservationIgnored var exit: (() -> Void)?
+    /// `env.screen*` / `env.safe*` of this stack.
+    @ObservationIgnored let geometry = ScreenGeometry()
 
     init(presenter: Navigator? = nil) {
         self.presenter = presenter
@@ -63,10 +65,17 @@ import UIKit
 /// The system bar is hidden (screens draw their own headers), which also disables UIKit's edge-swipe
 /// back; this re-enables it for the SDK's own navigation controller only (never at its root).
 struct SwipeBackEnabler: UIViewControllerRepresentable {
+    /// The iOS 26 full-width swipe would fight horizontal `drag` nodes; screens with drags keep the edge swipe only.
+    let allowsContentPop: Bool
+
     func makeUIViewController(context: Context) -> Controller { Controller() }
-    func updateUIViewController(_ controller: Controller, context: Context) {}
+    func updateUIViewController(_ controller: Controller, context: Context) {
+        controller.allowsContentPop = allowsContentPop
+    }
 
     final class Controller: UIViewController, UIGestureRecognizerDelegate {
+        var allowsContentPop = true
+
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
             navigationController?.interactivePopGestureRecognizer?.delegate = self
@@ -74,7 +83,11 @@ struct SwipeBackEnabler: UIViewControllerRepresentable {
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            (navigationController?.viewControllers.count ?? 0) > 1
+            guard (navigationController?.viewControllers.count ?? 0) > 1 else { return false }
+            if #available(iOS 26, *), gestureRecognizer === navigationController?.interactiveContentPopGestureRecognizer {
+                return allowsContentPop
+            }
+            return true
         }
     }
 }

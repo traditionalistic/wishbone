@@ -42,6 +42,8 @@ public final class Wishbone {
     @ObservationIgnored public var localScreens: [String: Data] = [:]
     /// Receives runtime errors of every screen (the preview client forwards them to the admin).
     @ObservationIgnored public var onLog: ((_ level: String, _ message: String) -> Void)?
+    /// Set by a connected `PreviewClient` (kept apart from the host's `onLog`).
+    @ObservationIgnored var previewLog: ((_ level: String, _ message: String) -> Void)?
 
     let env = EnvState()
     let clock = Clock()
@@ -71,6 +73,7 @@ public final class Wishbone {
         print("[wishbone] \(level): \(message)")
         #endif
         onLog?(level, message)
+        previewLog?(level, message)
     }
 
     // MARK: theme (cached per brand, revalidated with ETag)
@@ -80,12 +83,15 @@ public final class Wishbone {
     }
 
     private func loadTheme() {
-        if let cached = Self.cachedTheme(cache, brand) { theme = cached }
+        // No usable cache for this brand → bundled korpu until the server answers, and no ETag
+        // (a 304 would leave us without the brand's theme).
+        let cached = Self.cachedTheme(cache, brand)
+        theme = cached ?? .bundledKorpu
         themeTask?.cancel()
         themeTask = Task { [weak self] in
             guard let self else { return }
             let key = DiskCache.themeKey(brand: brand)
-            let etag = cache.read(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
+            let etag = cached == nil ? nil : cache.read(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
             let req = API.theme(await requestInfo(), etag: etag)
             do {
                 let (body, http) = try await API.send(req)

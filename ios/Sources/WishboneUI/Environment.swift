@@ -30,18 +30,23 @@ final class Clock {
     }
 }
 
-/// Device/system values behind `env.*`, written by the screen root view.
+/// Screen size and safe insets of one navigation stack (a sheet has its own), written by its root.
+@MainActor @Observable
+final class ScreenGeometry {
+    var screenSize = CGSize(width: 390, height: 844)
+    var safeTop = 0.0
+    var safeBottom = 0.0
+}
+
+/// App-wide system values behind `env.*` (scheme, reduce motion, locale).
 @MainActor @Observable
 final class EnvState {
     var dark = false
     var reduceMotion = false
-    var screenSize = CGSize(width: 390, height: 844)
-    var safeTop = 0.0
-    var safeBottom = 0.0
 
     let locale = (Locale.preferredLanguages.first ?? "en").lowercased()
 
-    func value(_ name: String, clock: Clock, brand: String) -> Value {
+    func value(_ name: String, clock: Clock, brand: String, geometry g: ScreenGeometry) -> Value {
         switch name {
         case "now": .number(clock.now)
         case "platform": .string("ios")
@@ -49,10 +54,10 @@ final class EnvState {
         case "brand": .string(brand)
         case "colorScheme": .string(dark ? "dark" : "light")
         case "reduceMotion": .bool(reduceMotion)
-        case "screenWidth": .number(screenSize.width)
-        case "screenHeight": .number(screenSize.height)
-        case "safeTop": .number(safeTop)
-        case "safeBottom": .number(safeBottom)
+        case "screenWidth": .number(g.screenSize.width)
+        case "screenHeight": .number(g.screenSize.height)
+        case "safeTop": .number(g.safeTop)
+        case "safeBottom": .number(g.safeBottom)
         case "timeZone": .string(TimeZone.current.identifier)
         default: .null
         }
@@ -67,6 +72,7 @@ struct EnvReader: ViewModifier {
     }
 
     let env: EnvState
+    let geometry: ScreenGeometry
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -79,9 +85,9 @@ struct EnvReader: ViewModifier {
                 Color.clear
                     .ignoresSafeArea(.keyboard)
                     .onGeometryChange(for: Geometry.self) { Geometry(size: $0.size, insets: $0.safeAreaInsets) } action: { g in
-                        env.safeTop = g.insets.top
-                        env.safeBottom = g.insets.bottom
-                        env.screenSize = CGSize(width: g.size.width, height: g.size.height + g.insets.top + g.insets.bottom)
+                        geometry.safeTop = g.insets.top
+                        geometry.safeBottom = g.insets.bottom
+                        geometry.screenSize = CGSize(width: g.size.width, height: g.size.height + g.insets.top + g.insets.bottom)
                     }
             }
     }

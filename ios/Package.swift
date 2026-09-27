@@ -47,6 +47,10 @@ let package = Package(
         .testTarget(
             name: "WishboneUITests",
             dependencies: ["WishboneUI"]
+        ),
+        .testTarget(
+            name: "WishboneAdapterTests",
+            dependencies: ["WishboneLottie", "WishboneRive", .product(name: "Lottie", package: "lottie-spm")]
         )
     ],
     swiftLanguageModes: [.v6]
