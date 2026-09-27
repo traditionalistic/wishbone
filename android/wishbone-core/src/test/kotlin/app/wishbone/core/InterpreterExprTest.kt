@@ -1,9 +1,10 @@
 package app.wishbone.core
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** Hand-written wire AST per area, transcribed from contract/conformance/expr.json (compiled vectors don't exist yet — see ConformanceTest). */
+/** Hand-written wire AST per area, transcribed from contract/conformance/expr.json — fast unit tests kept alongside the full real vectors in ConformanceTest. */
 class InterpreterExprTest {
     private fun eval(exprWire: String, vararg env: Pair<String, Value>) = TestHarness.eval(exprWire, env = env.toMap())
 
@@ -156,6 +157,14 @@ class InterpreterExprTest {
     }
 
     @Test
+    fun `min and max return NaN if either argument is NaN`() {
+        val nan = eval("""["f","min",[["op","/",["v",0],["v",0]],["v",1]]]""") as Value.Num
+        assertTrue(nan.value.isNaN())
+        val nan2 = eval("""["f","max",[["v",1],["op","/",["v",0],["v",0]]]]""") as Value.Num
+        assertTrue(nan2.value.isNaN())
+    }
+
+    @Test
     fun `token space and radius resolve theme numbers`() {
         assertEquals(Value.Num(20.0), eval("""["op","+",["t","space","lg"],["t","space","xs"]]"""))
         assertEquals(Value.Num(9999.0), eval("""["t","radius","pill"]"""))
@@ -226,10 +235,12 @@ class InterpreterExprTest {
     }
 
     @Test
-    fun `optional method call is null-propagating (compiler lowers to a null check around the call)`() {
+    fun `optional method call is null-propagating (real compiler output has no null-check wrapper, just Stdlib short-circuiting)`() {
+        // Confirmed against contract/conformance/compiled/expr.json "opt.method"/"opt.method.present":
+        // the compiler lowers `xs.count ?? -1` straight to this wire form, no ["if", ...] wrapper.
         val doc = TestHarness.document(data = """[{"name":"xs","op":"demo.offers","args":{},"required":false}]""")
-        val nullPropagatingCount = """["if",["op","!=",["d","xs"],["v",null]],["f","count",[["d","xs"]]],["v",null]]"""
-        assertEquals(Value.Num(-1.0), TestHarness.eval("""["op","??",$nullPropagatingCount,["v",-1]]""", doc))
-        assertEquals(Value.Num(0.0), TestHarness.eval("""["op","??",$nullPropagatingCount,["v",-1]]""", doc, data = mapOf("xs" to Value.ListV(emptyList()))))
+        val countCall = """["f","count",[["d","xs"]]]"""
+        assertEquals(Value.Num(-1.0), TestHarness.eval("""["op","??",$countCall,["v",-1]]""", doc))
+        assertEquals(Value.Num(0.0), TestHarness.eval("""["op","??",$countCall,["v",-1]]""", doc, data = mapOf("xs" to Value.ListV(emptyList()))))
     }
 }

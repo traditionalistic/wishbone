@@ -21,6 +21,9 @@ class MapScope(
     val state: MutableMap<String, Value> = LinkedHashMap()
     val instanceState: MutableMap<String, Value> = LinkedHashMap()
 
+    /** Every `set()` call in order, with the `transaction` (`animate(...)` motion) active at that point — for asserting `anim` scoping. */
+    val setCalls: MutableList<Pair<String, Value?>> = mutableListOf()
+
     override fun state(name: String): Value = state[name] ?: Value.Null
     override fun instanceState(name: String): Value = instanceState[name] ?: Value.Null
 
@@ -53,6 +56,7 @@ class MapScope(
     override fun selfPressed(): Boolean = pressed
 
     override fun set(scope: String, name: String, path: List<Value>, value: Value, transaction: Value?) {
+        setCalls.add(name to transaction)
         val target = if (scope == "i") instanceState else state
         val current = target[name] ?: Value.Null
         val updated = updatePath(current, path, value) ?: return

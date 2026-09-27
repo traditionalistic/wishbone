@@ -1,5 +1,6 @@
 package app.wishbone.core
 
+import kotlinx.coroutines.CancellationException
 import kotlin.math.floor
 
 sealed class InterpreterException(message: String) : Exception(message) {
@@ -52,6 +53,8 @@ class Interpreter(
         val budget = Budget()
         try {
             execStmts(stmts, locals, budget, transaction = null)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             effects.error(e.message ?: e.toString())
         }
@@ -84,14 +87,12 @@ class Interpreter(
                 locals
             }
             is Stmt.CallOp -> {
+                // Always called synchronously, in statement order (deterministic effect recording).
+                // `awaited` tells the SINK whether it may return a real result or must not block —
+                // see EffectSink.call's contract; the interpreter itself never launches anything.
                 val argsValue = evalInternal(stmt.args, locals, budget)
-                // ponytail: always awaits the call (even when await=false / fire-and-forget); the
-                // effect is still recorded synchronously either way, which is all conformance and a
-                // mock EffectSink can observe. True background dispatch needs a CoroutineScope on
-                // the interpreter — add one (and launch here) when a real networked EffectSink needs
-                // a slow `call` to not block the handler run.
-                val result = effects.call(stmt.op, argsValue)
-                if (stmt.resultName != null) locals.bind(stmt.resultName, result) else locals
+                val result = effects.call(stmt.op, argsValue, stmt.await)
+                if (stmt.await && stmt.resultName != null) locals.bind(stmt.resultName, result) else locals
             }
             is Stmt.Do -> {
                 val args = stmt.args.map { evalInternal(it, locals, budget) }
@@ -183,18 +184,29 @@ class Interpreter(
             "%" -> Value.Num(asNum(a) % asNum(b))
             "==" -> Value.of(deepEquals(a, b))
             "!=" -> Value.of(!deepEquals(a, b))
-            "<" -> Value.of(compareOrdered(a, b) < 0)
-            "<=" -> Value.of(compareOrdered(a, b) <= 0)
-            ">" -> Value.of(compareOrdered(a, b) > 0)
-            ">=" -> Value.of(compareOrdered(a, b) >= 0)
+            "<" -> Value.of(isLess(a, b))
+            "<=" -> Value.of(isLessOrEqual(a, b))
+            ">" -> Value.of(isLess(b, a))
+            ">=" -> Value.of(isLessOrEqual(b, a))
             else -> throw InterpreterException.EvalError("unknown operator: ${e.op}")
         }
     }
 
-    /** IEEE ordering for numbers (NaN comparisons are simply false, never routed through this), code-point ordering for strings. */
-    private fun compareOrdered(a: Value, b: Value): Int = when {
-        a is Value.Num && b is Value.Num -> if (a.value < b.value) -1 else if (a.value > b.value) 1 else 0
-        a is Value.Str && b is Value.Str -> compareCodePoints(a.value, b.value)
+    /**
+     * Direct IEEE comparison for numbers — NOT routed through a 3-way `compareTo`/`Int`, which
+     * cannot represent "neither less nor greater nor equal" (any NaN comparison must be `false`,
+     * for every one of `< <= > >=`, e.g. `NaN <= 1` and `NaN >= NaN` are both `false`). Code-point
+     * ordering for strings.
+     */
+    private fun isLess(a: Value, b: Value): Boolean = when {
+        a is Value.Num && b is Value.Num -> a.value < b.value
+        a is Value.Str && b is Value.Str -> compareCodePoints(a.value, b.value) < 0
+        else -> throw InterpreterException.EvalError("cannot compare $a and $b")
+    }
+
+    private fun isLessOrEqual(a: Value, b: Value): Boolean = when {
+        a is Value.Num && b is Value.Num -> a.value <= b.value
+        a is Value.Str && b is Value.Str -> compareCodePoints(a.value, b.value) <= 0
         else -> throw InterpreterException.EvalError("cannot compare $a and $b")
     }
 

@@ -31,7 +31,9 @@ sealed interface Value {
      */
     class Num(val value: Double) : Value {
         override fun equals(other: Any?): Boolean = other is Num && this.value == other.value
-        override fun hashCode(): Int = value.hashCode()
+        // equal objects must have equal hashCodes: Num(0.0) == Num(-0.0) per the equals above, but
+        // Double.hashCode() (doubleToLongBits) gives them different bits — collapse zero explicitly.
+        override fun hashCode(): Int = if (value == 0.0) 0 else value.hashCode()
         override fun toString(): String = "Num(value=$value)"
     }
 

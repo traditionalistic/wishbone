@@ -56,12 +56,13 @@ class RecordingEffectSink(private val callResults: Map<String, Value> = emptyMap
     val effects = mutableListOf<Value>()
     val errors = mutableListOf<String>()
 
-    override suspend fun call(op: String, args: Value): Value {
+    override suspend fun call(op: String, args: Value, awaited: Boolean): Value {
         effects.add(Value.rec("effect" to Value.Str("call"), "op" to Value.Str(op), "args" to args))
-        return callResults[op] ?: Value.rec(
+        val result = callResults[op] ?: Value.rec(
             "ok" to Value.FALSE,
             "error" to Value.rec("code" to Value.Str("NETWORK"), "message" to Value.Str("no mock")),
         )
+        return if (awaited) result else Value.Null
     }
 
     override suspend fun perform(effect: String, args: List<Value>, await: Boolean) {

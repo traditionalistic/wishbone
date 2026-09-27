@@ -73,7 +73,13 @@ data class Document(
     val root: Node,
 ) {
     companion object {
-        fun parse(json: String): Document = decode(Json.parseToJsonElement(json).jsonObject)
+        fun parse(json: String): Document = try {
+            decode(Json.parseToJsonElement(json).jsonObject)
+        } catch (e: AstDecodeException) {
+            throw e
+        } catch (e: Exception) {
+            throw AstDecodeException("malformed document JSON: ${e.message}")
+        }
 
         fun decode(obj: JsonObject): Document {
             val root = obj["root"]?.jsonObject ?: throw AstDecodeException("document missing 'root'")

@@ -125,4 +125,14 @@ class TimelineSamplerTest {
         assertEquals(3.0, TimelineSampler.sample(t, 0.0, 0)["a.opacity"]!!, TOL)
         assertEquals(3.0, TimelineSampler.sample(t, 500.0, 0)["a.opacity"]!!, TOL)
     }
+
+    @Test
+    fun `interior duplicate key times step to the later key (contract README - equal key times step to the later key)`() {
+        // keys at t=0(v=0), t=5(v=1), t=5(v=9), t=10(v=20): sampling exactly at t=5 must use the LATER
+        // of the two t=5 keys (v=9), not the earlier one (v=1).
+        val t = tl(10.0, tracks = listOf(track("a", "opacity", 0.0, Key(0.0, 0.0, null), Key(5.0, 1.0, null), Key(5.0, 9.0, null), Key(10.0, 20.0, null))))
+        assertEquals(9.0, TimelineSampler.sample(t, 5.0, 0)["a.opacity"]!!, TOL)
+        // interpolation onward from t=5 uses the later key's value (9) as its left edge.
+        assertEquals(14.5, TimelineSampler.sample(t, 7.5, 0)["a.opacity"]!!, TOL)
+    }
 }

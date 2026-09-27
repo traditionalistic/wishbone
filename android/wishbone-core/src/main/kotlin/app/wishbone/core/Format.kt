@@ -61,6 +61,12 @@ object Format {
     fun numberToString(x: Double): String {
         if (x.isNaN()) return "NaN"
         if (x.isInfinite()) return if (x > 0) "Infinity" else "-Infinity"
+        if (x == 0.0) return "0"
+        // Whole numbers below 1e15 print their exact integer digits directly. Going through the
+        // fixed-point path (x * 10^6 in double) loses precision above 2^53 ≈ 9.007e15 — well below
+        // 1e15 is safe, but even at ~1.79e12 the *scaled* value (×1e6 ⇒ ~1.79e18) already overflows
+        // exact double precision, corrupting trailing digits (e.g. "1790000000123.000064").
+        if (abs(x) < 1e15 && x == truncate(x)) return BigDecimal(x).toPlainString()
         val digits = magnitudeDigits(x, 6)
         val (intPart, fracRaw) = splitFraction(digits, 6)
         val fracPart = fracRaw.trimEnd('0')

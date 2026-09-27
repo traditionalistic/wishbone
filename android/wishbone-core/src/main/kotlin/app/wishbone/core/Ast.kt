@@ -56,7 +56,7 @@ sealed interface Expr {
                 "e" -> EnvRef(arr.stringAt(1, tag))
                 "t" -> TokenRef(arr.stringAt(1, tag), arr.stringAt(2, tag))
                 "dr" -> DriverRef(arr.stringAt(1, tag), arr.stringAt(2, tag), arr.stringAt(3, tag))
-                "self" -> SelfPressed
+                "self" -> if (arr.stringAt(1, tag) == "pressed") SelfPressed else Unknown(tag)
                 "get" -> Get(decode(arr.at(1, tag)), arr.stringAt(2, tag))
                 "at" -> At(decode(arr.at(1, tag)), decode(arr.at(2, tag)))
                 "op" -> BinOp(arr.stringAt(1, tag), decode(arr.at(2, tag)), decode(arr.at(3, tag)))

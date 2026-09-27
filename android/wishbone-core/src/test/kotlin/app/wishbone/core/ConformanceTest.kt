@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import java.io.File
 import kotlin.math.abs
@@ -21,12 +22,21 @@ import kotlin.math.abs
  * Task 3) and applies contract/README.md's harness rules to every vector, one [DynamicTest] per
  * vector name. Until that directory exists, this cleanly skips (JUnit5 assumption) instead of
  * failing — see core-decisions.md.
- *
- * NOTE: written against the *documented* compiled-vector format (contract/README.md "Скомпилированные
- * векторы"); it has not been run against real compiler output yet, since none exists. Whoever wires
- * up the compiler should re-run this and adjust field names here if the real output differs.
  */
 class ConformanceTest {
+
+    /** Guards against the dynamic factory silently collecting 0 tests (e.g. an empty/missing file passes vacuously). */
+    @Test
+    fun `all five compiled vector files exist and are non-empty`() {
+        val dir = RepoPaths.conformanceCompiledDir
+        assumeTrue(dir.isDirectory, "${dir.path} does not exist yet — skipping until the compiler produces it")
+        for (name in listOf("expr.json", "format.json", "handlers.json", "events.json", "timelines.json")) {
+            val file = File(dir, name)
+            assertTrue(file.isFile, "missing $file")
+            val count = Json.parseToJsonElement(file.readText()).jsonArray.size
+            assertTrue(count > 0, "$file has no vectors")
+        }
+    }
 
     @TestFactory
     fun conformance(): List<DynamicTest> {
@@ -114,6 +124,8 @@ class ConformanceTest {
             val args = (obj["args"] as JsonArray).map { Value.fromJson(it) }
             interp.run(handlerName, args)
         }
+
+        assertTrue(sink.errors.isEmpty(), "unexpected interpreter error(s): ${sink.errors}")
 
         val expect = obj["expect"]!!.jsonObject
         for ((key, expectedJson) in expect["state"]!!.jsonObject) {

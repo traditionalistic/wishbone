@@ -180,4 +180,71 @@ class InterpreterHandlerTest {
         assertEquals(Value.Num(1.0), scope.state("n"))
         assertTrue(sink.errors.isNotEmpty())
     }
+
+    @Test
+    fun `awaited=false call must not block — the sink's contract, not the interpreter's`() = runTest {
+        // EffectSink.call's contract: when awaited=false the SINK must not block (launch its own
+        // coroutine and return Value.Null immediately). This sink would suspend forever if it were
+        // ever awaited — proving the interpreter really passes awaited=false through unchanged
+        // rather than, say, always awaiting.
+        val doc = TestHarness.document(
+            state = """[["done",["v",false]]]""",
+            handlers = """{"go":{"params":[],"body":[
+                ["call","demo.slow",["rec",{}],null,false],
+                ["set","s","done",[],["v",true]]
+            ]}}""",
+        )
+        val neverBlocksSink = object : EffectSink {
+            override suspend fun call(op: String, args: Value, awaited: Boolean): Value {
+                if (!awaited) return Value.Null
+                kotlinx.coroutines.awaitCancellation()
+            }
+            override suspend fun perform(effect: String, args: List<Value>, await: Boolean) {}
+            override fun error(message: String) {}
+        }
+        val (scope, interp) = TestHarness.scopeAndInterpreter(doc, sink = neverBlocksSink)
+        interp.run("go", emptyList())
+        assertEquals(Value.TRUE, scope.state("done"))
+    }
+
+    @Test
+    fun `step budget exceeded aborts the run and reports an error`() = runTest {
+        val doc = TestHarness.document(
+            state = """[["n",["v",0]]]""",
+            handlers = """{"go":{"params":[],"body":[
+                ["set","s","n",[],["f","map",[["f","range",[["v",10000]]],["lam",["x"],["op","+",["l","x"],["v",1]]]]]]
+            ]}}""",
+        )
+        val sink = RecordingEffectSink()
+        val (scope, interp) = TestHarness.scopeAndInterpreter(doc, sink = sink)
+        interp.run("go", emptyList())
+        assertEquals(Value.Num(0.0), scope.state("n")) // the set never completed — budget died mid-expression
+        assertTrue(sink.errors.any { it.contains("budget", ignoreCase = true) }, "expected a budget error, got ${sink.errors}")
+    }
+
+    @Test
+    fun `anim passes its motion to scope-set and restores the previous transaction, across a suspending perform`() = runTest {
+        val doc = TestHarness.document(
+            state = """[["a",["v",0]],["b",["v",0]],["c",["v",0]]]""",
+            handlers = """{"go":{"params":[],"body":[
+                ["anim",["t","motion","snappy"],[
+                    ["set","s","a",[],["v",1]],
+                    ["do","wait",[["v",100]],true],
+                    ["set","s","b",[],["v",2]]
+                ]],
+                ["set","s","c",[],["v",3]]
+            ]}}""",
+        )
+        val yieldingSink = object : EffectSink {
+            override suspend fun call(op: String, args: Value, awaited: Boolean): Value = Value.Null
+            override suspend fun perform(effect: String, args: List<Value>, await: Boolean) {
+                kotlinx.coroutines.yield() // a REAL suspension point, not just a suspend-fun call that never actually suspends
+            }
+            override fun error(message: String) {}
+        }
+        val (scope, interp) = TestHarness.scopeAndInterpreter(doc, sink = yieldingSink)
+        interp.run("go", emptyList())
+        val snappy = Value.rec("\$motion" to Value.Str("snappy"))
+        assertEquals(listOf("a" to snappy, "b" to snappy, "c" to null), scope.setCalls)
+    }
 }

@@ -1,6 +1,8 @@
 package app.wishbone.core
 
+import java.util.Locale
 import java.util.regex.Pattern
+import java.util.regex.PatternSyntaxException
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -24,6 +26,17 @@ private val WHITESPACE_CODEPOINTS: Set<Int> = buildSet {
 }
 
 private val NUM_PATTERN: Pattern = Pattern.compile("^[+-]?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d+)?$")
+
+/** `matches(s, re)` compiles a lot of the same small regexes repeatedly (e.g. inside a `map`); cache them. */
+private val patternCache = java.util.concurrent.ConcurrentHashMap<String, Pattern>()
+
+private fun compiledPattern(re: String): Pattern = patternCache.getOrPut(re) {
+    try {
+        Pattern.compile(re, Pattern.UNICODE_CHARACTER_CLASS)
+    } catch (e: PatternSyntaxException) {
+        throw InterpreterException.EvalError("invalid regex '$re': ${e.message}")
+    }
+}
 
 /**
  * Every `"method": true` name in contract/stdlib.json. The compiler lowers `x.m(...)` for an
@@ -59,7 +72,7 @@ class Stdlib(private val ctx: StdlibContext) {
         "pow" -> Value.Num(num(args[0]).pow(num(args[1])))
         "sin" -> Value.Num(sin(num(args[0])))
         "cos" -> Value.Num(cos(num(args[0])))
-        "clamp" -> Value.Num(num(args[0]).coerceIn(min(num(args[1]), num(args[2])), kotlin.math.max(num(args[1]), num(args[2]))))
+        "clamp" -> Value.Num(min(kotlin.math.max(num(args[0]), num(args[1])), num(args[2]))) // literally min(max(x,lo),hi) — no bound swapping
         "interpolate" -> Value.Num(interpolate(num(args[0]), numList(args[1]), numList(args[2])))
 
         "length" -> Value.Num(str(args[0]).codePointCount(0, str(args[0]).length).toDouble())
@@ -91,10 +104,7 @@ class Stdlib(private val ctx: StdlibContext) {
             val a = str(args[1])
             if (a.isEmpty()) args[0] else Value.Str(str(args[0]).replace(a, str(args[2])))
         }
-        "matches" -> {
-            val pattern = Pattern.compile(str(args[1]), Pattern.UNICODE_CHARACTER_CLASS)
-            Value.of(pattern.matcher(str(args[0])).matches())
-        }
+        "matches" -> Value.of(compiledPattern(str(args[1])).matcher(str(args[0])).matches())
         "substring" -> {
             val s = str(args[0])
             val cps = codePoints(s)
@@ -104,7 +114,7 @@ class Stdlib(private val ctx: StdlibContext) {
             if (start >= end) Value.Str("") else Value.Str(codePointsToString(cps.subList(start, end)))
         }
         "num" -> {
-            val s = str(args[0]).trim()
+            val s = trimWhitespace(str(args[0]))
             if (NUM_PATTERN.matcher(s).matches()) {
                 val d = s.toDoubleOrNull()
                 if (d != null && d.isFinite()) Value.Num(d) else Value.Null
@@ -182,10 +192,20 @@ class Stdlib(private val ctx: StdlibContext) {
             if (byString) {
                 compareBy(codePointComparator) { i: Int -> (keys[i] as? Value.Str)?.value ?: "" }
             } else {
-                compareBy { i: Int -> (keys[i] as? Value.Num)?.value ?: Double.NaN }
+                Comparator { i, j -> compareNumKey((keys[i] as? Value.Num)?.value ?: Double.NaN, (keys[j] as? Value.Num)?.value ?: Double.NaN) }
             },
         )
         return Value.ListV(indices.map { items[it] })
+    }
+
+    /** NaN sorts after every number; otherwise plain IEEE `<`/`>` — so `-0.0`/`0.0` compare equal and the sort stays stable. */
+    private fun compareNumKey(a: Double, b: Double): Int = when {
+        a.isNaN() && b.isNaN() -> 0
+        a.isNaN() -> 1
+        b.isNaN() -> -1
+        a < b -> -1
+        a > b -> 1
+        else -> 0
     }
 
     private fun alpha(c: Value.Rec, a: Double): Value {
@@ -207,27 +227,27 @@ class Stdlib(private val ctx: StdlibContext) {
 
     private fun interpolate(x: Double, input: List<Double>, output: List<Double>): Double {
         if (input.size != output.size || input.size < 2) return output.firstOrNull() ?: 0.0
+        for (i in 0 until input.size - 1) if (input[i + 1] < input[i]) return output.firstOrNull() ?: 0.0
         if (x <= input.first()) return output.first()
         if (x >= input.last()) return output.last()
-        for (i in 0 until input.size - 1) {
-            val x0 = input[i]; val x1 = input[i + 1]
-            if (x in x0..x1) {
-                if (x1 == x0) continue
-                val t = (x - x0) / (x1 - x0)
-                return output[i] + (output[i + 1] - output[i]) * t
-            }
-        }
-        return output.last()
+        // last stop <= x — resolves a duplicated stop to the later segment.
+        var i = 0
+        for (j in input.indices) if (input[j] <= x) i = j
+        val x0 = input[i]; val x1 = input[i + 1]
+        val t = if (x1 == x0) 1.0 else (x - x0) / (x1 - x0)
+        return output[i] + (output[i + 1] - output[i]) * t
     }
 
     private fun envStr(name: String): String = (ctx.scope.env(name) as? Value.Str)?.value ?: ""
 
+    /** Full case mapping (can expand one code point to several, e.g. "ß" -> "SS"), applied per code point so no cross-character context (locale, final-sigma) ever applies. */
     private fun mapCase(s: String, toUpper: Boolean): String {
         val sb = StringBuilder(s.length)
         var i = 0
         while (i < s.length) {
             val cp = s.codePointAt(i)
-            sb.appendCodePoint(if (toUpper) Character.toUpperCase(cp) else Character.toLowerCase(cp))
+            val one = String(Character.toChars(cp))
+            sb.append(if (toUpper) one.uppercase(Locale.ROOT) else one.lowercase(Locale.ROOT))
             i += Character.charCount(cp)
         }
         return sb.toString()

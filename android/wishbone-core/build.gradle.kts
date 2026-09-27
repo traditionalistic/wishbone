@@ -1,6 +1,7 @@
 plugins {
+    `java-library` // for the api(...) configuration below — :wishbone-ui needs kotlinx-serialization-json's
+    // JsonObject/JsonElement types on its own compile classpath (Document.Node.raw, Document.decode(...)).
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 java {
@@ -15,7 +16,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.kotlinx.serialization.json)
+    api(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit5.api)
