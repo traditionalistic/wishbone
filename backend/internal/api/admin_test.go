@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"reflect"
 	"strings"
 	"testing"
@@ -232,6 +234,51 @@ func TestSeed(t *testing.T) {
 	}
 	if code, _, b := e.do("GET", "/v1/screens/t.seed", nil); code != 200 || obj(t, b)["revision"] != 1 {
 		t.Fatalf("a seeded screen without a revision is published, once: %d %s", code, b)
+	}
+}
+
+// A screen file that does not parse or compile (e.g. mid-edit on disk) is logged and skipped, never fatal.
+func TestSeedSkipsBadFiles(t *testing.T) {
+	dir, err := makeContract(chipV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rel, src := range map[string]string{
+		"screens/a.json": `{"id": "t.half", "title": "Half`,
+		"screens/b.json": `{"id": "t.bad", "title": "Bad", "script": "state n = ", "timelines": [], "root": {"type": "stack", "id": "root"}}`,
+		"screens/c.json": `{"id": "t.ok", "title": "Ok", "script": "", "timelines": [], "root": {"type": "stack", "id": "root", "children": []}}`,
+	} {
+		if err := write(dir, rel, src); err != nil {
+			t.Fatal(err)
+		}
+	}
+	newEnv(t) // empty tables
+	e := newEnvWith(t, dir)
+	var logs bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
+	defer slog.SetDefault(prev)
+
+	if err := e.srv.Seed(context.Background()); err != nil {
+		t.Fatalf("seed must not fail on a bad screen file: %v", err)
+	}
+	for _, id := range []string{"t.seed", "t.ok"} {
+		if code, _, b := e.do("GET", "/v1/screens/"+id, nil); code != 200 {
+			t.Errorf("%s must still be seeded: %d %s", id, code, b)
+		}
+	}
+	if code, b := e.admin("GET", "/screens/t.bad", nil); code != 404 {
+		t.Errorf("a non-compiling seed file creates nothing: %d %s", code, b)
+	}
+	var errs []map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(logs.String()), "\n") {
+		if m := obj(t, []byte(line)); m["level"] == "ERROR" {
+			errs = append(errs, m)
+		}
+	}
+	if len(errs) != 2 || !strings.HasSuffix(errs[0]["file"].(string), "a.json") || !strings.Contains(errs[0]["err"].(string), "unexpected end of JSON") ||
+		!strings.HasSuffix(errs[1]["file"].(string), "b.json") || !strings.Contains(errs[1]["err"].(string), "script:1:11") {
+		t.Fatalf("each bad file is logged at ERROR with its file and reason:\n%s", logs.String())
 	}
 }
 
