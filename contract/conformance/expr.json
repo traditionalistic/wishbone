@@ -1001,5 +1001,62 @@
   "expect": {
    "$color": "el16"
   }
+ },
+ {
+  "name": "str.epoch.int",
+  "kind": "expr",
+  "expr": "str(1790000000123)",
+  "expect": "1790000000123"
+ },
+ {
+  "name": "str.bigint.odd",
+  "kind": "expr",
+  "expr": "str(1000000000001)",
+  "expect": "1000000000001"
+ },
+ {
+  "name": "cmp.nan.le",
+  "kind": "expr",
+  "expr": "0 / 0 <= 1",
+  "expect": false
+ },
+ {
+  "name": "cmp.nan.ge",
+  "kind": "expr",
+  "expr": "0 / 0 >= 0 / 0",
+  "expect": false
+ },
+ {
+  "name": "math.clamp.inverted",
+  "kind": "expr",
+  "expr": "clamp(5, 10, 0)",
+  "expect": 0
+ },
+ {
+  "name": "math.interpolate.dupstop",
+  "kind": "expr",
+  "expr": "interpolate(5, [0, 5, 5, 10], [0, 1, 2, 3])",
+  "expect": 2
+ },
+ {
+  "name": "math.interpolate.decreasing",
+  "kind": "expr",
+  "expr": "interpolate(5, [10, 0], [1, 2])",
+  "expect": 1
+ },
+ {
+  "name": "str.upper.full",
+  "kind": "expr",
+  "expr": "\"Straße\".upper()",
+  "expect": "STRASSE"
+ },
+ {
+  "name": "list.sortBy.negzero",
+  "kind": "expr",
+  "expr": "[{n: \"a\", k: 0}, {n: \"b\", k: round(-0.4)}].sortBy(x => x.k).map(x => x.n)",
+  "expect": [
+   "a",
+   "b"
+  ]
  }
 ]

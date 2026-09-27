@@ -8383,5 +8383,588 @@
     "id": "root"
    }
   }
+ },
+ {
+  "name": "str.epoch.int",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "v",
+     1790000000123
+    ]
+   ]
+  ],
+  "expect": "1790000000123",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.epoch.int",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.bigint.odd",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "v",
+     1000000000001
+    ]
+   ]
+  ],
+  "expect": "1000000000001",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.bigint.odd",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.nan.le",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "<=",
+   [
+    "op",
+    "/",
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     0
+    ]
+   ],
+   [
+    "v",
+    1
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.nan.le",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.nan.ge",
+  "kind": "expr",
+  "expr": [
+   "op",
+   ">=",
+   [
+    "op",
+    "/",
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     0
+    ]
+   ],
+   [
+    "op",
+    "/",
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     0
+    ]
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.nan.ge",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.clamp.inverted",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "clamp",
+   [
+    [
+     "v",
+     5
+    ],
+    [
+     "v",
+     10
+    ],
+    [
+     "v",
+     0
+    ]
+   ]
+  ],
+  "expect": 0,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.clamp.inverted",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.interpolate.dupstop",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "interpolate",
+   [
+    [
+     "v",
+     5
+    ],
+    [
+     "list",
+     [
+      [
+       "v",
+       0
+      ],
+      [
+       "v",
+       5
+      ],
+      [
+       "v",
+       5
+      ],
+      [
+       "v",
+       10
+      ]
+     ]
+    ],
+    [
+     "list",
+     [
+      [
+       "v",
+       0
+      ],
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 2,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.interpolate.dupstop",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.interpolate.decreasing",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "interpolate",
+   [
+    [
+     "v",
+     5
+    ],
+    [
+     "list",
+     [
+      [
+       "v",
+       10
+      ],
+      [
+       "v",
+       0
+      ]
+     ]
+    ],
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.interpolate.decreasing",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.upper.full",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "upper",
+   [
+    [
+     "v",
+     "Straße"
+    ]
+   ]
+  ],
+  "expect": "STRASSE",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.upper.full",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.sortBy.negzero",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "map",
+   [
+    [
+     "f",
+     "sortBy",
+     [
+      [
+       "list",
+       [
+        [
+         "rec",
+         {
+          "n": [
+           "v",
+           "a"
+          ],
+          "k": [
+           "v",
+           0
+          ]
+         }
+        ],
+        [
+         "rec",
+         {
+          "n": [
+           "v",
+           "b"
+          ],
+          "k": [
+           "f",
+           "round",
+           [
+            [
+             "un",
+             "-",
+             [
+              "v",
+              0.4
+             ]
+            ]
+           ]
+          ]
+         }
+        ]
+       ]
+      ],
+      [
+       "lam",
+       [
+        "x"
+       ],
+       [
+        "get",
+        [
+         "l",
+         "x"
+        ],
+        "k"
+       ]
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "get",
+      [
+       "l",
+       "x"
+      ],
+      "n"
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   "a",
+   "b"
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.sortBy.negzero",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
  }
 ]
