@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "notes": [
-    "sig uses DSL type syntax; <T>/<U> are generic parameters. method: true => callable as receiver.name(args) (receiver = first param); a direct call name(receiver, …) is also legal. property: true => accessed as receiver.name without parentheses (lowered to [\"f\", name, [receiver]]).",
+    "sig uses DSL type syntax and may be a list of overloads (the first overload whose parameter types accept the arguments wins); <T>/<U> are generic parameters. method: true => callable as receiver.name(args) (receiver = first param); a direct call name(receiver, …) is also legal. property: true => accessed as receiver.name without parentheses (lowered to [\"f\", name, [receiver]]).",
     "Optional receivers: x.m(…) and x.p with x: T? are null-propagating — the result is null when x is null and the result type becomes U?. A direct call m(x) requires a non-optional x.",
     "Overloads, not unions: contains/isEmpty have a string overload and a list overload; anything else is a type error.",
     "Lambdas are legal only as arguments of stdlib functions. Lambdas passed to map/filter/find/some/every may declare 1 or 2 parameters: (item) or (item, index).",
@@ -65,7 +65,10 @@
       "doc": "code point count"
     },
     "isEmpty": {
-      "sig": "<T>(x: string) => bool | (x: list<T>) => bool",
+      "sig": [
+        "(s: string) => bool",
+        "<T>(xs: list<T>) => bool"
+      ],
       "method": true,
       "property": true
     },
@@ -85,7 +88,10 @@
       "doc": "strips leading/trailing White_Space code points: U+0009–000D, 0020, 0085, 00A0, 1680, 2000–200A, 2028, 2029, 202F, 205F, 3000"
     },
     "contains": {
-      "sig": "(s: string, t: string) => bool | <T>(xs: list<T>, v: T) => bool",
+      "sig": [
+        "(s: string, t: string) => bool",
+        "<T>(xs: list<T>, v: T) => bool"
+      ],
       "method": true,
       "doc": "overloads: (string, string) substring test ('' => true); (list<T>, T) deep-equality membership"
     },
@@ -213,9 +219,10 @@
       "doc": "[0, 1, …, floor(n)-1]; n <= 0 or non-finite => []; n capped at 10000"
     },
     "with": {
-      "sig": "<R>(r: R, patch: <record literal>) => R",
+      "sig": "<R>(r: R, patch: R) => R",
       "method": true,
-      "doc": "patch must be a record literal whose fields are a subset of r's fields, each assignable; r must be a non-optional record (or null-propagating per notes). Result type R."
+      "doc": "patch must be a record literal whose fields are a subset of r's fields, each assignable; r must be a non-optional record (or null-propagating per notes). Result type R.",
+      "special": true
     },
     "formatNumber": {
       "sig": "(x: number, decimals: number) => string",
@@ -355,7 +362,7 @@
     "effects": "refresh/play/stop take a bare name, lowered to [\"v\", name]; await is legal before call and play only",
     "bind": "`bind` is a pseudo-prop inside textField props: bind: \"x\" == value: =x plus on.change: x = event.value",
     "repeat": "repeat.over accepts list<T> or list<T>? (null renders nothing)",
-    "types": "map<T> is string-keyed; a record literal is assignable to map<T> when every field is assignable to T; a field k?: T may be omitted and reads as T?; unions (incl. mixed like number | \"fill\") may be written in annotations; `any` exists only in contract signatures",
+    "types": "map<T> is string-keyed; a record literal is assignable to map<T> when every field is assignable to T; a field k?: T may be omitted and reads as T?; unions (incl. mixed like number | \"fill\") may be written in annotations; `any` exists only in contract signatures; a record literal assigned to a record type may not contain fields absent from that type (compile error naming the field)",
     "timelines": "equal key times act as a step to the later key; duplicate (target, prop) tracks in one timeline are a compile error; repeat must be >= 1 or -1"
   }
 }

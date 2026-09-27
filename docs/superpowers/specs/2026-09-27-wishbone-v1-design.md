@@ -83,7 +83,7 @@ wishbone/
 
 ### 2.2 Значения и токены
 
-Значение prop — литерал, токен или выражение DSL. Токены: `@color.<name>`, `@type.<name>` (textStyle), `@space.<name>` (number), `@radius.<name>` (number | pill), `@motion.<name>` (motion), `@icon.<name>` (icon).
+Значение prop — литерал, токен или выражение DSL. Токены: `@color.<name>`, `@type.<name>` (textStyle), `@space.<name>` (number), `@radius.<name>` (number; `pill` = 9999), `@motion.<name>` (motion), `@icon.<name>` (icon).
 
 - **Цвета и типографика — только токенами.** У типов `color`/`textStyle` нет литералов; `paint` = `color` | `gradient([colors], angleDeg)`; `alpha(color, a)` допустим.
 - Геометрия — числа или токены spacing/radius.
@@ -118,7 +118,7 @@ wishbone/
 
 ### 3.2 Лексика
 
-Идентификаторы `[A-Za-z_][A-Za-z0-9_]*`; числа `12`, `1.5`, с единицами `300ms` (=300), `1.2s` (=1200) — длительности всегда в мс; строки `"…"` с `\" \\ \n \t \u{1F600}` и интерполяцией `${expr}`; токены `@group.name`; комментарии `// …`. Ключевые слова: `state let fn handler data param event if else true false null await animate emit`.
+Идентификаторы `[A-Za-z_][A-Za-z0-9_]*`; числа `12`, `1.5`, с единицами `300ms` (=300), `1.2s` (=1200) — длительности всегда в мс; строки `"…"` с `\" \\ \n \t \$ \u{1F600}` (прочие escape — ошибка компиляции) и интерполяцией `${expr}`; токены `@group.name`; комментарии `// …`. Ключевые слова: `state let fn handler data param if else true false null await animate emit`; `event` — контекстное (объявление в шаблоне / payload внутри `on.*`).
 
 ### 3.3 Объявления (верхний уровень `script`)
 
