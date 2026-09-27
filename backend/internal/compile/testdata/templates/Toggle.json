@@ -1,0 +1,8 @@
+{
+ "id": "Toggle",
+ "title": "Toggle",
+ "script": "param label: string = \"\"\nevent change\nstate on = false\nhandler flip() {\n  on = !on\n  emit change\n}",
+ "root": {"type": "stack", "id": "root", "on": {"tap": "flip()"}, "children": [
+  {"type": "Dot", "id": "dot", "props": {"lit": "=on"}}
+ ]}
+}

@@ -46,9 +46,9 @@ func TestConformanceCompiles(t *testing.T) {
 				if len(diags) > 0 {
 					t.Fatalf("script %q expr %q: %v", v.Script, v.Expr, diags)
 				}
-				wire := [][]byte{mustJSON(t, prog.Lower(nil))}
+				wire := [][]byte{mustJSON(t, prog.Lower())}
 				if e != nil {
-					wire = append(wire, LowerExpr(e, nil))
+					wire = append(wire, LowerExpr(e))
 				}
 				for _, w := range wire {
 					if !json.Valid(w) {
@@ -100,14 +100,14 @@ func FuzzCompile(f *testing.F) {
 		s, diags := ParseScript(script)
 		prog, d := Check(s, env)
 		if len(diags)+len(d) == 0 {
-			prog.Lower(nil)
+			prog.Lower()
 		}
 		e, diags := ParseExpr(expr)
 		if e != nil && len(diags) == 0 && len(prog.CheckExpr(e, &Scope{Self: true}, nil)) == 0 && len(d) == 0 {
-			LowerExpr(e, nil)
+			LowerExpr(e)
 		}
 		if ss, diags := ParseStmts(expr); len(diags) == 0 && len(prog.CheckStmts(ss, nil)) == 0 && len(d) == 0 {
-			LowerStmts(ss, nil)
+			LowerStmts(ss)
 		}
 	})
 }

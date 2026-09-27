@@ -1,0 +1,8387 @@
+[
+ {
+  "name": "arith.precedence",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "v",
+    1
+   ],
+   [
+    "op",
+    "*",
+    [
+     "v",
+     2
+    ],
+    [
+     "v",
+     3
+    ]
+   ]
+  ],
+  "expect": 7,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.precedence",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.parens",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "*",
+   [
+    "op",
+    "+",
+    [
+     "v",
+     1
+    ],
+    [
+     "v",
+     2
+    ]
+   ],
+   [
+    "v",
+    3
+   ]
+  ],
+  "expect": 9,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.parens",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.division",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "/",
+   [
+    "v",
+    10
+   ],
+   [
+    "v",
+    4
+   ]
+  ],
+  "expect": 2.5,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.division",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.mod",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "%",
+   [
+    "v",
+    7
+   ],
+   [
+    "v",
+    3
+   ]
+  ],
+  "expect": 1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.mod",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.mod.negative",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "%",
+   [
+    "un",
+    "-",
+    [
+     "v",
+     7
+    ]
+   ],
+   [
+    "v",
+    3
+   ]
+  ],
+  "expect": -1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.mod.negative",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.leftassoc",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "-",
+   [
+    "op",
+    "-",
+    [
+     "v",
+     2
+    ],
+    [
+     "v",
+     3
+    ]
+   ],
+   [
+    "v",
+    4
+   ]
+  ],
+  "expect": -5,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.leftassoc",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.unary",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "*",
+   [
+    "un",
+    "-",
+    [
+     "v",
+     2
+    ]
+   ],
+   [
+    "v",
+    3
+   ]
+  ],
+  "expect": -6,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.unary",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.units",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "v",
+    300
+   ],
+   [
+    "v",
+    1500
+   ]
+  ],
+  "expect": 1800,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.units",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.float",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "v",
+    0.1
+   ],
+   [
+    "v",
+    0.2
+   ]
+  ],
+  "expect": 0.30000000000000004,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.float",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.float.str",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "op",
+     "+",
+     [
+      "v",
+      0.1
+     ],
+     [
+      "v",
+      0.2
+     ]
+    ]
+   ]
+  ],
+  "expect": "0.3",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.float.str",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "arith.div0",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "op",
+    "+",
+    [
+     "op",
+     "+",
+     [
+      "op",
+      "+",
+      [
+       "f",
+       "str",
+       [
+        [
+         "op",
+         "/",
+         [
+          "v",
+          1
+         ],
+         [
+          "v",
+          0
+         ]
+        ]
+       ]
+      ],
+      [
+       "v",
+       " "
+      ]
+     ],
+     [
+      "f",
+      "str",
+      [
+       [
+        "op",
+        "/",
+        [
+         "un",
+         "-",
+         [
+          "v",
+          1
+         ]
+        ],
+        [
+         "v",
+         0
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "v",
+     " "
+    ]
+   ],
+   [
+    "f",
+    "str",
+    [
+     [
+      "op",
+      "/",
+      [
+       "v",
+       0
+      ],
+      [
+       "v",
+       0
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": "Infinity -Infinity NaN",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "arith.div0",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.and",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "&&",
+   [
+    "op",
+    "<",
+    [
+     "v",
+     1
+    ],
+    [
+     "v",
+     2
+    ]
+   ],
+   [
+    "op",
+    "<=",
+    [
+     "v",
+     2
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.and",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.string",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "<",
+   [
+    "v",
+    "a"
+   ],
+   [
+    "v",
+    "b"
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.string",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.string.codepoints",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "<",
+   [
+    "v",
+    "B"
+   ],
+   [
+    "v",
+    "a"
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.string.codepoints",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.not.or",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "||",
+   [
+    "un",
+    "!",
+    [
+     "op",
+     "==",
+     [
+      "v",
+      1
+     ],
+     [
+      "v",
+      1
+     ]
+    ]
+   ],
+   [
+    "op",
+    "!=",
+    [
+     "v",
+     3
+    ],
+    [
+     "v",
+     4
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.not.or",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.coalesce.null",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "v",
+    null
+   ],
+   [
+    "v",
+    5
+   ]
+  ],
+  "expect": 5,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.coalesce.null",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.ternary",
+  "kind": "expr",
+  "expr": [
+   "if",
+   [
+    "v",
+    true
+   ],
+   [
+    "v",
+    "y"
+   ],
+   [
+    "v",
+    "n"
+   ]
+  ],
+  "expect": "y",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.ternary",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.ternary.precedence",
+  "kind": "expr",
+  "expr": [
+   "if",
+   [
+    "op",
+    "==",
+    [
+     "v",
+     1
+    ],
+    [
+     "v",
+     1
+    ]
+   ],
+   [
+    "v",
+    2
+   ],
+   [
+    "op",
+    "+",
+    [
+     "v",
+     3
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": 2,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.ternary.precedence",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "cmp.and.false",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "&&",
+   [
+    "v",
+    false
+   ],
+   [
+    "op",
+    ">",
+    [
+     "op",
+     "/",
+     [
+      "v",
+      1
+     ],
+     [
+      "v",
+      0
+     ]
+    ],
+    [
+     "v",
+     0
+    ]
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "cmp.and.false",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "eq.list",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "==",
+   [
+    "list",
+    [
+     [
+      "v",
+      1
+     ],
+     [
+      "v",
+      2
+     ]
+    ]
+   ],
+   [
+    "list",
+    [
+     [
+      "v",
+      1
+     ],
+     [
+      "v",
+      2
+     ]
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "eq.list",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "eq.record.order",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "==",
+   [
+    "rec",
+    {
+     "a": [
+      "v",
+      1
+     ],
+     "b": [
+      "v",
+      2
+     ]
+    }
+   ],
+   [
+    "rec",
+    {
+     "b": [
+      "v",
+      2
+     ],
+     "a": [
+      "v",
+      1
+     ]
+    }
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "eq.record.order",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "eq.record.diff",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "==",
+   [
+    "rec",
+    {
+     "a": [
+      "v",
+      1
+     ]
+    }
+   ],
+   [
+    "rec",
+    {
+     "a": [
+      "v",
+      2
+     ]
+    }
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "eq.record.diff",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.interp.state",
+  "kind": "expr",
+  "expr": [
+   "str",
+   [
+    [
+     "v",
+     "Привет, "
+    ],
+    [
+     "s",
+     "name"
+    ],
+    [
+     "v",
+     "!"
+    ]
+   ]
+  ],
+  "expect": "Привет, Мир!",
+  "script": "state name = \"Мир\"",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.interp.state",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "name",
+     [
+      "v",
+      "Мир"
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.interp.values",
+  "kind": "expr",
+  "expr": [
+   "str",
+   [
+    [
+     "v",
+     "n="
+    ],
+    [
+     "v",
+     3
+    ],
+    [
+     "v",
+     " f="
+    ],
+    [
+     "v",
+     2.5
+    ],
+    [
+     "v",
+     " b="
+    ],
+    [
+     "v",
+     true
+    ]
+   ]
+  ],
+  "expect": "n=3 f=2.5 b=true",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.interp.values",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.big",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "v",
+     1000000000000000
+    ]
+   ]
+  ],
+  "expect": "1000000000000000",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.big",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.fraction",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "op",
+    "+",
+    [
+     "op",
+     "+",
+     [
+      "op",
+      "+",
+      [
+       "f",
+       "str",
+       [
+        [
+         "un",
+         "-",
+         [
+          "v",
+          0.5
+         ]
+        ]
+       ]
+      ],
+      [
+       "v",
+       " "
+      ]
+     ],
+     [
+      "f",
+      "str",
+      [
+       [
+        "op",
+        "/",
+        [
+         "v",
+         1
+        ],
+        [
+         "v",
+         3
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "v",
+     " "
+    ]
+   ],
+   [
+    "f",
+    "str",
+    [
+     [
+      "op",
+      "/",
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": "-0.5 0.333333 0.666667",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.fraction",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.negzero",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "un",
+     "-",
+     [
+      "v",
+      0
+     ]
+    ]
+   ]
+  ],
+  "expect": "0",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.negzero",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.record",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "rec",
+     {
+      "a": [
+       "v",
+       1
+      ],
+      "b": [
+       "v",
+       "x"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "{\"a\":1,\"b\":\"x\"}",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.record",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.length",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "length",
+   [
+    [
+     "v",
+     "héllo"
+    ]
+   ]
+  ],
+  "expect": 5,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.length",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.length.emoji",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "length",
+   [
+    [
+     "v",
+     "😀a"
+    ]
+   ]
+  ],
+  "expect": 2,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.length.emoji",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.trim.upper",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "upper",
+   [
+    [
+     "f",
+     "trim",
+     [
+      [
+       "v",
+       " Hi "
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": "HI",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.trim.upper",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.lower",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "lower",
+   [
+    [
+     "v",
+     "ПрИвЕт"
+    ]
+   ]
+  ],
+  "expect": "привет",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.lower",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.split",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "split",
+   [
+    [
+     "v",
+     "a,,b"
+    ],
+    [
+     "v",
+     ","
+    ]
+   ]
+  ],
+  "expect": [
+   "a",
+   "",
+   "b"
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.split",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.replace",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "replace",
+   [
+    [
+     "v",
+     "hello world"
+    ],
+    [
+     "v",
+     "o"
+    ],
+    [
+     "v",
+     "0"
+    ]
+   ]
+  ],
+  "expect": "hell0 w0rld",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.replace",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.substring.from",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "substring",
+   [
+    [
+     "v",
+     "abc"
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": "bc",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.substring.from",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.substring.clamp",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "substring",
+   [
+    [
+     "v",
+     "abc"
+    ],
+    [
+     "un",
+     "-",
+     [
+      "v",
+      5
+     ]
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "ab",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.substring.clamp",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.substring.empty",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "substring",
+   [
+    [
+     "v",
+     "abc"
+    ],
+    [
+     "v",
+     2
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": "",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.substring.empty",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.matches.ok",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "matches",
+   [
+    [
+     "v",
+     "test@example.com"
+    ],
+    [
+     "v",
+     "[^@]+@[^@]+\\.[a-z]+"
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.matches.ok",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.matches.fail",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "matches",
+   [
+    [
+     "v",
+     "test@"
+    ],
+    [
+     "v",
+     "[^@]+@[^@]+\\.[a-z]+"
+    ]
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.matches.fail",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.matches.whole",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "matches",
+   [
+    [
+     "v",
+     "abc"
+    ],
+    [
+     "v",
+     "b"
+    ]
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.matches.whole",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.num",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "num",
+   [
+    [
+     "v",
+     " 42.5 "
+    ]
+   ]
+  ],
+  "expect": 42.5,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.num",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.num.invalid",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "f",
+    "num",
+    [
+     [
+      "v",
+      "abc"
+     ]
+    ]
+   ],
+   [
+    "un",
+    "-",
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": -1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.num.invalid",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.num.exp",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "num",
+   [
+    [
+     "v",
+     "1e3"
+    ]
+   ]
+  ],
+  "expect": 1000,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.num.exp",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.num.empty",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "f",
+    "num",
+    [
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   [
+    "un",
+    "-",
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": -1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.num.empty",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.contains",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "&&",
+   [
+    "op",
+    "&&",
+    [
+     "f",
+     "contains",
+     [
+      [
+       "v",
+       "abc"
+      ],
+      [
+       "v",
+       "bc"
+      ]
+     ]
+    ],
+    [
+     "f",
+     "startsWith",
+     [
+      [
+       "v",
+       "abc"
+      ],
+      [
+       "v",
+       "ab"
+      ]
+     ]
+    ]
+   ],
+   [
+    "f",
+    "endsWith",
+    [
+     [
+      "v",
+      "abc"
+     ],
+     [
+      "v",
+      "bc"
+     ]
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.contains",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.isEmpty",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "isEmpty",
+   [
+    [
+     "v",
+     ""
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.isEmpty",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.escapes",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "length",
+   [
+    [
+     "v",
+     "a\"b\\c😀"
+    ]
+   ]
+  ],
+  "expect": 6,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.escapes",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.count",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "count",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       3
+      ],
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 3,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.count",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.map",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "map",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "op",
+      "*",
+      [
+       "l",
+       "x"
+      ],
+      [
+       "v",
+       2
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   2,
+   4,
+   6
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.map",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.filter",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "filter",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ],
+      [
+       "v",
+       4
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "op",
+      "==",
+      [
+       "op",
+       "%",
+       [
+        "l",
+        "x"
+       ],
+       [
+        "v",
+        2
+       ]
+      ],
+      [
+       "v",
+       0
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   2,
+   4
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.filter",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.map.index",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "map",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       "a"
+      ],
+      [
+       "v",
+       "b"
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x",
+      "i"
+     ],
+     [
+      "op",
+      "+",
+      [
+       "l",
+       "x"
+      ],
+      [
+       "f",
+       "str",
+       [
+        [
+         "l",
+         "i"
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   "a0",
+   "b1"
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.map.index",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.reduce",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "reduce",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     0
+    ],
+    [
+     "lam",
+     [
+      "acc",
+      "x"
+     ],
+     [
+      "op",
+      "+",
+      [
+       "l",
+       "acc"
+      ],
+      [
+       "l",
+       "x"
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 6,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.reduce",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.sum",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "sum",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1.5
+      ],
+      [
+       "v",
+       2.5
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 4,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.sum",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.empty.sum",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "sum",
+   [
+    [
+     "s",
+     "xs"
+    ]
+   ]
+  ],
+  "expect": 0,
+  "script": "state xs: list<number> = []",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.empty.sum",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "xs",
+     [
+      "list",
+      []
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.empty.first",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "f",
+    "first",
+    [
+     [
+      "s",
+      "xs"
+     ]
+    ]
+   ],
+   [
+    "un",
+    "-",
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": -1,
+  "script": "state xs: list<number> = []",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.empty.first",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "xs",
+     [
+      "list",
+      []
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.empty.every",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "every",
+   [
+    [
+     "s",
+     "xs"
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "op",
+      ">",
+      [
+       "l",
+       "x"
+      ],
+      [
+       "v",
+       0
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": true,
+  "script": "state xs: list<number> = []",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.empty.every",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "xs",
+     [
+      "list",
+      []
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.find",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "find",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       5
+      ],
+      [
+       "v",
+       6
+      ],
+      [
+       "v",
+       7
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "op",
+      ">",
+      [
+       "l",
+       "x"
+      ],
+      [
+       "v",
+       5
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 6,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.find",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.find.none",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "f",
+    "find",
+    [
+     [
+      "list",
+      [
+       [
+        "v",
+        5
+       ]
+      ]
+     ],
+     [
+      "lam",
+      [
+       "x"
+      ],
+      [
+       "op",
+       ">",
+       [
+        "l",
+        "x"
+       ],
+       [
+        "v",
+        5
+       ]
+      ]
+     ]
+    ]
+   ],
+   [
+    "v",
+    0
+   ]
+  ],
+  "expect": 0,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.find.none",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.indexOf",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "indexOf",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": 1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.indexOf",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.indexOf.none",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "indexOf",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     9
+    ]
+   ]
+  ],
+  "expect": -1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.indexOf.none",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.chain",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "set",
+   [
+    [
+     "f",
+     "removeAt",
+     [
+      [
+       "f",
+       "append",
+       [
+        [
+         "list",
+         [
+          [
+           "v",
+           1
+          ],
+          [
+           "v",
+           2
+          ],
+          [
+           "v",
+           3
+          ]
+         ]
+        ],
+        [
+         "v",
+         4
+        ]
+       ]
+      ],
+      [
+       "v",
+       0
+      ]
+     ]
+    ],
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     9
+    ]
+   ]
+  ],
+  "expect": [
+   9,
+   3,
+   4
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.chain",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.set.oob",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "set",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ]
+     ]
+    ],
+    [
+     "v",
+     5
+    ],
+    [
+     "v",
+     0
+    ]
+   ]
+  ],
+  "expect": [
+   1,
+   2
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.set.oob",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.slice",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "slice",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": [
+   2,
+   3
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.slice",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.slice.clamp",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "slice",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "un",
+     "-",
+     [
+      "v",
+      1
+     ]
+    ],
+    [
+     "v",
+     10
+    ]
+   ]
+  ],
+  "expect": [
+   1,
+   2,
+   3
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.slice.clamp",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.sortBy.stable",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "map",
+   [
+    [
+     "f",
+     "sortBy",
+     [
+      [
+       "list",
+       [
+        [
+         "rec",
+         {
+          "n": [
+           "v",
+           "b"
+          ],
+          "v": [
+           "v",
+           2
+          ]
+         }
+        ],
+        [
+         "rec",
+         {
+          "n": [
+           "v",
+           "a"
+          ],
+          "v": [
+           "v",
+           1
+          ]
+         }
+        ],
+        [
+         "rec",
+         {
+          "n": [
+           "v",
+           "c"
+          ],
+          "v": [
+           "v",
+           1
+          ]
+         }
+        ]
+       ]
+      ],
+      [
+       "lam",
+       [
+        "x"
+       ],
+       [
+        "get",
+        [
+         "l",
+         "x"
+        ],
+        "v"
+       ]
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "get",
+      [
+       "l",
+       "x"
+      ],
+      "n"
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   "a",
+   "c",
+   "b"
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.sortBy.stable",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.sortBy.strings",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "sortBy",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       "b"
+      ],
+      [
+       "v",
+       "a"
+      ],
+      [
+       "v",
+       "B"
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "l",
+      "x"
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   "B",
+   "a",
+   "b"
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.sortBy.strings",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.range",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "range",
+   [
+    [
+     "v",
+     4
+    ]
+   ]
+  ],
+  "expect": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.range",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.range.neg",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "range",
+   [
+    [
+     "un",
+     "-",
+     [
+      "v",
+      1
+     ]
+    ]
+   ]
+  ],
+  "expect": [],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.range.neg",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.range.frac",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "range",
+   [
+    [
+     "v",
+     2.9
+    ]
+   ]
+  ],
+  "expect": [
+   0,
+   1
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.range.frac",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.reverse",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "reverse",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   3,
+   2,
+   1
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.reverse",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.join",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "join",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2.5
+      ]
+     ]
+    ],
+    [
+     "v",
+     ", "
+    ]
+   ]
+  ],
+  "expect": "1, 2.5",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.join",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.index",
+  "kind": "expr",
+  "expr": [
+   "at",
+   [
+    "list",
+    [
+     [
+      "v",
+      1
+     ],
+     [
+      "v",
+      2
+     ],
+     [
+      "v",
+      3
+     ]
+    ]
+   ],
+   [
+    "v",
+    1
+   ]
+  ],
+  "expect": 2,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.index",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.index.oob",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "at",
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     5
+    ]
+   ],
+   [
+    "v",
+    0
+   ]
+  ],
+  "expect": 0,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.index.oob",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.some.every",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "&&",
+   [
+    "f",
+    "some",
+    [
+     [
+      "list",
+      [
+       [
+        "v",
+        10
+       ],
+       [
+        "v",
+        20
+       ]
+      ]
+     ],
+     [
+      "lam",
+      [
+       "x"
+      ],
+      [
+       "op",
+       ">",
+       [
+        "l",
+        "x"
+       ],
+       [
+        "v",
+        15
+       ]
+      ]
+     ]
+    ]
+   ],
+   [
+    "un",
+    "!",
+    [
+     "f",
+     "every",
+     [
+      [
+       "list",
+       [
+        [
+         "v",
+         10
+        ],
+        [
+         "v",
+         20
+        ]
+       ]
+      ],
+      [
+       "lam",
+       [
+        "x"
+       ],
+       [
+        "op",
+        ">",
+        [
+         "l",
+         "x"
+        ],
+        [
+         "v",
+         15
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.some.every",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.contains",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "contains",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.contains",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.contains.records",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "contains",
+   [
+    [
+     "s",
+     "items"
+    ],
+    [
+     "rec",
+     {
+      "id": [
+       "v",
+       2
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": true,
+  "script": "state items = [{id: 1}, {id: 2}]",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.contains.records",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          1
+         ]
+        }
+       ],
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          2
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.isEmpty",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "isEmpty",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.isEmpty",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "rec.with",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "with",
+   [
+    [
+     "s",
+     "user"
+    ],
+    [
+     "rec",
+     {
+      "age": [
+       "v",
+       31
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": {
+   "name": "Ann",
+   "age": 31
+  },
+  "script": "state user = {name: \"Ann\", age: 30}",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "rec.with",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "user",
+     [
+      "rec",
+      {
+       "name": [
+        "v",
+        "Ann"
+       ],
+       "age": [
+        "v",
+        30
+       ]
+      }
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "rec.fields",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "op",
+    "+",
+    [
+     "get",
+     [
+      "s",
+      "user"
+     ],
+     "name"
+    ],
+    [
+     "v",
+     " "
+    ]
+   ],
+   [
+    "f",
+    "str",
+    [
+     [
+      "get",
+      [
+       "s",
+       "user"
+      ],
+      "age"
+     ]
+    ]
+   ]
+  ],
+  "expect": "Ann 30",
+  "script": "state user = {name: \"Ann\", age: 30}",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "rec.fields",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "user",
+     [
+      "rec",
+      {
+       "name": [
+        "v",
+        "Ann"
+       ],
+       "age": [
+        "v",
+        30
+       ]
+      }
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "rec.nested",
+  "kind": "expr",
+  "expr": [
+   "get",
+   [
+    "get",
+    [
+     "rec",
+     {
+      "a": [
+       "rec",
+       {
+        "b": [
+         "v",
+         1
+        ]
+       }
+      ]
+     }
+    ],
+    "a"
+   ],
+   "b"
+  ],
+  "expect": 1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "rec.nested",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "rec.optional",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "get",
+    [
+     "s",
+     "maybe"
+    ],
+    "name"
+   ],
+   [
+    "v",
+    "none"
+   ]
+  ],
+  "expect": "none",
+  "script": "state maybe: {name: string}? = null",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "rec.optional",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "maybe",
+     [
+      "v",
+      null
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.round",
+  "kind": "expr",
+  "expr": [
+   "list",
+   [
+    [
+     "f",
+     "round",
+     [
+      [
+       "v",
+       2.5
+      ]
+     ]
+    ],
+    [
+     "f",
+     "round",
+     [
+      [
+       "un",
+       "-",
+       [
+        "v",
+        2.5
+       ]
+      ]
+     ]
+    ],
+    [
+     "f",
+     "round",
+     [
+      [
+       "v",
+       2.4
+      ]
+     ]
+    ],
+    [
+     "f",
+     "round",
+     [
+      [
+       "un",
+       "-",
+       [
+        "v",
+        0.4
+       ]
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   3,
+   -3,
+   2,
+   0
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.round",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.floorceil",
+  "kind": "expr",
+  "expr": [
+   "list",
+   [
+    [
+     "f",
+     "floor",
+     [
+      [
+       "un",
+       "-",
+       [
+        "v",
+        1.5
+       ]
+      ]
+     ]
+    ],
+    [
+     "f",
+     "ceil",
+     [
+      [
+       "v",
+       1.2
+      ]
+     ]
+    ],
+    [
+     "f",
+     "abs",
+     [
+      [
+       "un",
+       "-",
+       [
+        "v",
+        3
+       ]
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   -2,
+   2,
+   3
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.floorceil",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.minmax",
+  "kind": "expr",
+  "expr": [
+   "list",
+   [
+    [
+     "f",
+     "clamp",
+     [
+      [
+       "v",
+       15
+      ],
+      [
+       "v",
+       0
+      ],
+      [
+       "v",
+       10
+      ]
+     ]
+    ],
+    [
+     "f",
+     "min",
+     [
+      [
+       "v",
+       3
+      ],
+      [
+       "v",
+       4
+      ]
+     ]
+    ],
+    [
+     "f",
+     "max",
+     [
+      [
+       "v",
+       3
+      ],
+      [
+       "v",
+       4
+      ]
+     ]
+    ],
+    [
+     "f",
+     "pow",
+     [
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       10
+      ]
+     ]
+    ],
+    [
+     "f",
+     "sqrt",
+     [
+      [
+       "v",
+       16
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   10,
+   3,
+   4,
+   1024,
+   4
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.minmax",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.trig",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "f",
+    "round",
+    [
+     [
+      "op",
+      "*",
+      [
+       "f",
+       "sin",
+       [
+        [
+         "v",
+         0
+        ]
+       ]
+      ],
+      [
+       "v",
+       1000
+      ]
+     ]
+    ]
+   ],
+   [
+    "f",
+    "round",
+    [
+     [
+      "op",
+      "*",
+      [
+       "f",
+       "cos",
+       [
+        [
+         "v",
+         0
+        ]
+       ]
+      ],
+      [
+       "v",
+       1000
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": 1000,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.trig",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.interpolate",
+  "kind": "expr",
+  "expr": [
+   "list",
+   [
+    [
+     "f",
+     "interpolate",
+     [
+      [
+       "v",
+       50
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         0
+        ],
+        [
+         "v",
+         100
+        ]
+       ]
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         1
+        ],
+        [
+         "v",
+         0
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "f",
+     "interpolate",
+     [
+      [
+       "un",
+       "-",
+       [
+        "v",
+        20
+       ]
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         0
+        ],
+        [
+         "v",
+         100
+        ]
+       ]
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         1
+        ],
+        [
+         "v",
+         0
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "f",
+     "interpolate",
+     [
+      [
+       "v",
+       150
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         0
+        ],
+        [
+         "v",
+         100
+        ],
+        [
+         "v",
+         200
+        ]
+       ]
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         0
+        ],
+        [
+         "v",
+         10
+        ],
+        [
+         "v",
+         0
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "f",
+     "interpolate",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         0
+        ]
+       ]
+      ],
+      [
+       "list",
+       [
+        [
+         "v",
+         3
+        ]
+       ]
+      ]
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   0.5,
+   1,
+   5,
+   3
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.interpolate",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.color",
+  "kind": "expr",
+  "expr": [
+   "t",
+   "color",
+   "el16"
+  ],
+  "expect": {
+   "$color": "el16"
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.color",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.alpha",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "alpha",
+   [
+    [
+     "t",
+     "color",
+     "bg1"
+    ],
+    [
+     "v",
+     0.5
+    ]
+   ]
+  ],
+  "expect": {
+   "$color": "bg1",
+   "alpha": 0.5
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.alpha",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.alpha.twice",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "alpha",
+   [
+    [
+     "f",
+     "alpha",
+     [
+      [
+       "t",
+       "color",
+       "bg1"
+      ],
+      [
+       "v",
+       0.5
+      ]
+     ]
+    ],
+    [
+     "v",
+     0.5
+    ]
+   ]
+  ],
+  "expect": {
+   "$color": "bg1",
+   "alpha": 0.25
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.alpha.twice",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.type",
+  "kind": "expr",
+  "expr": [
+   "t",
+   "type",
+   "body"
+  ],
+  "expect": {
+   "$type": "body"
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.type",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.space",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "t",
+    "space",
+    "lg"
+   ],
+   [
+    "t",
+    "space",
+    "xs"
+   ]
+  ],
+  "expect": 20,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.space",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.radius.pill",
+  "kind": "expr",
+  "expr": [
+   "t",
+   "radius",
+   "pill"
+  ],
+  "expect": 9999,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.radius.pill",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.icon",
+  "kind": "expr",
+  "expr": [
+   "t",
+   "icon",
+   "close"
+  ],
+  "expect": {
+   "$icon": "close"
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.icon",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.motion",
+  "kind": "expr",
+  "expr": [
+   "t",
+   "motion",
+   "snappy"
+  ],
+  "expect": {
+   "$motion": "snappy"
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.motion",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.spring",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "spring",
+   [
+    [
+     "v",
+     300
+    ],
+    [
+     "v",
+     0.8
+    ]
+   ]
+  ],
+  "expect": {
+   "$motion": {
+    "kind": "spring",
+    "response": 300,
+    "damping": 0.8
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.spring",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.ease",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "ease",
+   [
+    [
+     "v",
+     200
+    ]
+   ]
+  ],
+  "expect": {
+   "$motion": {
+    "kind": "curve",
+    "duration": 200,
+    "bezier": [
+     0.42,
+     0,
+     0.58,
+     1
+    ]
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.ease",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.linear",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "linear",
+   [
+    [
+     "v",
+     100
+    ]
+   ]
+  ],
+  "expect": {
+   "$motion": {
+    "kind": "curve",
+    "duration": 100,
+    "bezier": [
+     0,
+     0,
+     1,
+     1
+    ]
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.linear",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.curve",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "curve",
+   [
+    [
+     "v",
+     250
+    ],
+    [
+     "v",
+     0.2
+    ],
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": {
+   "$motion": {
+    "kind": "curve",
+    "duration": 250,
+    "bezier": [
+     0.2,
+     0,
+     0,
+     1
+    ]
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.curve",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.gradient",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "gradient",
+   [
+    [
+     "list",
+     [
+      [
+       "t",
+       "color",
+       "accentPrimary"
+      ],
+      [
+       "t",
+       "color",
+       "accentSecondary"
+      ]
+     ]
+    ],
+    [
+     "v",
+     90
+    ]
+   ]
+  ],
+  "expect": {
+   "$gradient": [
+    {
+     "$color": "accentPrimary"
+    },
+    {
+     "$color": "accentSecondary"
+    }
+   ],
+   "angle": 90
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.gradient",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.ternary",
+  "kind": "expr",
+  "expr": [
+   "if",
+   [
+    "s",
+    "selected"
+   ],
+   [
+    "t",
+    "color",
+    "el16"
+   ],
+   [
+    "t",
+    "color",
+    "el8"
+   ]
+  ],
+  "expect": {
+   "$color": "el16"
+  },
+  "script": "state selected = true",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.ternary",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "selected",
+     [
+      "v",
+      true
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.eq",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "==",
+   [
+    "t",
+    "color",
+    "el16"
+   ],
+   [
+    "t",
+    "color",
+    "el16"
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.eq",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "env.platform",
+  "kind": "expr",
+  "expr": [
+   "e",
+   "platform"
+  ],
+  "expect": "test",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "env.platform",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "env.locale",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "op",
+    "+",
+    [
+     "op",
+     "+",
+     [
+      "op",
+      "+",
+      [
+       "e",
+       "locale"
+      ],
+      [
+       "v",
+       "/"
+      ]
+     ],
+     [
+      "e",
+      "brand"
+     ]
+    ],
+    [
+     "v",
+     "/"
+    ]
+   ],
+   [
+    "e",
+    "colorScheme"
+   ]
+  ],
+  "expect": "ru/korpu/light",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "env.locale",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "env.metrics",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "/",
+   [
+    "e",
+    "screenWidth"
+   ],
+   [
+    "v",
+    2
+   ]
+  ],
+  "expect": 195,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "env.metrics",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "env.override",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "&&",
+   [
+    "op",
+    "==",
+    [
+     "e",
+     "colorScheme"
+    ],
+    [
+     "v",
+     "dark"
+    ]
+   ],
+   [
+    "e",
+    "reduceMotion"
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "dark",
+   "reduceMotion": true,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "env.override",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.computed.fn",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "u",
+    "twice",
+    [
+     [
+      "c",
+      "b"
+     ]
+    ]
+   ],
+   [
+    "v",
+    1
+   ]
+  ],
+  "expect": 41,
+  "script": "state a = 2\nlet b = a * 10\nfn twice(x: number): number = x * 2",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.computed.fn",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "a",
+     [
+      "v",
+      2
+     ]
+    ]
+   ],
+   "computed": {
+    "b": [
+     "op",
+     "*",
+     [
+      "s",
+      "a"
+     ],
+     [
+      "v",
+      10
+     ]
+    ]
+   },
+   "fns": {
+    "twice": {
+     "params": [
+      "x"
+     ],
+     "body": [
+      "op",
+      "*",
+      [
+       "l",
+       "x"
+      ],
+      [
+       "v",
+       2
+      ]
+     ]
+    }
+   },
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.state.override",
+  "kind": "expr",
+  "expr": [
+   "c",
+   "label"
+  ],
+  "expect": "21 билет",
+  "script": "state count = 0\nlet label = plural(count, {one: \"# билет\", few: \"# билета\", many: \"# билетов\", other: \"# билета\"})",
+  "state": {
+   "count": 21
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.state.override",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "count",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {
+    "label": [
+     "f",
+     "plural",
+     [
+      [
+       "s",
+       "count"
+      ],
+      [
+       "rec",
+       {
+        "one": [
+         "v",
+         "# билет"
+        ],
+        "few": [
+         "v",
+         "# билета"
+        ],
+        "many": [
+         "v",
+         "# билетов"
+        ],
+        "other": [
+         "v",
+         "# билета"
+        ]
+       }
+      ]
+     ]
+    ]
+   },
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.state.order",
+  "kind": "expr",
+  "expr": [
+   "s",
+   "b"
+  ],
+  "expect": 3,
+  "script": "state a = 1\nstate b = a + 2",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.state.order",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "a",
+     [
+      "v",
+      1
+     ]
+    ],
+    [
+     "b",
+     [
+      "op",
+      "+",
+      [
+       "s",
+       "a"
+      ],
+      [
+       "v",
+       2
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.param.given",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "v",
+    "id="
+   ],
+   [
+    "p",
+    "id"
+   ]
+  ],
+  "expect": "id=42",
+  "script": "param id: string = \"x\"",
+  "params": {
+   "id": "42"
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.param.given",
+   "revision": 1,
+   "params": {
+    "id": [
+     "v",
+     "x"
+    ]
+   },
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.param.default",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "v",
+    "id="
+   ],
+   [
+    "p",
+    "id"
+   ]
+  ],
+  "expect": "id=x",
+  "script": "param id: string = \"x\"",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.param.default",
+   "revision": 1,
+   "params": {
+    "id": [
+     "v",
+     "x"
+    ]
+   },
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.data",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "get",
+    [
+     "d",
+     "me"
+    ],
+    "name"
+   ],
+   [
+    "v",
+    "?"
+   ]
+  ],
+  "expect": "Ann",
+  "script": "data me = demo.profile()",
+  "data": {
+   "me": {
+    "name": "Ann",
+    "tickets": 5,
+    "avatar": "",
+    "level": 2
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.data",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [
+    {
+     "name": "me",
+     "op": "demo.profile",
+     "args": {},
+     "required": false
+    }
+   ],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.data.missing",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "get",
+    [
+     "d",
+     "me"
+    ],
+    "name"
+   ],
+   [
+    "v",
+    "?"
+   ]
+  ],
+  "expect": "?",
+  "script": "data me = demo.profile()",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.data.missing",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [
+    {
+     "name": "me",
+     "op": "demo.profile",
+     "args": {},
+     "required": false
+    }
+   ],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.data.required",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "*",
+   [
+    "get",
+    [
+     "d",
+     "me"
+    ],
+    "tickets"
+   ],
+   [
+    "v",
+    2
+   ]
+  ],
+  "expect": 10,
+  "script": "data me = demo.profile() required",
+  "data": {
+   "me": {
+    "name": "Ann",
+    "tickets": 5,
+    "avatar": "",
+    "level": 2
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.data.required",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [
+    {
+     "name": "me",
+     "op": "demo.profile",
+     "args": {},
+     "required": true
+    }
+   ],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "decl.fn.lambda",
+  "kind": "expr",
+  "expr": [
+   "u",
+   "total",
+   [
+    [
+     "s",
+     "items"
+    ]
+   ]
+  ],
+  "expect": 30,
+  "script": "state items = [{price: 10}, {price: 20}]\nfn total(xs: list<{price: number}>): number = xs.map(x => x.price).sum()",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "decl.fn.lambda",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "price": [
+          "v",
+          10
+         ]
+        }
+       ],
+       [
+        "rec",
+        {
+         "price": [
+          "v",
+          20
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {
+    "total": {
+     "params": [
+      "xs"
+     ],
+     "body": [
+      "f",
+      "sum",
+      [
+       [
+        "f",
+        "map",
+        [
+         [
+          "l",
+          "xs"
+         ],
+         [
+          "lam",
+          [
+           "x"
+          ],
+          [
+           "get",
+           [
+            "l",
+            "x"
+           ],
+           "price"
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.big.17",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "v",
+     100000000000000000
+    ]
+   ]
+  ],
+  "expect": "100000000000000000",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.big.17",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.tiny.neg",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "un",
+     "-",
+     [
+      "v",
+      1e-7
+     ]
+    ]
+   ]
+  ],
+  "expect": "0",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.tiny.neg",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.identity",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "v",
+     "a\"b"
+    ]
+   ]
+  ],
+  "expect": "a\"b",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.identity",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.record.sorted",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "str",
+   [
+    [
+     "rec",
+     {
+      "b": [
+       "v",
+       1
+      ],
+      "a": [
+       "v",
+       "x/y"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "{\"a\":\"x/y\",\"b\":1}",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.record.sorted",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.combining.length",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "length",
+   [
+    [
+     "v",
+     "é"
+    ]
+   ]
+  ],
+  "expect": 2,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.combining.length",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.combining.eq",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "==",
+   [
+    "v",
+    "é"
+   ],
+   [
+    "v",
+    "é"
+   ]
+  ],
+  "expect": false,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.combining.eq",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.cmp.astral",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "<",
+   [
+    "v",
+    "！"
+   ],
+   [
+    "v",
+    "😀"
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.cmp.astral",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.sort.astral",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "sortBy",
+   [
+    [
+     "list",
+     [
+      [
+       "v",
+       "😀"
+      ],
+      [
+       "v",
+       "！"
+      ]
+     ]
+    ],
+    [
+     "lam",
+     [
+      "x"
+     ],
+     [
+      "l",
+      "x"
+     ]
+    ]
+   ]
+  ],
+  "expect": [
+   "！",
+   "😀"
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.sort.astral",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.substring.astral",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "substring",
+   [
+    [
+     "v",
+     "😀ab"
+    ],
+    [
+     "v",
+     1
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "a",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.substring.astral",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.length.skintone",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "length",
+   [
+    [
+     "v",
+     "👍🏽"
+    ]
+   ]
+  ],
+  "expect": 2,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.length.skintone",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.matches.unicode",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "matches",
+   [
+    [
+     "v",
+     "Привет"
+    ],
+    [
+     "v",
+     "\\w+"
+    ]
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.matches.unicode",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "str.escape.dollar",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "length",
+   [
+    [
+     "v",
+     "${x}"
+    ]
+   ]
+  ],
+  "expect": 4,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "str.escape.dollar",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "math.round.edge",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "round",
+   [
+    [
+     "v",
+     0.49999999999999994
+    ]
+   ]
+  ],
+  "expect": 0,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "math.round.edge",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "list.index.frac",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "at",
+    [
+     "list",
+     [
+      [
+       "v",
+       1
+      ],
+      [
+       "v",
+       2
+      ],
+      [
+       "v",
+       3
+      ]
+     ]
+    ],
+    [
+     "v",
+     1.5
+    ]
+   ],
+   [
+    "un",
+    "-",
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": -1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "list.index.frac",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "opt.method",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "f",
+    "count",
+    [
+     [
+      "d",
+      "xs"
+     ]
+    ]
+   ],
+   [
+    "un",
+    "-",
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": -1,
+  "script": "data xs = demo.offers()",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "opt.method",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [
+    {
+     "name": "xs",
+     "op": "demo.offers",
+     "args": {},
+     "required": false
+    }
+   ],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "opt.method.present",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "f",
+    "count",
+    [
+     [
+      "d",
+      "xs"
+     ]
+    ]
+   ],
+   [
+    "un",
+    "-",
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": 0,
+  "script": "data xs = demo.offers()",
+  "data": {
+   "xs": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "opt.method.present",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [
+    {
+     "name": "xs",
+     "op": "demo.offers",
+     "args": {},
+     "required": false
+    }
+   ],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "map.index",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "at",
+    [
+     "s",
+     "m"
+    ],
+    [
+     "v",
+     "a"
+    ]
+   ],
+   [
+    "v",
+    0
+   ]
+  ],
+  "expect": 1,
+  "script": "state m: map<number> = {a: 1}",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "map.index",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "m",
+     [
+      "rec",
+      {
+       "a": [
+        "v",
+        1
+       ]
+      }
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "map.index.missing",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "at",
+    [
+     "s",
+     "m"
+    ],
+    [
+     "v",
+     "z"
+    ]
+   ],
+   [
+    "v",
+    0
+   ]
+  ],
+  "expect": 0,
+  "script": "state m: map<number> = {a: 1}",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "map.index.missing",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "m",
+     [
+      "rec",
+      {
+       "a": [
+        "v",
+        1
+       ]
+      }
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "coalesce.rightassoc",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "??",
+   [
+    "v",
+    null
+   ],
+   [
+    "op",
+    "??",
+    [
+     "v",
+     null
+    ],
+    [
+     "v",
+     3
+    ]
+   ]
+  ],
+  "expect": 3,
+  "script": "state n: number? = null",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "coalesce.rightassoc",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "n",
+     [
+      "v",
+      null
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.alpha.one",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "==",
+   [
+    "f",
+    "alpha",
+    [
+     [
+      "t",
+      "color",
+      "el16"
+     ],
+     [
+      "v",
+      1
+     ]
+    ]
+   ],
+   [
+    "t",
+    "color",
+    "el16"
+   ]
+  ],
+  "expect": true,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.alpha.one",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tok.alpha.clamp",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "alpha",
+   [
+    [
+     "t",
+     "color",
+     "el16"
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": {
+   "$color": "el16"
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tok.alpha.clamp",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ }
+]

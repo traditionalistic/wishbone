@@ -1,0 +1,914 @@
+[
+ {
+  "name": "tl.linear",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 400,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "opacity",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 400,
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 0,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0
+    }
+   },
+   {
+    "t": 100,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0.25
+    }
+   },
+   {
+    "t": 400,
+    "index": 0,
+    "expect": {
+     "a.opacity": 1.0
+    }
+   },
+   {
+    "t": 1000,
+    "index": 0,
+    "expect": {
+     "a.opacity": 1.0
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.linear",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.easeOut",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 1000,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "offsetY",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 1000,
+       "v": 100,
+       "ease": [
+        0,
+        0,
+        0.58,
+        1
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 250,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 37.813813083
+    }
+   },
+   {
+    "t": 500,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 68.464318743
+    }
+   },
+   {
+    "t": 750,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 90.653534928
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.easeOut",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.easeIn.easeInOut",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 200,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "scale",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 100,
+       "v": 1,
+       "ease": [
+        0.42,
+        0,
+        1,
+        1
+       ]
+      },
+      {
+       "t": 200,
+       "v": 0,
+       "ease": [
+        0.42,
+        0,
+        0.58,
+        1
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.scale": 0.315356813
+    }
+   },
+   {
+    "t": 150,
+    "index": 0,
+    "expect": {
+     "a.scale": 0.5
+    }
+   },
+   {
+    "t": 175,
+    "index": 0,
+    "expect": {
+     "a.scale": 0.129161931
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.easeIn.easeInOut",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.spring",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 200,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "offsetY",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 40
+      },
+      {
+       "t": 200,
+       "v": 0,
+       "ease": [
+        0.38,
+        0.7,
+        0.125,
+        1
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 15.333559586
+    }
+   },
+   {
+    "t": 100,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 2.7664857
+    }
+   },
+   {
+    "t": 199,
+    "index": 0,
+    "expect": {
+     "a.offsetY": 0.000131286
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.spring",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.custom",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 1000,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "rotation",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 1000,
+       "v": 90,
+       "ease": [
+        0.25,
+        0.1,
+        0.25,
+        1
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 300,
+    "index": 0,
+    "expect": {
+     "a.rotation": 46.198364488
+    }
+   },
+   {
+    "t": 500,
+    "index": 0,
+    "expect": {
+     "a.rotation": 72.216304883
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.custom",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.stagger",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 200,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "item",
+     "prop": "opacity",
+     "stagger": 100,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 200,
+       "v": 1
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 150,
+    "index": 0,
+    "expect": {
+     "item.opacity": 0.75
+    }
+   },
+   {
+    "t": 150,
+    "index": 1,
+    "expect": {
+     "item.opacity": 0.25
+    }
+   },
+   {
+    "t": 150,
+    "index": 2,
+    "expect": {
+     "item.opacity": 0
+    }
+   },
+   {
+    "t": 500,
+    "index": 2,
+    "expect": {
+     "item.opacity": 1.0
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.stagger",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.repeat.autoreverse",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 100,
+   "repeat": 2,
+   "autoreverse": true,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "offsetX",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 100,
+       "v": 10
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.offsetX": 5.0
+    }
+   },
+   {
+    "t": 130,
+    "index": 0,
+    "expect": {
+     "a.offsetX": 7.0
+    }
+   },
+   {
+    "t": 250,
+    "index": 0,
+    "expect": {
+     "a.offsetX": 0
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.repeat.autoreverse",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.repeat.forever",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 100,
+   "repeat": -1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "rotation",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 100,
+       "v": 360
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 1050,
+    "index": 0,
+    "expect": {
+     "a.rotation": 180.0
+    }
+   },
+   {
+    "t": 99,
+    "index": 0,
+    "expect": {
+     "a.rotation": 356.4
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.repeat.forever",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.multitrack",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 400,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "opacity",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 0
+      },
+      {
+       "t": 400,
+       "v": 1
+      }
+     ]
+    },
+    {
+     "target": "a",
+     "prop": "offsetY",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 40
+      },
+      {
+       "t": 200,
+       "v": 0,
+       "ease": [
+        0.38,
+        0.7,
+        0.125,
+        1
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 100,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0.25,
+     "a.offsetY": 2.7664857
+    }
+   },
+   {
+    "t": 300,
+    "index": 0,
+    "expect": {
+     "a.opacity": 0.75,
+     "a.offsetY": 0
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.multitrack",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.lateStart",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 200,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "scale",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 100,
+       "v": 5
+      },
+      {
+       "t": 200,
+       "v": 10
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 50,
+    "index": 0,
+    "expect": {
+     "a.scale": 5
+    }
+   },
+   {
+    "t": 150,
+    "index": 0,
+    "expect": {
+     "a.scale": 7.5
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.lateStart",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "tl.zeroDuration",
+  "kind": "timeline",
+  "timeline": {
+   "duration": 0,
+   "repeat": 1,
+   "autoreverse": false,
+   "autoplay": false,
+   "tracks": [
+    {
+     "target": "a",
+     "prop": "opacity",
+     "stagger": 0,
+     "keys": [
+      {
+       "t": 0,
+       "v": 3
+      }
+     ]
+    }
+   ]
+  },
+  "samples": [
+   {
+    "t": 0,
+    "index": 0,
+    "expect": {
+     "a.opacity": 3
+    }
+   },
+   {
+    "t": 500,
+    "index": 0,
+    "expect": {
+     "a.opacity": 3
+    }
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "tl.zeroDuration",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ }
+]

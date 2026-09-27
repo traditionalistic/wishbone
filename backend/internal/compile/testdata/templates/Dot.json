@@ -1,0 +1,6 @@
+{
+ "id": "Dot",
+ "title": "Dot",
+ "script": "param lit: bool\nstate hover = false",
+ "root": {"type": "shape", "id": "root", "props": {"opacity": "=lit ? 1 : 0.3", "scale": "=hover ? 1.1 : 1"}}
+}

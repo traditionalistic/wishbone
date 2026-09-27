@@ -1,0 +1,2331 @@
+[
+ {
+  "name": "fmt.number.group",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     1990
+    ],
+    [
+     "v",
+     0
+    ]
+   ]
+  ],
+  "expect": "1 990",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.group",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.neg",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "un",
+     "-",
+     [
+      "v",
+      1234.5
+     ]
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": "-1 234.5",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.neg",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.carry",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     999.999
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "1 000.00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.carry",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.halfaway",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     0.125
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "0.13",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.halfaway",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.binary",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     2.675
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "2.68",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.binary",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.binary.down",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     1.005
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "1.00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.binary.down",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.negzero",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "op",
+    "+",
+    [
+     "f",
+     "formatNumber",
+     [
+      [
+       "un",
+       "-",
+       [
+        "v",
+        0.4
+       ]
+      ],
+      [
+       "v",
+       0
+      ]
+     ]
+    ],
+    [
+     "v",
+     "|"
+    ]
+   ],
+   [
+    "f",
+    "formatNumber",
+    [
+     [
+      "un",
+      "-",
+      [
+       "v",
+       0.001
+      ]
+     ],
+     [
+      "v",
+      2
+     ]
+    ]
+   ]
+  ],
+  "expect": "0|0.00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.negzero",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.group.exact",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     1000
+    ],
+    [
+     "v",
+     0
+    ]
+   ]
+  ],
+  "expect": "1 000",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.group.exact",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.big",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     100000000000000000
+    ],
+    [
+     "v",
+     1
+    ]
+   ]
+  ],
+  "expect": "100 000 000 000 000 000.0",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.big",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.small",
+  "kind": "expr",
+  "expr": [
+   "op",
+   "+",
+   [
+    "op",
+    "+",
+    [
+     "op",
+     "+",
+     [
+      "op",
+      "+",
+      [
+       "f",
+       "formatNumber",
+       [
+        [
+         "v",
+         999
+        ],
+        [
+         "v",
+         0
+        ]
+       ]
+      ],
+      [
+       "v",
+       "|"
+      ]
+     ],
+     [
+      "f",
+      "formatNumber",
+      [
+       [
+        "v",
+        0.5
+       ],
+       [
+        "v",
+        0
+       ]
+      ]
+     ]
+    ],
+    [
+     "v",
+     "|"
+    ]
+   ],
+   [
+    "f",
+    "formatNumber",
+    [
+     [
+      "un",
+      "-",
+      [
+       "v",
+       0.5
+      ]
+     ],
+     [
+      "v",
+      0
+     ]
+    ]
+   ]
+  ],
+  "expect": "999|1|-1",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.small",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.pad",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     0.05
+    ],
+    [
+     "v",
+     3
+    ]
+   ]
+  ],
+  "expect": "0.050",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.pad",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.number.million",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatNumber",
+   [
+    [
+     "v",
+     1234567.891
+    ],
+    [
+     "v",
+     2
+    ]
+   ]
+  ],
+  "expect": "1 234 567.89",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.number.million",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.duration.hms",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDuration",
+   [
+    [
+     "v",
+     3723000
+    ],
+    [
+     "v",
+     "hms"
+    ]
+   ]
+  ],
+  "expect": "01:02:03",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.duration.hms",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.duration.ms",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDuration",
+   [
+    [
+     "v",
+     59999
+    ],
+    [
+     "v",
+     "ms"
+    ]
+   ]
+  ],
+  "expect": "00:59",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.duration.ms",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.duration.neg",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDuration",
+   [
+    [
+     "un",
+     "-",
+     [
+      "v",
+      5
+     ]
+    ],
+    [
+     "v",
+     "hms"
+    ]
+   ]
+  ],
+  "expect": "00:00:00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.duration.neg",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.duration.dhms",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDuration",
+   [
+    [
+     "v",
+     90061000
+    ],
+    [
+     "v",
+     "dhms"
+    ]
+   ]
+  ],
+  "expect": "1:01:01:01",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.duration.dhms",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.duration.bighours",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDuration",
+   [
+    [
+     "v",
+     360000000
+    ],
+    [
+     "v",
+     "hms"
+    ]
+   ]
+  ],
+  "expect": "100:00:00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.duration.bighours",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.duration.countdown",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDuration",
+   [
+    [
+     "op",
+     "-",
+     [
+      "s",
+      "until"
+     ],
+     [
+      "e",
+      "now"
+     ]
+    ],
+    [
+     "v",
+     "hms"
+    ]
+   ]
+  ],
+  "expect": "00:00:10",
+  "script": "state until = 20000",
+  "env": {
+   "now": 10000,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.duration.countdown",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "until",
+     [
+      "v",
+      20000
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.date.epoch",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDate",
+   [
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     "dateTime"
+    ]
+   ]
+  ],
+  "expect": "01.01.1970 00:00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.date.epoch",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.date.date",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDate",
+   [
+    [
+     "v",
+     1790000000000
+    ],
+    [
+     "v",
+     "date"
+    ]
+   ]
+  ],
+  "expect": "21.09.2026",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.date.date",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.date.tz",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDate",
+   [
+    [
+     "v",
+     0
+    ],
+    [
+     "v",
+     "time"
+    ]
+   ]
+  ],
+  "expect": "03:00",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "Europe/Moscow"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.date.tz",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "fmt.date.tz.dst",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "formatDate",
+   [
+    [
+     "v",
+     1783000000000
+    ],
+    [
+     "v",
+     "dateTime"
+    ]
+   ]
+  ],
+  "expect": "02.07.2026 15:46",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "Europe/Berlin"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "fmt.date.tz.dst",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.1",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     1
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "1 билет",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.1",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.2",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     2
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "2 билета",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.2",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.5",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     5
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "5 билетов",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.5",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.11",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     11
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "11 билетов",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.11",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.21",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     21
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "21 билет",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.21",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.22",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     22
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "22 билета",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.22",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.111",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     111
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "111 билетов",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.111",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.1.5",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     1.5
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "1.5 билета",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.1.5",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.0",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     0
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "0 билетов",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.0",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.ru.14",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     14
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# билет"
+      ],
+      "few": [
+       "v",
+       "# билета"
+      ],
+      "many": [
+       "v",
+       "# билетов"
+      ],
+      "other": [
+       "v",
+       "# билета"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "14 билетов",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.ru.14",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.en.one",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     1
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# day"
+      ],
+      "other": [
+       "v",
+       "# days"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "1 day",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "en",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.en.one",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.en.other",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     3
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# day"
+      ],
+      "other": [
+       "v",
+       "# days"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "3 days",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "en",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.en.other",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.en.zero",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     0
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# day"
+      ],
+      "other": [
+       "v",
+       "# days"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "0 days",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "en",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.en.zero",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.en.neg",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "un",
+     "-",
+     [
+      "v",
+      1
+     ]
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "# day"
+      ],
+      "other": [
+       "v",
+       "# days"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "-1 day",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "en",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.en.neg",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.locale.region",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     2
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "a"
+      ],
+      "few": [
+       "v",
+       "b"
+      ],
+      "many": [
+       "v",
+       "c"
+      ],
+      "other": [
+       "v",
+       "d"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "b",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru-RU",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.locale.region",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.kk",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     1
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "бір"
+      ],
+      "other": [
+       "v",
+       "көп"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "бір",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "kk",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.kk",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.tt.other",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     1
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "бер"
+      ],
+      "other": [
+       "v",
+       "күп"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "күп",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "tt",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.tt.other",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "plural.missing.form",
+  "kind": "expr",
+  "expr": [
+   "f",
+   "plural",
+   [
+    [
+     "v",
+     2
+    ],
+    [
+     "rec",
+     {
+      "one": [
+       "v",
+       "one"
+      ],
+      "other": [
+       "v",
+       "other"
+      ]
+     }
+    ]
+   ]
+  ],
+  "expect": "other",
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "plural.missing.form",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ }
+]

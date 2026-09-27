@@ -6,14 +6,6 @@ import (
 	"fmt"
 )
 
-// Hooks let the screen compiler rewrite parts of the output (template expansion). Nil hooks = default wire forms.
-type Hooks struct {
-	// Ref may replace the read of a resolved name (e.g. a template param by the instance's argument); nil = default form.
-	Ref func(kind RefKind, name string) json.RawMessage
-	// Emit returns the statements inlined in place of `emit name`; without it `["emit", name]` is produced.
-	Emit func(event string) []json.RawMessage
-}
-
 // Decls is the lowered script, in the shapes of the wire document (spec §3.8).
 type Decls struct {
 	Params   map[string]json.RawMessage `json:"params"` // default expression; null when the param is required
@@ -38,14 +30,14 @@ type DataSource struct {
 }
 
 // LowerExpr lowers an expression checked without diagnostics.
-func LowerExpr(e Expr, h *Hooks) json.RawMessage { return lowerer{h}.expr(e) }
+func LowerExpr(e Expr) json.RawMessage { return lowerer{}.expr(e) }
 
-// LowerStmts lowers a checked statement list to a JSON array.
-func LowerStmts(ss []Stmt, h *Hooks) json.RawMessage { return enc(lowerer{h}.stmts(ss)) }
+// LowerStmts lowers a checked statement list to a JSON array. `emit` stays ["emit", name] for template expansion.
+func LowerStmts(ss []Stmt) json.RawMessage { return enc(lowerer{}.stmts(ss)) }
 
 // Lower lowers the checked declarations.
-func (p *Program) Lower(h *Hooks) *Decls {
-	l := lowerer{h}
+func (p *Program) Lower() *Decls {
+	l := lowerer{}
 	d := &Decls{Params: map[string]json.RawMessage{}, State: []json.RawMessage{}, Computed: map[string]json.RawMessage{},
 		Fns: map[string]Body{}, Handlers: map[string]Body{}, Data: []DataSource{}}
 	for _, decl := range p.order {
@@ -116,7 +108,7 @@ func (o obj) MarshalJSON() ([]byte, error) {
 
 var refTags = [...]string{RefState: "s", RefInst: "i", RefComputed: "c", RefData: "d", RefLocal: "l", RefParam: "p"}
 
-type lowerer struct{ h *Hooks }
+type lowerer struct{}
 
 func (l lowerer) exprs(es []Expr) []json.RawMessage {
 	out := make([]json.RawMessage, len(es))
@@ -127,15 +119,11 @@ func (l lowerer) exprs(es []Expr) []json.RawMessage {
 }
 
 func (l lowerer) ref(k RefKind, name string) json.RawMessage {
-	switch {
-	case k == RefBare:
+	switch k {
+	case RefBare:
 		return enc([]any{"v", name})
-	case k == RefNone:
+	case RefNone:
 		panic("dsl: lowering an unchecked name " + name)
-	case l.h != nil && l.h.Ref != nil:
-		if r := l.h.Ref(k, name); r != nil {
-			return r
-		}
 	}
 	return enc([]any{refTags[k], name})
 }
@@ -198,10 +186,6 @@ func (l lowerer) expr(e Expr) json.RawMessage {
 func (l lowerer) stmts(ss []Stmt) []json.RawMessage {
 	out := []json.RawMessage{}
 	for _, s := range ss {
-		if em, ok := s.(*EmitStmt); ok && l.h != nil && l.h.Emit != nil {
-			out = append(out, l.h.Emit(em.Name)...)
-			continue
-		}
 		out = append(out, l.stmt(s))
 	}
 	return out

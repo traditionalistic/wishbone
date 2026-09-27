@@ -235,6 +235,11 @@ func (c *ctx) stdCall(pos Pos, f *Func, args []Expr, recvT *Type) *Type {
 		t, _ := c.sigCall(pos, f, f.Sigs[0], args, recvT)
 		return t
 	}
+	if recvT == nil && len(args) > 0 { // check the first argument once, not once per overload (nesting was exponential)
+		if recvT = c.expr(args[0], nil); recvT == nil {
+			return nil
+		}
+	}
 	var best []Diag
 	for _, sig := range f.Sigs {
 		var scratch []Diag
@@ -330,8 +335,8 @@ func (c *ctx) lambda(lam *Lambda, f *Func, ft *Type, b map[string]*Type) bool {
 		c.typeErr(lam.Body.Pos(), "lambda for %s must return %s, got %s", f.Name, subst(ft.Ret, b), rt)
 		return false
 	}
-	if ft.Ret.Kind == KUnion && !anyAlt(ft.Ret, rt) { // e.g. sortBy keys: all numbers or all strings, not a mix
-		c.typeErr(lam.Body.Pos(), "lambda for %s must return only one of %s, got %s", f.Name, ft.Ret, rt)
+	if ft.Ret.Kind == KUnion && !anyAlt(ft.Ret, rt) { // only sortBy has a union key type: all numbers or all strings
+		c.typeErr(lam.Body.Pos(), "%s keys must be all numbers or all strings, got %s", f.Name, rt)
 		return false
 	}
 	lam.T = &Type{Kind: KFunc, Params: ps, Ret: rt}

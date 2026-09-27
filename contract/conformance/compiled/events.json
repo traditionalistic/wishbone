@@ -1,0 +1,792 @@
+[
+ {
+  "name": "e.change.bind",
+  "kind": "event",
+  "script": "state email = \"\"",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "textField",
+     "id": "field",
+     "props": {
+      "bind": "email"
+     }
+    }
+   ]
+  },
+  "node": "field",
+  "event": "change",
+  "payload": {
+   "value": "a@b.c"
+  },
+  "expect": {
+   "state": {
+    "email": "a@b.c"
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "e.change.bind",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "email",
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root",
+    "c": [
+     {
+      "t": "textField",
+      "id": "field",
+      "p": {
+       "value": [
+        "s",
+        "email"
+       ]
+      },
+      "on": {
+       "change": [
+        [
+         "set",
+         "s",
+         "email",
+         [],
+         [
+          "get",
+          [
+           "l",
+           "event"
+          ],
+          "value"
+         ]
+        ]
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "name": "e.change.explicit",
+  "kind": "event",
+  "script": "state name = \"\"\nstate edits = 0",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "textField",
+     "id": "field",
+     "props": {
+      "value": "=name"
+     },
+     "on": {
+      "change": "name = event.value.trim()\nedits = edits + 1"
+     }
+    }
+   ]
+  },
+  "node": "field",
+  "event": "change",
+  "payload": {
+   "value": "  Ann "
+  },
+  "expect": {
+   "state": {
+    "name": "Ann",
+    "edits": 1
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "e.change.explicit",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "name",
+     [
+      "v",
+      ""
+     ]
+    ],
+    [
+     "edits",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root",
+    "c": [
+     {
+      "t": "textField",
+      "id": "field",
+      "p": {
+       "value": [
+        "s",
+        "name"
+       ]
+      },
+      "on": {
+       "change": [
+        [
+         "set",
+         "s",
+         "name",
+         [],
+         [
+          "f",
+          "trim",
+          [
+           [
+            "get",
+            [
+             "l",
+             "event"
+            ],
+            "value"
+           ]
+          ]
+         ]
+        ],
+        [
+         "set",
+         "s",
+         "edits",
+         [],
+         [
+          "op",
+          "+",
+          [
+           "s",
+           "edits"
+          ],
+          [
+           "v",
+           1
+          ]
+         ]
+        ]
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "name": "e.tap.handler",
+  "kind": "event",
+  "script": "state n = 0\nhandler inc(by: number) { n = n + by }",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "text",
+     "id": "btn",
+     "props": {
+      "text": "+"
+     },
+     "on": {
+      "tap": "inc(3)"
+     }
+    }
+   ]
+  },
+  "node": "btn",
+  "event": "tap",
+  "payload": {},
+  "expect": {
+   "state": {
+    "n": 3
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "e.tap.handler",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "n",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "inc": {
+     "params": [
+      "by"
+     ],
+     "body": [
+      [
+       "set",
+       "s",
+       "n",
+       [],
+       [
+        "op",
+        "+",
+        [
+         "s",
+         "n"
+        ],
+        [
+         "l",
+         "by"
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root",
+    "c": [
+     {
+      "t": "text",
+      "id": "btn",
+      "p": {
+       "text": [
+        "v",
+        "+"
+       ]
+      },
+      "on": {
+       "tap": [
+        [
+         "run",
+         "inc",
+         [
+          [
+           "v",
+           3
+          ]
+         ]
+        ]
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "name": "e.dragEnd",
+  "kind": "event",
+  "script": "state dismissed = false",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "shape",
+     "id": "card",
+     "drag": {
+      "axis": "x"
+     },
+     "on": {
+      "dragEnd": "if abs(event.x) > 120 || abs(event.vx) > 800 { dismissed = true }"
+     }
+    }
+   ]
+  },
+  "node": "card",
+  "event": "dragEnd",
+  "payload": {
+   "x": 150,
+   "y": 0,
+   "vx": 0,
+   "vy": 0
+  },
+  "expect": {
+   "state": {
+    "dismissed": true
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "e.dragEnd",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "dismissed",
+     [
+      "v",
+      false
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root",
+    "c": [
+     {
+      "t": "shape",
+      "id": "card",
+      "on": {
+       "dragEnd": [
+        [
+         "if",
+         [
+          "op",
+          "||",
+          [
+           "op",
+           ">",
+           [
+            "f",
+            "abs",
+            [
+             [
+              "get",
+              [
+               "l",
+               "event"
+              ],
+              "x"
+             ]
+            ]
+           ],
+           [
+            "v",
+            120
+           ]
+          ],
+          [
+           "op",
+           ">",
+           [
+            "f",
+            "abs",
+            [
+             [
+              "get",
+              [
+               "l",
+               "event"
+              ],
+              "vx"
+             ]
+            ]
+           ],
+           [
+            "v",
+            800
+           ]
+          ]
+         ],
+         [
+          [
+           "set",
+           "s",
+           "dismissed",
+           [],
+           [
+            "v",
+            true
+           ]
+          ]
+         ],
+         []
+        ]
+       ]
+      },
+      "drag": {
+       "axis": "x"
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "name": "e.dragEnd.small",
+  "kind": "event",
+  "script": "state dismissed = false",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "shape",
+     "id": "card",
+     "drag": {
+      "axis": "x"
+     },
+     "on": {
+      "dragEnd": "if abs(event.x) > 120 || abs(event.vx) > 800 { dismissed = true }"
+     }
+    }
+   ]
+  },
+  "node": "card",
+  "event": "dragEnd",
+  "payload": {
+   "x": 40,
+   "y": 0,
+   "vx": 100,
+   "vy": 0
+  },
+  "expect": {
+   "state": {
+    "dismissed": false
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "e.dragEnd.small",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "dismissed",
+     [
+      "v",
+      false
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root",
+    "c": [
+     {
+      "t": "shape",
+      "id": "card",
+      "on": {
+       "dragEnd": [
+        [
+         "if",
+         [
+          "op",
+          "||",
+          [
+           "op",
+           ">",
+           [
+            "f",
+            "abs",
+            [
+             [
+              "get",
+              [
+               "l",
+               "event"
+              ],
+              "x"
+             ]
+            ]
+           ],
+           [
+            "v",
+            120
+           ]
+          ],
+          [
+           "op",
+           ">",
+           [
+            "f",
+            "abs",
+            [
+             [
+              "get",
+              [
+               "l",
+               "event"
+              ],
+              "vx"
+             ]
+            ]
+           ],
+           [
+            "v",
+            800
+           ]
+          ]
+         ],
+         [
+          [
+           "set",
+           "s",
+           "dismissed",
+           [],
+           [
+            "v",
+            true
+           ]
+          ]
+         ],
+         []
+        ]
+       ]
+      },
+      "drag": {
+       "axis": "x"
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "name": "e.repeat.item",
+  "kind": "event",
+  "script": "state picked = \"\"\nstate plans = [{id: \"basic\"}, {id: \"pro\"}]",
+  "root": {
+   "type": "stack",
+   "id": "root",
+   "children": [
+    {
+     "type": "text",
+     "id": "chip",
+     "repeat": {
+      "over": "plans",
+      "as": "p"
+     },
+     "props": {
+      "text": "=p.id"
+     },
+     "on": {
+      "tap": "picked = p.id"
+     }
+    }
+   ]
+  },
+  "node": "chip",
+  "event": "tap",
+  "payload": {},
+  "expect": {
+   "state": {
+    "picked": "pro"
+   },
+   "effects": []
+  },
+  "repeatIndex": 1,
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "e.repeat.item",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "picked",
+     [
+      "v",
+      ""
+     ]
+    ],
+    [
+     "plans",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          "basic"
+         ]
+        }
+       ],
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          "pro"
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {},
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root",
+    "c": [
+     {
+      "t": "text",
+      "id": "chip",
+      "p": {
+       "text": [
+        "get",
+        [
+         "l",
+         "p"
+        ],
+        "id"
+       ]
+      },
+      "rep": {
+       "over": [
+        "s",
+        "plans"
+       ],
+       "as": "p",
+       "index": "index"
+      },
+      "on": {
+       "tap": [
+        [
+         "set",
+         "s",
+         "picked",
+         [],
+         [
+          "get",
+          [
+           "l",
+           "p"
+          ],
+          "id"
+         ]
+        ]
+       ]
+      }
+     }
+    ]
+   }
+  }
+ }
+]

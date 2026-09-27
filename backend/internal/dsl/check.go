@@ -94,7 +94,37 @@ func Check(s *Script, env *Env) (*Program, []Diag) {
 			c.push(c.paramVars(d.Params)).stmts(d.Body)
 		}
 	}
+	for _, d := range p.order {
+		if d, ok := d.(*HandlerDecl); ok {
+			p.ensureHandler(d, d.P)
+		}
+	}
 	return p, p.diags
+}
+
+// ensureHandler rejects handler-call cycles: execution must be finite (spec §3.7).
+func (p *Program) ensureHandler(d *HandlerDecl, pos Pos) {
+	if !p.enter(d, d.Name, pos, "handler") {
+		return
+	}
+	defer p.leave(d)
+	var walk func(ss []Stmt)
+	walk = func(ss []Stmt) {
+		for _, s := range ss {
+			switch s := s.(type) {
+			case *ExprStmt:
+				if h, ok := p.decls[s.Call.Name].(*HandlerDecl); ok && s.Call.Kind == CallHandler {
+					p.ensureHandler(h, s.P)
+				}
+			case *IfStmt:
+				walk(s.Then)
+				walk(s.Else)
+			case *AnimStmt:
+				walk(s.Body)
+			}
+		}
+	}
+	walk(d.Body)
 }
 
 // CheckExpr checks a node expression; want (optional) is the expected type, e.g. the prop type.
@@ -159,8 +189,8 @@ func (p *Program) enter(d Decl, name string, pos Pos, what string) bool {
 			i++
 		}
 		path := strings.Join(append(append([]string{}, p.stack[i:]...), name), " → ")
-		if what == "fn" {
-			p.errf(pos, "fn '%s' is recursive (%s); recursion is not allowed", name, path)
+		if what != "let" {
+			p.errf(pos, "%s '%s' is recursive (%s); recursion is not allowed", what, name, path)
 		} else {
 			p.errf(pos, "cycle in computed values: %s", path)
 		}
@@ -462,6 +492,9 @@ func (c *ctx) member(e *Member) *Type {
 	if inner, ok := e.X.(*Member); ok {
 		if kind, ok := c.special(inner.X, "scroll", "drag"); ok {
 			switch {
+			case c.vis != visAll:
+				c.errf(inner.X.Pos(), "unknown name '%s' (%s)", kind, visWhy[c.vis])
+				return nil
 			case e.Name != "x" && e.Name != "y":
 				c.errf(e.P, "unknown %s driver axis '%s' (x or y)", kind, e.Name)
 				return nil
@@ -690,6 +723,8 @@ func (c *ctx) list(e *ListLit, want *Type) *Type {
 	var ew *Type
 	if l := pick(want, KList); l != nil {
 		ew = l.Elem
+	} else if isKind(nonOpt(want), KAny) { // a sink like map<any>: [] is list<any>
+		ew = TAny
 	}
 	if len(e.Elems) == 0 {
 		if ew == nil {

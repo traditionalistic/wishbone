@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const contractDir = "../../../contract"
@@ -255,6 +256,7 @@ fn f(x: number): number = x`
 		{"rec.with({a: true})", "type"},
 		{"rec.with(rec)", "record literal"},
 		{"[1].sortBy(x => true)", "type"},
+		{`[1].sortBy(x => x > 0 ? 1 : "a")`, "sortBy keys must be all numbers or all strings, got number | string"},
 		{`[1].sortBy(x => x > 0 ? 1 : "a")`, "type"},
 		{`xs["a"]`, "type"},
 		{"s[0]", "type"},
@@ -334,7 +336,7 @@ handler next(step: number) {
   wait(300ms)
   await play(intro)
   navigate("x", {id: id}, "push")
-  track("t", {n: page, ok: r.ok})
+  track("t", {n: page, ok: r.ok, items: []})
 }
 handler go() { next(1) }`
 	_, prog, diags := compile(t, env, script, "", nil)
@@ -419,12 +421,23 @@ func TestCheckScriptErrors(t *testing.T) {
 		{"color literal", `state c: color = "#FF0000"`, "type"},
 		{"event decl value", "state x = tap\nevent tap", "event"},
 		{"call result scope", "handler go() {\n if true { let r = await call demo.profile() }\n let y = r.ok\n}", "unknown name 'r'"},
+		{"sibling lets ok", "state n = 0\nhandler go() {\n if true { let x = 1\n n = x } else { let x = 2\n n = x }\n let x = 3\n n = x\n}", "<no error>"},
 		{"track args", `handler go() { track("t", {f: x => x}) }`, "lambda"},
+		{"let shadows outer let", "state n = 0\nhandler h() {\n let x = 1\n if true { let x = \"a\" }\n n = x + 1\n}", "duplicate local"},
+		{"let shadows param", "handler h(x: number) { if true { let x = 2 } }", "duplicate local"},
+		{"let shadows in animate", "handler h() {\n let x = 1\n animate(@motion.snappy) { let x = 2 }\n}", "duplicate local"},
+		{"call result shadows", "handler h() {\n let r = 1\n if true { let r = await call demo.profile() }\n}", "duplicate local"},
+		{"driver in fn", "fn f(): number = scroll.list.y", "unknown name"},
+		{"driver in state", "state s = scroll.list.y", "unknown name"},
+		{"driver in param default", "param p: number = drag.card.x", "unknown name"},
+		{"handler recursion direct", "handler h() { h() }", "recurs"},
+		{"handler recursion indirect", "handler a() { b() }\nhandler b() { if true { a() } }", "recurs"},
 	}
 	for _, c := range cases {
 		env := contractEnv(t)
+		env.Drivers = func(kind, id string) bool { return true }
 		_, _, diags := compile(t, env, c.script, "", nil)
-		if !hasDiag(diags, c.want) {
+		if c.want == "<no error>" && len(diags) > 0 || c.want != "<no error>" && !hasDiag(diags, c.want) {
 			t.Errorf("%s: diags %v, want one containing %q", c.name, diags, c.want)
 		}
 	}
@@ -478,5 +491,22 @@ func TestCheckEventBodies(t *testing.T) {
 	ss, _ := ParseStmts("event = 1")
 	if diags := prog.CheckStmts(ss, change); !hasDiag(diags, "assign") {
 		t.Errorf("assign to event: %v", diags)
+	}
+}
+
+// Overload trials must check each argument once (nested overloaded calls used to be exponential).
+func TestCheckOverloadDepth(t *testing.T) {
+	env := contractEnv(t)
+	expr := "true"
+	for i := 0; i < 40; i++ {
+		expr = "isEmpty([" + expr + "])"
+	}
+	start := time.Now()
+	e, _, diags := compile(t, env, "", "[1].contains(1) && "+expr, nil)
+	if len(diags) > 0 || e.Type() != TBool {
+		t.Fatalf("diags %v", diags)
+	}
+	if d := time.Since(start); d > time.Second {
+		t.Errorf("depth-40 overloaded call took %v", d)
 	}
 }

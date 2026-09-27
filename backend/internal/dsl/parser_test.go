@@ -208,6 +208,10 @@ func TestParseExprErrors(t *testing.T) {
 		{"1" + strings.Repeat(" + 1", 10000), "nested too deeply", Pos{}},
 		{"a" + strings.Repeat(" ?? a", 10000), "nested too deeply", Pos{}},
 		{strings.Repeat(`"${`, 2000) + strings.Repeat(`}"`, 2000), "nested too deeply", Pos{}},
+		{`"a"` + strings.Repeat(".upper()", 600), "nested too deeply", Pos{}},
+		{"a" + strings.Repeat("[0]", 600), "nested too deeply", Pos{}},
+		{"a" + strings.Repeat(".b", 600), "nested too deeply", Pos{}},
+		{"r" + strings.Repeat(".with({a: 1})", 600), "nested too deeply", Pos{}},
 	}
 	for _, c := range cases {
 		_, diags := ParseExpr(c.src)
@@ -261,6 +265,7 @@ func TestParseStmtErrors(t *testing.T) {
 		{"if a { x = 1", "expected '}'"},
 		{"emit", "name"},
 		{strings.Repeat("if true { ", 10000) + strings.Repeat("}", 10000), "nested too deeply"},
+		{"if a { }" + strings.Repeat(" else if a { }", 600), "nested too deeply"},
 	}
 	for _, c := range cases {
 		_, diags := ParseStmts(c.src)

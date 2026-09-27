@@ -1,0 +1,6 @@
+{
+ "id": "Row",
+ "title": "Row",
+ "script": "param code: string\nevent pick\nhandler choose(n: number) {\n  let x = n + 1\n  let r = await call demo.checkPromo({code: code})\n  emit pick\n}",
+ "root": {"type": "text", "id": "root", "props": {"text": "=code"}, "on": {"tap": "choose(2)"}}
+}

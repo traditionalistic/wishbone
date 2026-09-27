@@ -62,7 +62,7 @@ fn twice(x: number): number = x * 2`
 			t.Errorf("%s: unexpected diags %v", c.expr, diags)
 			continue
 		}
-		if got := string(LowerExpr(e, nil)); got != c.want {
+		if got := string(LowerExpr(e)); got != c.want {
 			t.Errorf("%s:\n got %s\nwant %s", c.expr, got, c.want)
 		}
 	}
@@ -106,7 +106,7 @@ handler add(x: number) { }`
 			t.Errorf("%s: unexpected diags %v", c.src, diags)
 			continue
 		}
-		if got := string(LowerStmts(ss, nil)); got != c.want {
+		if got := string(LowerStmts(ss)); got != c.want {
 			t.Errorf("%s:\n got %s\nwant %s", c.src, got, c.want)
 		}
 	}
@@ -129,7 +129,7 @@ handler next(by: number) { page = min(page + by, 2) }`
 	if len(diags) > 0 {
 		t.Fatalf("unexpected diags %v", diags)
 	}
-	got, err := json.Marshal(prog.Lower(nil))
+	got, err := json.Marshal(prog.Lower())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ handler next(by: number) { page = min(page + by, 2) }`
 	}
 }
 
-func TestLowerTemplateHooks(t *testing.T) {
+func TestLowerTemplate(t *testing.T) {
 	env := lowerEnv(t)
 	env.Template = true
 	script := "param title: string\nevent tap\nstate on = false\nhandler press() {\n on = !on\n if on { emit tap }\n}"
@@ -154,28 +154,14 @@ func TestLowerTemplateHooks(t *testing.T) {
 	if len(diags) > 0 {
 		t.Fatalf("unexpected diags %v", diags)
 	}
-	hooks := &Hooks{
-		Ref: func(k RefKind, name string) json.RawMessage {
-			if k == RefParam && name == "title" {
-				return json.RawMessage(`["v","Buy"]`)
-			}
-			return nil
-		},
-		Emit: func(event string) []json.RawMessage {
-			return []json.RawMessage{json.RawMessage(`["run","` + event + `Outer",[]]`), json.RawMessage(`["do","back",[],false]`)}
-		},
-	}
-	if got, want := string(LowerExpr(e, hooks)), `["op","+",["v","Buy"],["f","str",[["i","on"]]]]`; got != want {
+	if got, want := string(LowerExpr(e)), `["op","+",["p","title"],["f","str",[["i","on"]]]]`; got != want {
 		t.Errorf("expr: got %s, want %s", got, want)
 	}
-	d := prog.Lower(nil)
+	d := prog.Lower()
 	if got, want := string(d.Handlers["press"].Body), `[["set","i","on",[],["un","!",["i","on"]]],["if",["i","on"],[["emit","tap"]],[]]]`; got != want {
-		t.Errorf("no hooks: got %s, want %s", got, want)
+		t.Errorf("handler: got %s, want %s", got, want)
 	}
-	if got, want := string(prog.Lower(hooks).Handlers["press"].Body), `[["set","i","on",[],["un","!",["i","on"]]],["if",["i","on"],[["run","tapOuter",[]],["do","back",[],false]],[]]]`; got != want {
-		t.Errorf("hooks: got %s, want %s", got, want)
-	}
-	if got, want := d.Events, []string{"tap"}; len(got) != 1 || got[0] != want[0] {
+	if got := d.Events; len(got) != 1 || got[0] != "tap" {
 		t.Errorf("events: %v", got)
 	}
 	if got := string(d.Params["title"]); got != "null" {

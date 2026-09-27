@@ -1,0 +1,10 @@
+{
+ "id": "Card",
+ "title": "Card",
+ "script": "param items: list<string>\nparam title: string = \"\"",
+ "root": {"type": "scroll", "id": "root", "children": [
+  {"type": "text", "id": "head", "props": {"text": "=title", "offsetY": "=scroll.root.y / 10"}},
+  {"type": "text", "id": "row", "repeat": {"over": "items"}, "props": {"text": "=item + title + items.map(x => x).join(\"\")"}},
+  {"type": "slot"}
+ ]}
+}

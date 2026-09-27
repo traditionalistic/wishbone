@@ -11,9 +11,11 @@ func (c *ctx) stmts(ss []Stmt) {
 	}
 }
 
+// declare adds a handler local. Runtimes keep one locals chain per run (if/anim bodies share it), so a
+// statement local may not shadow any visible local: params, repeat vars, outer lets.
 func (c *ctx) declare(pos Pos, name string, t *Type) {
-	if _, dup := c.sc.vars[name]; dup {
-		c.errf(pos, "duplicate local '%s'", name)
+	if c.isLocal(name) {
+		c.errf(pos, "duplicate local '%s' (a local of that name is already visible)", name)
 	}
 	c.sc.vars[name] = t
 }

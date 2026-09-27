@@ -1,0 +1,3033 @@
+[
+ {
+  "name": "h.assign.arg",
+  "kind": "handler",
+  "script": "state n = 0\nhandler inc(x: number) { n = n + x }",
+  "handler": "inc",
+  "args": [
+   2
+  ],
+  "expect": {
+   "state": {
+    "n": 2
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.assign.arg",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "n",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "inc": {
+     "params": [
+      "x"
+     ],
+     "body": [
+      [
+       "set",
+       "s",
+       "n",
+       [],
+       [
+        "op",
+        "+",
+        [
+         "s",
+         "n"
+        ],
+        [
+         "l",
+         "x"
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.if.then",
+  "kind": "handler",
+  "script": "state step = 0\nstate done = false\nhandler next() {\n  if step < 2 { step = step + 1 } else { done = true }\n}",
+  "handler": "next",
+  "args": [],
+  "expect": {
+   "state": {
+    "step": 1,
+    "done": false
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.if.then",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "step",
+     [
+      "v",
+      0
+     ]
+    ],
+    [
+     "done",
+     [
+      "v",
+      false
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "next": {
+     "params": [],
+     "body": [
+      [
+       "if",
+       [
+        "op",
+        "<",
+        [
+         "s",
+         "step"
+        ],
+        [
+         "v",
+         2
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "step",
+         [],
+         [
+          "op",
+          "+",
+          [
+           "s",
+           "step"
+          ],
+          [
+           "v",
+           1
+          ]
+         ]
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "done",
+         [],
+         [
+          "v",
+          true
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.if.else",
+  "kind": "handler",
+  "script": "state step = 0\nstate done = false\nhandler next() {\n  if step < 2 { step = step + 1 } else { done = true }\n}",
+  "handler": "next",
+  "args": [],
+  "expect": {
+   "state": {
+    "step": 2,
+    "done": true
+   },
+   "effects": []
+  },
+  "state": {
+   "step": 2
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.if.else",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "step",
+     [
+      "v",
+      0
+     ]
+    ],
+    [
+     "done",
+     [
+      "v",
+      false
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "next": {
+     "params": [],
+     "body": [
+      [
+       "if",
+       [
+        "op",
+        "<",
+        [
+         "s",
+         "step"
+        ],
+        [
+         "v",
+         2
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "step",
+         [],
+         [
+          "op",
+          "+",
+          [
+           "s",
+           "step"
+          ],
+          [
+           "v",
+           1
+          ]
+         ]
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "done",
+         [],
+         [
+          "v",
+          true
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.elseif",
+  "kind": "handler",
+  "script": "state n = 5\nstate r = \"\"\nhandler go() {\n  if n < 3 { r = \"low\" } else if n < 10 { r = \"mid\" } else { r = \"high\" }\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "r": "mid"
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.elseif",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "n",
+     [
+      "v",
+      5
+     ]
+    ],
+    [
+     "r",
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "if",
+       [
+        "op",
+        "<",
+        [
+         "s",
+         "n"
+        ],
+        [
+         "v",
+         3
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "r",
+         [],
+         [
+          "v",
+          "low"
+         ]
+        ]
+       ],
+       [
+        [
+         "if",
+         [
+          "op",
+          "<",
+          [
+           "s",
+           "n"
+          ],
+          [
+           "v",
+           10
+          ]
+         ],
+         [
+          [
+           "set",
+           "s",
+           "r",
+           [],
+           [
+            "v",
+            "mid"
+           ]
+          ]
+         ],
+         [
+          [
+           "set",
+           "s",
+           "r",
+           [],
+           [
+            "v",
+            "high"
+           ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.path.list",
+  "kind": "handler",
+  "script": "state items = [{title: \"a\", done: false}, {title: \"b\", done: false}]\nhandler toggle(i: number) { items[i].done = !(items[i].done ?? false) }",
+  "handler": "toggle",
+  "args": [
+   1
+  ],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "title": "a",
+      "done": false
+     },
+     {
+      "title": "b",
+      "done": true
+     }
+    ]
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.path.list",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "title": [
+          "v",
+          "a"
+         ],
+         "done": [
+          "v",
+          false
+         ]
+        }
+       ],
+       [
+        "rec",
+        {
+         "title": [
+          "v",
+          "b"
+         ],
+         "done": [
+          "v",
+          false
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "toggle": {
+     "params": [
+      "i"
+     ],
+     "body": [
+      [
+       "set",
+       "s",
+       "items",
+       [
+        [
+         "l",
+         "i"
+        ],
+        [
+         "v",
+         "done"
+        ]
+       ],
+       [
+        "un",
+        "!",
+        [
+         "op",
+         "??",
+         [
+          "get",
+          [
+           "at",
+           [
+            "s",
+            "items"
+           ],
+           [
+            "l",
+            "i"
+           ]
+          ],
+          "done"
+         ],
+         [
+          "v",
+          false
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.path.record",
+  "kind": "handler",
+  "script": "state user = {name: \"A\", meta: {age: 1}}\nhandler bump() { user.meta.age = user.meta.age + 1 }",
+  "handler": "bump",
+  "args": [],
+  "expect": {
+   "state": {
+    "user": {
+     "name": "A",
+     "meta": {
+      "age": 2
+     }
+    }
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.path.record",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "user",
+     [
+      "rec",
+      {
+       "name": [
+        "v",
+        "A"
+       ],
+       "meta": [
+        "rec",
+        {
+         "age": [
+          "v",
+          1
+         ]
+        }
+       ]
+      }
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "bump": {
+     "params": [],
+     "body": [
+      [
+       "set",
+       "s",
+       "user",
+       [
+        [
+         "v",
+         "meta"
+        ],
+        [
+         "v",
+         "age"
+        ]
+       ],
+       [
+        "op",
+        "+",
+        [
+         "get",
+         [
+          "get",
+          [
+           "s",
+           "user"
+          ],
+          "meta"
+         ],
+         "age"
+        ],
+        [
+         "v",
+         1
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.path.oob",
+  "kind": "handler",
+  "script": "state items = [{done: false}]\nhandler go() { items[5].done = true }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "done": false
+     }
+    ]
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.path.oob",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "done": [
+          "v",
+          false
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "set",
+       "s",
+       "items",
+       [
+        [
+         "v",
+         5
+        ],
+        [
+         "v",
+         "done"
+        ]
+       ],
+       [
+        "v",
+        true
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.let.effects",
+  "kind": "handler",
+  "script": "handler go() {\n  let id = \"x\" + str(1)\n  navigate(\"details\", {id: id})\n  navigate(\"promo\", {}, \"fade\")\n  track(\"open\", {id: id})\n  haptic(\"light\")\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "navigate",
+     "args": [
+      "details",
+      {
+       "id": "x1"
+      }
+     ]
+    },
+    {
+     "effect": "navigate",
+     "args": [
+      "promo",
+      {},
+      "fade"
+     ]
+    },
+    {
+     "effect": "track",
+     "args": [
+      "open",
+      {
+       "id": "x1"
+      }
+     ]
+    },
+    {
+     "effect": "haptic",
+     "args": [
+      "light"
+     ]
+    }
+   ]
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.let.effects",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "let",
+       "id",
+       [
+        "op",
+        "+",
+        [
+         "v",
+         "x"
+        ],
+        [
+         "f",
+         "str",
+         [
+          [
+           "v",
+           1
+          ]
+         ]
+        ]
+       ]
+      ],
+      [
+       "do",
+       "navigate",
+       [
+        [
+         "v",
+         "details"
+        ],
+        [
+         "rec",
+         {
+          "id": [
+           "l",
+           "id"
+          ]
+         }
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "navigate",
+       [
+        [
+         "v",
+         "promo"
+        ],
+        [
+         "rec",
+         {}
+        ],
+        [
+         "v",
+         "fade"
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "track",
+       [
+        [
+         "v",
+         "open"
+        ],
+        [
+         "rec",
+         {
+          "id": [
+           "l",
+           "id"
+          ]
+         }
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "haptic",
+       [
+        [
+         "v",
+         "light"
+        ]
+       ],
+       false
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.call.ok",
+  "kind": "handler",
+  "script": "state promo = \"\"\nstate discount = 0\nstate msg = \"\"\nhandler check() {\n  let r = await call demo.checkPromo({code: promo})\n  if r.ok {\n    discount = r.value.discount ?? 0\n    msg = r.value.message ?? \"\"\n  } else {\n    msg = r.error.message ?? \"error\"\n  }\n}",
+  "handler": "check",
+  "args": [],
+  "expect": {
+   "state": {
+    "discount": 10,
+    "msg": "ok"
+   },
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.checkPromo",
+     "args": {
+      "code": "WB10"
+     }
+    }
+   ]
+  },
+  "state": {
+   "promo": "WB10"
+  },
+  "calls": {
+   "demo.checkPromo": {
+    "ok": true,
+    "value": {
+     "valid": true,
+     "discount": 10,
+     "message": "ok"
+    }
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.call.ok",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "promo",
+     [
+      "v",
+      ""
+     ]
+    ],
+    [
+     "discount",
+     [
+      "v",
+      0
+     ]
+    ],
+    [
+     "msg",
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "check": {
+     "params": [],
+     "body": [
+      [
+       "call",
+       "demo.checkPromo",
+       [
+        "rec",
+        {
+         "code": [
+          "s",
+          "promo"
+         ]
+        }
+       ],
+       "r",
+       true
+      ],
+      [
+       "if",
+       [
+        "get",
+        [
+         "l",
+         "r"
+        ],
+        "ok"
+       ],
+       [
+        [
+         "set",
+         "s",
+         "discount",
+         [],
+         [
+          "op",
+          "??",
+          [
+           "get",
+           [
+            "get",
+            [
+             "l",
+             "r"
+            ],
+            "value"
+           ],
+           "discount"
+          ],
+          [
+           "v",
+           0
+          ]
+         ]
+        ],
+        [
+         "set",
+         "s",
+         "msg",
+         [],
+         [
+          "op",
+          "??",
+          [
+           "get",
+           [
+            "get",
+            [
+             "l",
+             "r"
+            ],
+            "value"
+           ],
+           "message"
+          ],
+          [
+           "v",
+           ""
+          ]
+         ]
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "msg",
+         [],
+         [
+          "op",
+          "??",
+          [
+           "get",
+           [
+            "get",
+            [
+             "l",
+             "r"
+            ],
+            "error"
+           ],
+           "message"
+          ],
+          [
+           "v",
+           "error"
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.call.fail",
+  "kind": "handler",
+  "script": "state promo = \"\"\nstate discount = 0\nstate msg = \"\"\nhandler check() {\n  let r = await call demo.checkPromo({code: promo})\n  if r.ok {\n    discount = r.value.discount ?? 0\n    msg = r.value.message ?? \"\"\n  } else {\n    msg = r.error.message ?? \"error\"\n  }\n}",
+  "handler": "check",
+  "args": [],
+  "expect": {
+   "state": {
+    "discount": 0,
+    "msg": "offline"
+   },
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.checkPromo",
+     "args": {
+      "code": "X"
+     }
+    }
+   ]
+  },
+  "state": {
+   "promo": "X"
+  },
+  "calls": {
+   "demo.checkPromo": {
+    "ok": false,
+    "error": {
+     "code": "NETWORK",
+     "message": "offline"
+    }
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.call.fail",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "promo",
+     [
+      "v",
+      ""
+     ]
+    ],
+    [
+     "discount",
+     [
+      "v",
+      0
+     ]
+    ],
+    [
+     "msg",
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "check": {
+     "params": [],
+     "body": [
+      [
+       "call",
+       "demo.checkPromo",
+       [
+        "rec",
+        {
+         "code": [
+          "s",
+          "promo"
+         ]
+        }
+       ],
+       "r",
+       true
+      ],
+      [
+       "if",
+       [
+        "get",
+        [
+         "l",
+         "r"
+        ],
+        "ok"
+       ],
+       [
+        [
+         "set",
+         "s",
+         "discount",
+         [],
+         [
+          "op",
+          "??",
+          [
+           "get",
+           [
+            "get",
+            [
+             "l",
+             "r"
+            ],
+            "value"
+           ],
+           "discount"
+          ],
+          [
+           "v",
+           0
+          ]
+         ]
+        ],
+        [
+         "set",
+         "s",
+         "msg",
+         [],
+         [
+          "op",
+          "??",
+          [
+           "get",
+           [
+            "get",
+            [
+             "l",
+             "r"
+            ],
+            "value"
+           ],
+           "message"
+          ],
+          [
+           "v",
+           ""
+          ]
+         ]
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "msg",
+         [],
+         [
+          "op",
+          "??",
+          [
+           "get",
+           [
+            "get",
+            [
+             "l",
+             "r"
+            ],
+            "error"
+           ],
+           "message"
+          ],
+          [
+           "v",
+           "error"
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.call.fieldErrors",
+  "kind": "handler",
+  "script": "state err = \"\"\nhandler go() {\n  let r = await call demo.subscribe({email: \"taken@example.com\", name: \"A\", plan: \"pro\", promo: \"\"})\n  err = r.fieldErrors[\"email\"] ?? \"none\"\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "err": "Этот email уже занят"
+   },
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.subscribe",
+     "args": {
+      "email": "taken@example.com",
+      "name": "A",
+      "plan": "pro",
+      "promo": ""
+     }
+    }
+   ]
+  },
+  "calls": {
+   "demo.subscribe": {
+    "ok": false,
+    "error": {
+     "code": "ARGS_INVALID",
+     "message": "Проверьте поля"
+    },
+    "fieldErrors": {
+     "email": "Этот email уже занят"
+    }
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.call.fieldErrors",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "err",
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "call",
+       "demo.subscribe",
+       [
+        "rec",
+        {
+         "email": [
+          "v",
+          "taken@example.com"
+         ],
+         "name": [
+          "v",
+          "A"
+         ],
+         "plan": [
+          "v",
+          "pro"
+         ],
+         "promo": [
+          "v",
+          ""
+         ]
+        }
+       ],
+       "r",
+       true
+      ],
+      [
+       "set",
+       "s",
+       "err",
+       [],
+       [
+        "op",
+        "??",
+        [
+         "at",
+         [
+          "get",
+          [
+           "l",
+           "r"
+          ],
+          "fieldErrors"
+         ],
+         [
+          "v",
+          "email"
+         ]
+        ],
+        [
+         "v",
+         "none"
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.call.fireforget",
+  "kind": "handler",
+  "script": "handler go() { call demo.claimOffer({id: \"o1\"}) }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "call",
+     "op": "demo.claimOffer",
+     "args": {
+      "id": "o1"
+     }
+    }
+   ]
+  },
+  "calls": {
+   "demo.claimOffer": {
+    "ok": true,
+    "value": {
+     "tickets": 3
+    }
+   }
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.call.fireforget",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "call",
+       "demo.claimOffer",
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          "o1"
+         ]
+        }
+       ],
+       null,
+       false
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.run.nested",
+  "kind": "handler",
+  "script": "state log = \"\"\nhandler a() {\n  log = log + \"a\"\n  b()\n  log = log + \"c\"\n}\nhandler b() { log = log + \"b\" }",
+  "handler": "a",
+  "args": [],
+  "expect": {
+   "state": {
+    "log": "abc"
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.run.nested",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "log",
+     [
+      "v",
+      ""
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "a": {
+     "params": [],
+     "body": [
+      [
+       "set",
+       "s",
+       "log",
+       [],
+       [
+        "op",
+        "+",
+        [
+         "s",
+         "log"
+        ],
+        [
+         "v",
+         "a"
+        ]
+       ]
+      ],
+      [
+       "run",
+       "b",
+       []
+      ],
+      [
+       "set",
+       "s",
+       "log",
+       [],
+       [
+        "op",
+        "+",
+        [
+         "s",
+         "log"
+        ],
+        [
+         "v",
+         "c"
+        ]
+       ]
+      ]
+     ]
+    },
+    "b": {
+     "params": [],
+     "body": [
+      [
+       "set",
+       "s",
+       "log",
+       [],
+       [
+        "op",
+        "+",
+        [
+         "s",
+         "log"
+        ],
+        [
+         "v",
+         "b"
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.run.args",
+  "kind": "handler",
+  "script": "state total = 0\nhandler add(x: number, y: number) { total = total + x * y }\nhandler go() { add(2, 3)\n add(1, 1) }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "total": 7
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.run.args",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "total",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "add": {
+     "params": [
+      "x",
+      "y"
+     ],
+     "body": [
+      [
+       "set",
+       "s",
+       "total",
+       [],
+       [
+        "op",
+        "+",
+        [
+         "s",
+         "total"
+        ],
+        [
+         "op",
+         "*",
+         [
+          "l",
+          "x"
+         ],
+         [
+          "l",
+          "y"
+         ]
+        ]
+       ]
+      ]
+     ]
+    },
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "run",
+       "add",
+       [
+        [
+         "v",
+         2
+        ],
+        [
+         "v",
+         3
+        ]
+       ]
+      ],
+      [
+       "run",
+       "add",
+       [
+        [
+         "v",
+         1
+        ],
+        [
+         "v",
+         1
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.animate.body",
+  "kind": "handler",
+  "script": "state x = 0\nhandler go() { animate(@motion.snappy) { x = 1 } }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "x": 1
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.animate.body",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "x",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "anim",
+       [
+        "t",
+        "motion",
+        "snappy"
+       ],
+       [
+        [
+         "set",
+         "s",
+         "x",
+         [],
+         [
+          "v",
+          1
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.timeline.effects",
+  "kind": "handler",
+  "script": "handler go() {\n  play(intro)\n  wait(300ms)\n  await play(intro)\n  stop(intro)\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "play",
+     "args": [
+      "intro"
+     ]
+    },
+    {
+     "effect": "wait",
+     "args": [
+      300
+     ]
+    },
+    {
+     "effect": "play",
+     "args": [
+      "intro"
+     ]
+    },
+    {
+     "effect": "stop",
+     "args": [
+      "intro"
+     ]
+    }
+   ]
+  },
+  "timelines": [
+   {
+    "name": "intro",
+    "tracks": [
+     {
+      "target": "root",
+      "prop": "opacity",
+      "keys": [
+       {
+        "t": 0,
+        "v": 0
+       },
+       {
+        "t": 100,
+        "v": 1
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.timeline.effects",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "do",
+       "play",
+       [
+        [
+         "v",
+         "intro"
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "wait",
+       [
+        [
+         "v",
+         300
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "play",
+       [
+        [
+         "v",
+         "intro"
+        ]
+       ],
+       true
+      ],
+      [
+       "do",
+       "stop",
+       [
+        [
+         "v",
+         "intro"
+        ]
+       ],
+       false
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {
+    "intro": {
+     "duration": 100,
+     "repeat": 1,
+     "autoreverse": false,
+     "autoplay": false,
+     "tracks": [
+      {
+       "target": "root",
+       "prop": "opacity",
+       "stagger": 0,
+       "keys": [
+        {
+         "t": 0,
+         "v": 0
+        },
+        {
+         "t": 100,
+         "v": 1
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.computed.read",
+  "kind": "handler",
+  "script": "state a = 1\nlet b = a + 1\nhandler go() { a = b * 10 }",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "a": 20
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.computed.read",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "a",
+     [
+      "v",
+      1
+     ]
+    ]
+   ],
+   "computed": {
+    "b": [
+     "op",
+     "+",
+     [
+      "s",
+      "a"
+     ],
+     [
+      "v",
+      1
+     ]
+    ]
+   },
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "set",
+       "s",
+       "a",
+       [],
+       [
+        "op",
+        "*",
+        [
+         "c",
+         "b"
+        ],
+        [
+         "v",
+         10
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.computed.fresh",
+  "kind": "handler",
+  "script": "state a = 1\nlet b = a * 2\nstate seen = 0\nhandler go() {\n  a = 5\n  seen = b\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "a": 5,
+    "seen": 10
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.computed.fresh",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "a",
+     [
+      "v",
+      1
+     ]
+    ],
+    [
+     "seen",
+     [
+      "v",
+      0
+     ]
+    ]
+   ],
+   "computed": {
+    "b": [
+     "op",
+     "*",
+     [
+      "s",
+      "a"
+     ],
+     [
+      "v",
+      2
+     ]
+    ]
+   },
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "set",
+       "s",
+       "a",
+       [],
+       [
+        "v",
+        5
+       ]
+      ],
+      [
+       "set",
+       "s",
+       "seen",
+       [],
+       [
+        "c",
+        "b"
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.misc.effects",
+  "kind": "handler",
+  "script": "data me = demo.profile()\nhandler go() {\n  refresh(me)\n  host(\"openProfile\", {id: 5})\n  open(\"https://example.com/\" + str(7))\n  present(\"sheet.x\", {a: 1})\n  dismiss()\n  back()\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {},
+   "effects": [
+    {
+     "effect": "refresh",
+     "args": [
+      "me"
+     ]
+    },
+    {
+     "effect": "host",
+     "args": [
+      "openProfile",
+      {
+       "id": 5
+      }
+     ]
+    },
+    {
+     "effect": "open",
+     "args": [
+      "https://example.com/7"
+     ]
+    },
+    {
+     "effect": "present",
+     "args": [
+      "sheet.x",
+      {
+       "a": 1
+      }
+     ]
+    },
+    {
+     "effect": "dismiss",
+     "args": []
+    },
+    {
+     "effect": "back",
+     "args": []
+    }
+   ]
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.misc.effects",
+   "revision": 1,
+   "params": {},
+   "state": [],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "do",
+       "refresh",
+       [
+        [
+         "v",
+         "me"
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "host",
+       [
+        [
+         "v",
+         "openProfile"
+        ],
+        [
+         "rec",
+         {
+          "id": [
+           "v",
+           5
+          ]
+         }
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "open",
+       [
+        [
+         "op",
+         "+",
+         [
+          "v",
+          "https://example.com/"
+         ],
+         [
+          "f",
+          "str",
+          [
+           [
+            "v",
+            7
+           ]
+          ]
+         ]
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "present",
+       [
+        [
+         "v",
+         "sheet.x"
+        ],
+        [
+         "rec",
+         {
+          "a": [
+           "v",
+           1
+          ]
+         }
+        ]
+       ],
+       false
+      ],
+      [
+       "do",
+       "dismiss",
+       [],
+       false
+      ],
+      [
+       "do",
+       "back",
+       [],
+       false
+      ]
+     ]
+    }
+   },
+   "data": [
+    {
+     "name": "me",
+     "op": "demo.profile",
+     "args": {},
+     "required": false
+    }
+   ],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.path.alias",
+  "kind": "handler",
+  "script": "state items = [{done: false}]\nstate snap = true\nhandler go() {\n  let before = items\n  items[0].done = true\n  snap = before[0].done ?? true\n}",
+  "handler": "go",
+  "args": [],
+  "expect": {
+   "state": {
+    "snap": false,
+    "items": [
+     {
+      "done": true
+     }
+    ]
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.path.alias",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "done": [
+          "v",
+          false
+         ]
+        }
+       ]
+      ]
+     ]
+    ],
+    [
+     "snap",
+     [
+      "v",
+      true
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "go": {
+     "params": [],
+     "body": [
+      [
+       "let",
+       "before",
+       [
+        "s",
+        "items"
+       ]
+      ],
+      [
+       "set",
+       "s",
+       "items",
+       [
+        [
+         "v",
+         0
+        ],
+        [
+         "v",
+         "done"
+        ]
+       ],
+       [
+        "v",
+        true
+       ]
+      ],
+      [
+       "set",
+       "s",
+       "snap",
+       [],
+       [
+        "op",
+        "??",
+        [
+         "get",
+         [
+          "at",
+          [
+           "l",
+           "before"
+          ],
+          [
+           "v",
+           0
+          ]
+         ],
+         "done"
+        ],
+        [
+         "v",
+         true
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.list.update",
+  "kind": "handler",
+  "script": "state items: list<{id: number, qty: number}> = [{id: 1, qty: 1}]\nhandler add(id: number) {\n  let i = items.indexOf(items.find(x => x.id == id) ?? {id: -1, qty: 0})\n  if i >= 0 { items[i].qty = (items[i].qty ?? 0) + 1 } else { items = items.append({id: id, qty: 1}) }\n}",
+  "handler": "add",
+  "args": [
+   2
+  ],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "id": 1,
+      "qty": 1
+     },
+     {
+      "id": 2,
+      "qty": 1
+     }
+    ]
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.list.update",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          1
+         ],
+         "qty": [
+          "v",
+          1
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "add": {
+     "params": [
+      "id"
+     ],
+     "body": [
+      [
+       "let",
+       "i",
+       [
+        "f",
+        "indexOf",
+        [
+         [
+          "s",
+          "items"
+         ],
+         [
+          "op",
+          "??",
+          [
+           "f",
+           "find",
+           [
+            [
+             "s",
+             "items"
+            ],
+            [
+             "lam",
+             [
+              "x"
+             ],
+             [
+              "op",
+              "==",
+              [
+               "get",
+               [
+                "l",
+                "x"
+               ],
+               "id"
+              ],
+              [
+               "l",
+               "id"
+              ]
+             ]
+            ]
+           ]
+          ],
+          [
+           "rec",
+           {
+            "id": [
+             "un",
+             "-",
+             [
+              "v",
+              1
+             ]
+            ],
+            "qty": [
+             "v",
+             0
+            ]
+           }
+          ]
+         ]
+        ]
+       ]
+      ],
+      [
+       "if",
+       [
+        "op",
+        ">=",
+        [
+         "l",
+         "i"
+        ],
+        [
+         "v",
+         0
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "items",
+         [
+          [
+           "l",
+           "i"
+          ],
+          [
+           "v",
+           "qty"
+          ]
+         ],
+         [
+          "op",
+          "+",
+          [
+           "op",
+           "??",
+           [
+            "get",
+            [
+             "at",
+             [
+              "s",
+              "items"
+             ],
+             [
+              "l",
+              "i"
+             ]
+            ],
+            "qty"
+           ],
+           [
+            "v",
+            0
+           ]
+          ],
+          [
+           "v",
+           1
+          ]
+         ]
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "items",
+         [],
+         [
+          "f",
+          "append",
+          [
+           [
+            "s",
+            "items"
+           ],
+           [
+            "rec",
+            {
+             "id": [
+              "l",
+              "id"
+             ],
+             "qty": [
+              "v",
+              1
+             ]
+            }
+           ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ },
+ {
+  "name": "h.list.update.existing",
+  "kind": "handler",
+  "script": "state items: list<{id: number, qty: number}> = [{id: 1, qty: 1}]\nhandler add(id: number) {\n  let i = items.indexOf(items.find(x => x.id == id) ?? {id: -1, qty: 0})\n  if i >= 0 { items[i].qty = (items[i].qty ?? 0) + 1 } else { items = items.append({id: id, qty: 1}) }\n}",
+  "handler": "add",
+  "args": [
+   1
+  ],
+  "expect": {
+   "state": {
+    "items": [
+     {
+      "id": 1,
+      "qty": 2
+     }
+    ]
+   },
+   "effects": []
+  },
+  "env": {
+   "now": 0,
+   "platform": "test",
+   "locale": "ru",
+   "brand": "korpu",
+   "colorScheme": "light",
+   "reduceMotion": false,
+   "screenWidth": 390,
+   "screenHeight": 844,
+   "safeTop": 0,
+   "safeBottom": 0,
+   "timeZone": "UTC"
+  },
+  "document": {
+   "format": 1,
+   "runtimeMin": "1.0.0",
+   "screen": "h.list.update.existing",
+   "revision": 1,
+   "params": {},
+   "state": [
+    [
+     "items",
+     [
+      "list",
+      [
+       [
+        "rec",
+        {
+         "id": [
+          "v",
+          1
+         ],
+         "qty": [
+          "v",
+          1
+         ]
+        }
+       ]
+      ]
+     ]
+    ]
+   ],
+   "computed": {},
+   "fns": {},
+   "handlers": {
+    "add": {
+     "params": [
+      "id"
+     ],
+     "body": [
+      [
+       "let",
+       "i",
+       [
+        "f",
+        "indexOf",
+        [
+         [
+          "s",
+          "items"
+         ],
+         [
+          "op",
+          "??",
+          [
+           "f",
+           "find",
+           [
+            [
+             "s",
+             "items"
+            ],
+            [
+             "lam",
+             [
+              "x"
+             ],
+             [
+              "op",
+              "==",
+              [
+               "get",
+               [
+                "l",
+                "x"
+               ],
+               "id"
+              ],
+              [
+               "l",
+               "id"
+              ]
+             ]
+            ]
+           ]
+          ],
+          [
+           "rec",
+           {
+            "id": [
+             "un",
+             "-",
+             [
+              "v",
+              1
+             ]
+            ],
+            "qty": [
+             "v",
+             0
+            ]
+           }
+          ]
+         ]
+        ]
+       ]
+      ],
+      [
+       "if",
+       [
+        "op",
+        ">=",
+        [
+         "l",
+         "i"
+        ],
+        [
+         "v",
+         0
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "items",
+         [
+          [
+           "l",
+           "i"
+          ],
+          [
+           "v",
+           "qty"
+          ]
+         ],
+         [
+          "op",
+          "+",
+          [
+           "op",
+           "??",
+           [
+            "get",
+            [
+             "at",
+             [
+              "s",
+              "items"
+             ],
+             [
+              "l",
+              "i"
+             ]
+            ],
+            "qty"
+           ],
+           [
+            "v",
+            0
+           ]
+          ],
+          [
+           "v",
+           1
+          ]
+         ]
+        ]
+       ],
+       [
+        [
+         "set",
+         "s",
+         "items",
+         [],
+         [
+          "f",
+          "append",
+          [
+           [
+            "s",
+            "items"
+           ],
+           [
+            "rec",
+            {
+             "id": [
+              "l",
+              "id"
+             ],
+             "qty": [
+              "v",
+              1
+             ]
+            }
+           ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    }
+   },
+   "data": [],
+   "timelines": {},
+   "root": {
+    "t": "stack",
+    "id": "root"
+   }
+  }
+ }
+]

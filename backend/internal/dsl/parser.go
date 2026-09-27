@@ -238,8 +238,14 @@ func (p *parser) unary() Expr {
 
 // postfix: '.' may continue on a new line (method chains); '(' and '[' may not.
 func (p *parser) postfix(x Expr) Expr {
+	chain := 0 // each step nests the tree one level deeper
+	defer func() { p.depth -= chain }()
 	for {
 		t := p.peek()
+		if p.is(".") || (p.is("(") || p.is("[")) && !t.nl {
+			chain++
+			p.nest(t.pos)
+		}
 		switch {
 		case p.is("."):
 			p.next()
@@ -502,6 +508,8 @@ func (p *parser) stmt() Stmt {
 }
 
 func (p *parser) ifStmt() *IfStmt {
+	defer func() { p.depth-- }()
+	p.nest(p.peek().pos)
 	t := p.next()
 	s := &IfStmt{P: t.pos, Cond: p.expr()}
 	s.Then = p.block()

@@ -1,0 +1,10 @@
+{
+ "id": "Button",
+ "title": "Button",
+ "script": "param title: string\nparam kind: \"primary\" | \"secondary\" = \"primary\"\nevent tap\nstate presses = 0\nlet label = title + \"!\"\nfn double(x: number): number = x * 2\nhandler press() {\n  presses = double(presses) + 1\n  emit tap\n}",
+ "timelines": [{"name": "pulse", "tracks": [{"target": "bg", "prop": "scale", "keys": [{"t": 0, "v": 1}, {"t": 100, "v": 0.95}]}]}],
+ "root": {"type": "stack", "id": "root", "props": {"padding": 8}, "on": {"tap": "press()\nplay(pulse)"}, "children": [
+  {"type": "shape", "id": "bg", "props": {"fill": "=kind == \"primary\" ? @color.accentPrimary : @color.bg2", "scale": "=self.pressed ? 0.9 : 1"}, "on": {"longPress": "back()"}},
+  {"type": "text", "id": "label", "props": {"text": "=label"}}
+ ]}
+}
