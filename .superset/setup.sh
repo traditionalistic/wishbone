@@ -15,6 +15,7 @@ done
 
 # Deps, once the dirs stop being placeholders.
 [ -f backend/go.mod ] && (cd backend && go mod download)
+[ -f admin/package.json ] && (cd admin && npm ci)
 [ -f android/gradlew ] && ./android/gradlew -p android --quiet help >/dev/null
 [ -f ios/Tuist/Config.swift ] && (cd ios && tuist install && tuist generate --no-open)
 

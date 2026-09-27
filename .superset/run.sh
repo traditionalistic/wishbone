@@ -10,6 +10,10 @@ if [ ! -f backend/go.mod ]; then
 	exit 1
 fi
 
+if [ -f admin/package.json ] && [ ! -d admin/dist ]; then
+	(cd admin && npm run build)
+fi
+
 cd backend
 export PORT="$port"
 echo "BDUI backend on http://localhost:$port"
