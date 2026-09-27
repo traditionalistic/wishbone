@@ -81,15 +81,6 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 
 const enc = encodeURIComponent
 
-/** Token/icon lists may come as names, "@group.name" strings or {name} objects — normalize to bare names. */
-function names(xs: unknown, group: string): string[] {
-  if (!Array.isArray(xs)) return []
-  return xs
-    .map((x) => (typeof x === 'string' ? x : String((x as { name?: unknown })?.name ?? '')))
-    .map((n) => n.replace(new RegExp(`^@${group}\\.`), ''))
-    .filter(Boolean)
-}
-
 export const api = {
   screens: () => req<ScreenSummary[]>('GET', '/screens'),
   createScreen: (id: string, title: string) => req<{ id: string; title: string; draft: Source }>('POST', '/screens', { id, title }),
@@ -106,38 +97,39 @@ export const api = {
   play: (code: string, timeline: string) => req<void>('POST', `/preview/${enc(code)}/play`, { timeline }),
 
   async catalog(): Promise<Catalog> {
-    const raw = await req<Catalog & { tokens: Record<string, unknown>; icons: unknown }>('GET', '/catalog')
+    const raw = await req<Omit<Catalog, 'tokens'> & { tokens: Partial<Record<TokenGroup, string[]>> }>('GET', '/catalog')
     const groups: TokenGroup[] = ['color', 'type', 'space', 'radius', 'motion']
-    const icons = names(raw.icons, 'icon')
-    const tokens = Object.fromEntries(groups.map((g) => [g, names(raw.tokens?.[g], g)])) as Record<TokenGroup, string[]>
+    const icons = raw.icons ?? []
+    const tokens = Object.fromEntries(groups.map((g) => [g, raw.tokens?.[g] ?? []])) as Record<TokenGroup, string[]>
     tokens.icon = icons
     return { ...raw, templates: raw.templates ?? [], ops: raw.ops ?? [], brands: raw.brands ?? [], icons, tokens }
   },
 
-  /** Subscribes to the admin side of a preview session; reconnects until the returned stop() is called. */
-  previewSocket(code: string, onMessage: (m: PreviewMessage) => void): () => void {
+  /** Live preview sessions (public device API) — used to tell a dropped socket from a dead session. */
+  async previewSessions(): Promise<{ code: string }[]> {
+    const res = await fetch('/v1/preview/sessions')
+    if (!res.ok) throw new ApiError(res.status, `HTTP_${res.status}`, res.statusText)
+    return res.json()
+  },
+
+  /** Subscribes to the admin side of a preview session; `onClose` fires when the socket drops (not on stop()). */
+  previewSocket(code: string, onMessage: (m: PreviewMessage) => void, onClose: () => void): () => void {
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/admin/api/preview/${enc(code)}/ws?token=${enc(auth.get())}`
-    let ws: WebSocket | undefined
-    let timer: ReturnType<typeof setTimeout> | undefined
+    const ws = new WebSocket(url)
     let stopped = false
-    const open = () => {
-      ws = new WebSocket(url)
-      ws.onmessage = (e) => {
-        try {
-          onMessage(JSON.parse(String(e.data)) as PreviewMessage)
-        } catch {
-          /* ignore malformed frames */
-        }
-      }
-      ws.onclose = () => {
-        if (!stopped) timer = setTimeout(open, 2000)
+    ws.onmessage = (e) => {
+      try {
+        onMessage(JSON.parse(String(e.data)) as PreviewMessage)
+      } catch {
+        /* ignore malformed frames */
       }
     }
-    open()
+    ws.onclose = () => {
+      if (!stopped) onClose()
+    }
     return () => {
       stopped = true
-      clearTimeout(timer)
-      ws?.close()
+      ws.close()
     }
   },
 }

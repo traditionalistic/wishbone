@@ -8,7 +8,7 @@ const catalog = {
   stdlib: { functions: {}, env: {}, effects: {}, easings: {} },
   templates: [
     { name: 'Button', params: [{ name: 'title', type: 'string' }, { name: 'style', type: '"primary" | "ghost"', default: 'primary' }], events: ['tap'], slot: false },
-    { name: 'Card', params: [], events: [], slot: true },
+    { name: 'Card', params: [{ name: 'padding', type: 'number', default: 16 }], events: [], slot: true },
   ],
   tokens: { color: ['el16', 'bg1'], type: ['body'], space: ['sm', 'lg'], radius: ['md'], motion: ['snappy'], icon: ['close', 'star'] },
   icons: ['close', 'star'],
@@ -46,11 +46,18 @@ describe('propSpecs', () => {
     expect(Object.keys(p).slice(0, 7)).toEqual(['value', 'placeholder', 'keyboard', 'secure', 'style', 'color', 'bind'])
     expect(p.padding.type).toContain('number')
   })
-  it('template params', () => {
-    expect(propSpecs('Button', catalog)).toEqual({
-      title: { type: 'string', required: true },
-      style: { type: '"primary" | "ghost"', default: 'primary', required: false },
-    })
+  it('template params followed by common props', () => {
+    const p = propSpecs('Button', catalog)
+    expect(Object.keys(p)).toEqual(['title', 'style', ...Object.keys(primitives.common)])
+    expect(p.title).toEqual({ type: 'string', required: true })
+    expect(p.style).toEqual({ type: '"primary" | "ghost"', default: 'primary', required: false })
+    expect(p.opacity).toEqual(primitives.common.opacity)
+  })
+  it('a template param shadows the common prop of the same name', () => {
+    const p = propSpecs('Card', catalog)
+    expect(p.padding).toEqual({ type: 'number', default: 16, required: false })
+    expect(Object.keys(p).filter((k) => k === 'padding')).toHaveLength(1)
+    expect(Object.keys(p)[0]).toBe('padding')
   })
   it('optional-typed params without default are not required', () => {
     const c = { ...catalog, templates: [{ name: 'X', params: [{ name: 'icon', type: 'icon?' }], events: [], slot: false }] } as Catalog
@@ -69,10 +76,11 @@ describe('containers and events', () => {
     expect(isContainer('Card', catalog)).toBe(true)
     expect(isContainer('Button', catalog)).toBe(false)
   })
-  it('nodeEvents: common + primitive + dragEnd when draggable; template events', () => {
+  it('nodeEvents: common + primitive + dragEnd when draggable; template: declared + common, de-duplicated', () => {
     expect(nodeEvents({ type: 'textField', id: 'f' }, catalog)).toEqual(['tap', 'longPress', 'appear', 'disappear', 'change', 'submit'])
     expect(nodeEvents({ type: 'shape', id: 's', drag: { axis: 'x' } }, catalog)).toEqual(['tap', 'longPress', 'appear', 'disappear', 'dragEnd'])
-    expect(nodeEvents({ type: 'Button', id: 'b' }, catalog)).toEqual(['tap'])
+    expect(nodeEvents({ type: 'Button', id: 'b' }, catalog)).toEqual(['tap', 'longPress', 'appear', 'disappear'])
+    expect(nodeEvents({ type: 'Card', id: 'c', drag: { axis: 'y' } }, catalog)).toEqual(['tap', 'longPress', 'appear', 'disappear', 'dragEnd'])
   })
 })
 

@@ -70,13 +70,17 @@ export const isTemplate = (type: string): boolean => /^[A-Z]/.test(type)
 
 export const templateSpec = (type: string, c: Catalog) => c.templates.find((t) => t.name === type)
 
-/** Editable props of a node type: primitive props + sugar + common, or a template's params. */
+/**
+ * Editable props of a node type: primitive props + sugar + common, or a template's params + common
+ * (instance modifiers move onto the expanded root, spec §2.3; a param shadows a common prop of the same name).
+ */
 export function propSpecs(type: string, c: Catalog): Record<string, PropSpec> {
   const tpl = templateSpec(type, c)
   if (tpl) {
-    return Object.fromEntries(
+    const params: Record<string, PropSpec> = Object.fromEntries(
       tpl.params.map((p) => [p.name, { type: p.type, ...(p.default !== undefined ? { default: p.default } : {}), required: p.default === undefined && !p.type.trim().endsWith('?') }]),
     )
+    return { ...params, ...Object.fromEntries(Object.entries(c.primitives.common).filter(([k]) => !(k in params))) }
   }
   const prim = c.primitives.primitives[type]
   const sugar = Object.fromEntries(Object.entries(prim?.sugar ?? {}).map(([k, doc]) => [k, { type: 'string', doc }]))
@@ -90,7 +94,7 @@ export function isContainer(type: string, c: Catalog): boolean {
 export function nodeEvents(node: Node, c: Catalog): string[] {
   const drag = node.drag ? Object.keys(c.primitives.dragEvents) : []
   const tpl = templateSpec(node.type, c)
-  if (tpl) return [...tpl.events, ...drag]
+  if (tpl) return [...new Set([...tpl.events, ...Object.keys(c.primitives.events), ...drag])]
   return [...Object.keys(c.primitives.events), ...Object.keys(c.primitives.primitives[node.type]?.events ?? {}), ...drag]
 }
 

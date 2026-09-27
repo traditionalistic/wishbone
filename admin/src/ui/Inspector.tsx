@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { api } from '../api'
-import { isTemplate, propSpecs } from '../model/catalog'
+import { isTemplate, propSpecs, templateSpec } from '../model/catalog'
 import { diagsAt } from '../model/path'
 import type { Path } from '../model/tree'
 import type { Diag, Json, Node, PropSpec } from '../model/types'
@@ -14,7 +14,9 @@ export function Inspector({ node, path, diags, onChange }: { node: Node | undefi
   if (!node) return <div className="empty">Select a node</div>
 
   const specs = propSpecs(node.type, catalog)
-  const common = new Set(isTemplate(node.type) ? [] : Object.keys(catalog.primitives.common))
+  // common modifiers apply to template instances too, unless a param of the same name shadows one
+  const params = new Set(templateSpec(node.type, catalog)?.params.map((p) => p.name) ?? [])
+  const common = new Set(Object.keys(catalog.primitives.common).filter((k) => !params.has(k)))
   const own = Object.entries(specs).filter(([k]) => !common.has(k))
   const shared = Object.entries(specs).filter(([k]) => common.has(k))
   const extra = Object.keys(node.props ?? {})

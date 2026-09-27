@@ -48,6 +48,12 @@ describe('jsonToDsl', () => {
     expect(jsonToDsl([1, 'a'])).toBe('[1, "a"]')
     expect(jsonToDsl({ top: 4, 'x-y': 1 })).toBe('{top: 4, "x-y": 1}')
   })
+  it('encodes strings with the DSL escapes of §3.2; other control chars as u{hex}', () => {
+    expect(jsonToDsl('a\\b')).toBe('"a\\\\b"')
+    expect(jsonToDsl('cost ${x}')).toBe('"cost \\${x}"')
+    expect(jsonToDsl('a\tb\r\u0001\u007f')).toBe('"a\\tb\\u{D}\\u{1}\\u{7F}"')
+    expect(jsonToDsl('Привет 😀')).toBe('"Привет 😀"')
+  })
 })
 
 describe('switchMode', () => {
@@ -63,6 +69,10 @@ describe('switchMode', () => {
     expect(switchMode('=16', 'literal')).toBe(16)
     expect(switchMode('="=hi"', 'literal')).toBe('\\=hi')
     expect(switchMode('=a + 1', 'literal')).toBeUndefined()
+  })
+  it('expr → literal refuses strings with interpolation (meaning would change)', () => {
+    expect(switchMode('="Hi, ${me.name}"', 'literal')).toBeUndefined()
+    expect(switchMode('=["${a}"]', 'literal')).toBeUndefined()
   })
   it('→ token uses the first token offered, or keeps an existing token', () => {
     expect(switchMode(16, 'token', '@space.none')).toBe('@space.none')

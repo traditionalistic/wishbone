@@ -120,7 +120,7 @@ export function NodeFields({ node, path, diags, onChange }: { node: Node; path: 
 
       <Section title="Drag" open={!!drag}>
         <div className="row3">
-          <Field label="axis" field="drag/axis" diags={at('drag')}>
+          <Field label="axis" field="drag" diags={at('drag')}>
             <select value={drag?.axis ?? ''} onChange={(e) => (e.target.value ? setDrag('axis', e.target.value) : set('drag', undefined))}>
               <option value="">none</option>
               <option>x</option>

@@ -58,20 +58,28 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
   }
   const refreshScreens = () => api.screens().then(setScreens, () => undefined)
 
+  /** the last requested screen: responses for any earlier request are dropped */
+  const wanted = useRef<string | null>(null)
   const load = async (id: string) => {
+    wanted.current = id
     setSource(null)
     setScreenId(id)
     history.replaceState(null, '', `#${encodeURIComponent(id)}`)
     try {
       const s = await api.screen(id)
+      if (wanted.current !== id) return
       const src = normalize(s)
       setSource(src)
       setSaved(JSON.stringify(src))
       setPublishedRev(s.publishedRev)
       setSelected([])
       setTlSel({ tl: 0 })
-      api.revisions(id).then(setRevisions, () => setRevisions([]))
+      api.revisions(id).then(
+        (r) => wanted.current === id && setRevisions(r),
+        () => wanted.current === id && setRevisions([]),
+      )
     } catch (e) {
+      if (wanted.current !== id) return
       flash(`Cannot open ${id}: ${message(e)}`)
       setScreenId(null)
     }
@@ -88,8 +96,11 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
     if (id) void load(id)
   }, [])
 
+  /** one save at a time (⌘S can repeat while a request is in flight) */
+  const saving = useRef(false)
   const save = async (): Promise<boolean> => {
-    if (!source || !screenId) return false
+    if (!source || !screenId || saving.current) return false
+    saving.current = true
     setBusy(true)
     try {
       await api.saveDraft(screenId, source)
@@ -101,11 +112,14 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
       flash(`Save failed: ${message(e)}`)
       return false
     } finally {
+      saving.current = false
       setBusy(false)
     }
   }
   const saveRef = useRef(save)
   saveRef.current = save
+  const busyRef = useRef(busy)
+  busyRef.current = busy
 
   const publish = async () => {
     if (!screenId || (dirty && !(await save()))) return
@@ -158,7 +172,8 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
-        void saveRef.current()
+        // no-op while publish/rollback/save is in flight (a save could overwrite a rolled-back draft)
+        if (!busyRef.current) void saveRef.current()
       }
     }
     window.addEventListener('keydown', h)

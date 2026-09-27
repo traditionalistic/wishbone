@@ -135,6 +135,19 @@ describe('duplicateNode', () => {
   })
 })
 
+describe('unknown node fields', () => {
+  it('survive update, move and duplicate', () => {
+    const r = sample()
+    const withExtra = updateNode(r, [1, 0], (n) => ({ ...n, future: { x: 1 } }) as Node)
+    expect((getNode(withExtra, [1, 0]) as Node & { future?: unknown }).future).toEqual({ x: 1 })
+    const moved = moveNode(withExtra, [1, 0], [], 0)!
+    expect((getNode(moved.root, moved.path) as Node & { future?: unknown }).future).toEqual({ x: 1 })
+    const dup = duplicateNode(moved.root, moved.path)
+    expect((getNode(dup.root, dup.path) as Node & { future?: unknown }).future).toEqual({ x: 1 })
+    expect(getNode(dup.root, dup.path)!.id).toBe('c1')
+  })
+})
+
 describe('walk', () => {
   it('visits depth-first with paths', () => {
     const seen: string[] = []

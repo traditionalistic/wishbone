@@ -24,13 +24,25 @@ export const encodeToken = (group: string, name: string): string => `@${group}.$
 
 const ident = /^[A-Za-z_][A-Za-z0-9_]*$/
 
+const ESC: Record<string, string> = { '\\': '\\\\', '"': '\\"', $: '\\$', '\n': '\\n', '\t': '\\t' }
+
+/** DSL string literal: only the escapes of spec §3.2 (\\ \" \$ \n \t \u{…}); JSON's \r \b \u00XX are rejected there. */
+export function dslString(s: string): string {
+  let out = '"'
+  for (const ch of s) {
+    const cp = ch.codePointAt(0)!
+    out += ESC[ch] ?? (cp < 0x20 || cp === 0x7f ? `\\u{${cp.toString(16).toUpperCase()}}` : ch)
+  }
+  return out + '"'
+}
+
 /** JSON value → equivalent DSL literal source. */
 export function jsonToDsl(v: Json): string {
-  if (typeof v === 'string') return JSON.stringify(v)
+  if (typeof v === 'string') return dslString(v)
   if (Array.isArray(v)) return `[${v.map(jsonToDsl).join(', ')}]`
   if (v && typeof v === 'object')
     return `{${Object.entries(v)
-      .map(([k, x]) => `${ident.test(k) ? k : JSON.stringify(k)}: ${jsonToDsl(x)}`)
+      .map(([k, x]) => `${ident.test(k) ? k : dslString(k)}: ${jsonToDsl(x)}`)
       .join(', ')}}`
   return String(v)
 }
@@ -51,7 +63,8 @@ export function switchMode(v: Json | undefined, to: Mode, firstToken?: string): 
       if (d?.mode === 'expr' && /^@\w+\.\w+$/.test(d.text.trim())) return d.text.trim()
       return firstToken
     case 'literal':
-      if (d?.mode === 'expr') {
+      // "${…}" in a DSL string is interpolation — as a JSON literal it would silently become plain text
+      if (d?.mode === 'expr' && !d.text.includes('${')) {
         try {
           return encodeLiteral(JSON.parse(d.text) as Json)
         } catch {
