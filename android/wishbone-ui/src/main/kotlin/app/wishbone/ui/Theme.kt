@@ -4,7 +4,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import app.wishbone.core.Value
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.doubleOrNull
@@ -25,11 +24,12 @@ class Theme(
     val type: Map<String, TypeToken>,
     val space: Map<String, Double>,
     val radius: Map<String, Double>,
-    val motion: Map<String, JsonObject>,
+    val motions: Map<String, MotionSpec>,
 ) {
     /** `{"$color": name, "alpha"?: a}` → the theme color for the scheme, alpha multiplied. */
     fun color(v: Value, dark: Boolean): Color? {
         val f = (v as? Value.Rec)?.fields ?: return null
+        (f["\$argb"] as? Value.Num)?.let { return Color(it.value.toLong().toInt()) } // an animated color in flight
         val name = (f["\$color"] as? Value.Str)?.value ?: return null
         val pair = colors[name] ?: return null
         val c = if (dark) pair.second else pair.first
@@ -68,7 +68,7 @@ class Theme(
                 } ?: emptyMap(),
                 space = nums("space"),
                 radius = nums("radius"),
-                motion = o["motion"]?.jsonObject?.mapValues { it.value.jsonObject } ?: emptyMap(),
+                motions = o["motion"]?.jsonObject?.mapNotNull { (k, v) -> MotionSpec.fromJson(v.jsonObject)?.let { k to it } }?.toMap() ?: emptyMap(),
             )
         }
     }

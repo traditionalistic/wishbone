@@ -1,0 +1,8 @@
+{"id": "fixture.rive", "title": "Rive", "script": "state play = true",
+ "root": {"type": "stack", "id": "root", "props": {"spacing": 16, "align": "center"}, "children": [
+  {"type": "stack", "id": "dark", "props": {"axis": "z", "width": 220, "height": 220, "background": "@color.el16", "corner": 24}, "on": {"tap": "play = !play"}, "children": [
+   {"type": "rive", "id": "r1", "props": {"url": "/assets/rive/play_pause.riv", "stateMachine": "State Machine 1", "inputs": "={Play: play}", "width": 200, "height": 200}}]},
+  {"type": "stack", "id": "light", "props": {"axis": "z", "width": 220, "height": 220, "background": "@color.accentPrimary", "corner": 24}, "children": [
+   {"type": "rive", "id": "r2", "props": {"url": "/assets/rive/play_pause.riv", "width": 200, "height": 200}}]},
+  {"type": "text", "id": "t", "props": {"text": "=play ? \"Play = true\" : \"Play = false\""}}
+ ]}}

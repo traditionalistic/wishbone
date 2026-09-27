@@ -22,26 +22,27 @@ class DiskCacheTest {
         val cache = DiskCache(dir)
         val a = mapOf("id" to Value.Str("1"))
         val b = mapOf("id" to Value.Str("2"))
-        cache.writeScreen("s", a, CachedScreen("\"4-abc\"", 4, doc, data))
-        assertEquals(CachedScreen("\"4-abc\"", 4, doc, data), cache.readScreen("s", a))
-        assertNull(cache.readScreen("s", b))
-        assertNull(cache.readScreen("other", a))
+        cache.writeScreen("s", a, "korpu", CachedScreen("\"4-abc\"", 4, doc, data))
+        assertEquals(CachedScreen("\"4-abc\"", 4, doc, data), cache.readScreen("s", a, "korpu"))
+        assertNull(cache.readScreen("s", b, "korpu"))
+        assertNull(cache.readScreen("other", a, "korpu"))
+        assertNull(cache.readScreen("s", a, "kz")) // brand is part of the key
     }
 
     @Test
     fun paramOrderDoesNotMatter() {
-        val k1 = DiskCache.screenKey("s", linkedMapOf("a" to Value.Num(1.0), "b" to Value.Num(2.0)))
-        val k2 = DiskCache.screenKey("s", linkedMapOf("b" to Value.Num(2.0), "a" to Value.Num(1.0)))
+        val k1 = DiskCache.screenKey("s", linkedMapOf("a" to Value.Num(1.0), "b" to Value.Num(2.0)), "korpu")
+        val k2 = DiskCache.screenKey("s", linkedMapOf("b" to Value.Num(2.0), "a" to Value.Num(1.0)), "korpu")
         assertEquals(k1, k2)
-        assertNotEquals(k1, DiskCache.screenKey("s", emptyMap()))
+        assertNotEquals(k1, DiskCache.screenKey("s", emptyMap(), "korpu"))
     }
 
     @Test
     fun corruptOrMissingIsNull() {
         val cache = DiskCache(dir)
-        assertNull(cache.readScreen("s", emptyMap()))
-        cache.write(DiskCache.screenKey("s", emptyMap()), "{not json")
-        assertNull(cache.readScreen("s", emptyMap()))
+        assertNull(cache.readScreen("s", emptyMap(), "korpu"))
+        cache.write(DiskCache.screenKey("s", emptyMap(), "korpu"), "{not json")
+        assertNull(cache.readScreen("s", emptyMap(), "korpu"))
     }
 
     @Test

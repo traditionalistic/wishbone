@@ -3,6 +3,8 @@ package app.wishbone.ui
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -16,9 +18,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +44,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -50,8 +59,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import app.wishbone.core.Value
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.TimeZone
@@ -82,7 +95,7 @@ fun WishbonePreview(wishbone: Wishbone, code: String, modifier: Modifier = Modif
                     inline.data = m.data
                     inline.document = m.document
                 }
-                is PreviewMessage.Play -> inline.holder?.store?.let { s -> s.timelines[m.timeline] = System.currentTimeMillis() }
+                is PreviewMessage.Play -> inline.holder?.store?.play(m.timeline)
             }
         }
         wishbone.previewLog = client::log
@@ -119,11 +132,14 @@ private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<Str
     }
     val env = rememberEnv(wishbone.brand, dark)
     LaunchedEffect(wishbone) { wishbone.refreshTheme() }
-    LaunchedEffect(Unit) {
-        while (true) {
-            val t = System.currentTimeMillis()
-            Clock.now.longValue = t
-            delay(1000 - t % 1000)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                val t = System.currentTimeMillis()
+                Clock.now.longValue = t
+                delay(1000 - t % 1000)
+            }
         }
     }
     DisposableEffect(navigator) { onDispose { holders.values.forEach { it.dispose() } } }
@@ -136,7 +152,7 @@ private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<Str
                 h.load()
             } else {
                 inline.holder = h
-                if (doc != null) h.apply(doc, inline.data, doc.revision())
+                if (doc != null && !h.apply(doc, inline.data, doc.revision())) h.state = LoadState.Failed
             }
         }
     }
@@ -183,7 +199,8 @@ private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<Str
                     onDismissRequest = { navigator.dismiss() },
                     modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 10.dp), // large detent: below the status bar
                     sheetState = state,
-                    containerColor = wishbone.theme.colors["bg1Elevated"]?.let { if (dark) it.second else it.first } ?: Color.White,
+                    containerColor = holders[shownSheet.last().key]?.store?.let { rootColor(it) }
+                        ?: wishbone.theme.colors["bg1Elevated"]?.let { if (dark) it.second else it.first } ?: Color.White,
                 ) {
                     AnimatedContent(shownSheet.last(), transitionSpec = { navTransition(initialState, targetState) }, contentKey = { it.key }, label = "wb-sheet") { Content(it, true) }
                 }
@@ -193,6 +210,10 @@ private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<Str
 }
 
 private fun JsonObject.revision() = (this["revision"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
+
+/** The root node's solid background, so a sheet's handle area matches its content. */
+private fun rootColor(store: Store): Color? =
+    (store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }?.let { store.theme.paint(it, store.dark) } as? Paint.Solid)?.color
 
 /** iOS-like push (new from the right, old shifts left by a third), fade, and their reverses on pop. */
 private fun navTransition(from: Entry, to: Entry): ContentTransform {
@@ -211,6 +232,7 @@ private fun navTransition(from: Entry, to: Entry): ContentTransform {
  * The screen lays out inside the safe area (like SwiftUI); the root node's `background` also paints
  * behind the system bars (like a SwiftUI ShapeStyle background). `env.safeTop/safeBottom` report the insets.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: Theme, safeArea: Boolean) {
     holder.env = env
@@ -224,15 +246,44 @@ private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: 
                 store.env = env
                 store.theme = theme
             }
+            // Timelines: advance the frame clock only while one is running (restarted by play/stop).
+            LaunchedEffect(store) {
+                store.timelines.firstFrame(withFrameNanos { it })
+                snapshotFlow { store.timelines.version }.collectLatest {
+                    do {
+                        val t = withFrameNanos { it }
+                        store.frameNanos.longValue = t
+                    } while (store.timelines.running(t))
+                }
+            }
             val rootBg = store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }
             val bg = theme.brush(rootBg, store.dark)
-            Box(
-                Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)
-                    .then(if (safeArea) Modifier.windowInsetsPadding(WindowInsets.safeDrawing) else Modifier),
-                contentAlignment = Alignment.Center,
-            ) { NodeView(store.doc.root, store.root) }
+            val ignore = (store.doc.root.props["ignoreSafeArea"]?.let { store.root.evalOrNull(it) } as? Value.Str)?.value
+            SharedTransitionLayout(Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)) {
+                CompositionLocalProvider(LocalSharedScope provides this) {
+                    Box(
+                        Modifier.fillMaxSize().then(if (safeArea) Modifier.windowInsetsPadding(safeInsets(ignore)) else Modifier),
+                        contentAlignment = Alignment.Center,
+                    ) { NodeView(store.doc.root, store.root) }
+                }
+            }
         }
     }
+}
+
+/** System bars + display cutout — what `env.safeTop/safeBottom` report (never the keyboard). */
+private val safeArea: WindowInsets @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+
+/** Root `ignoreSafeArea` drops the system-bar padding on those edges; the keyboard is always avoided. */
+@Composable
+private fun safeInsets(ignore: String?): WindowInsets {
+    val sides = when (ignore) {
+        "top" -> WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
+        "bottom" -> WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        "all" -> WindowInsetsSides.Horizontal
+        else -> WindowInsetsSides.Top + WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
+    }
+    return safeArea.only(sides).union(WindowInsets.ime)
 }
 
 @Composable
@@ -248,7 +299,7 @@ private fun rememberEnv(brand: String, dark: Boolean): Map<String, Value> {
     val density = LocalDensity.current
     val locale = LocalConfiguration.current.locales[0].language.lowercase()
     val window = LocalWindowInfo.current.containerSize
-    val insets = WindowInsets.safeDrawing
+    val insets = safeArea
     val context = LocalContext.current
     val reduceMotion = remember { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
     fun dp(px: Int) = Value.Num((px / density.density).toDouble())

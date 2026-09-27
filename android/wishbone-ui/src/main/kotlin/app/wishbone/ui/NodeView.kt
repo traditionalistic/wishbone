@@ -1,7 +1,12 @@
 package app.wishbone.ui
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.wishbone.core.Node
 import app.wishbone.core.Value
 
@@ -25,11 +30,16 @@ private fun RenderContext.evalProps(node: Node): Map<String, Value>? {
     return out
 }
 
+/** [extra] wraps the whole node (shared bounds from an enclosing AnimatedVisibility). */
 @Composable
-internal fun NodeView(node: Node, parentCtx: RenderContext) {
+internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Modifier) {
     val inst = parentCtx.store.extras[node.id]?.inst
-    val ctx = if (inst != null) parentCtx.withInstance(node.id + parentCtx.keyPath, inst) else parentCtx
-    val p = ctx.evalProps(node) ?: return
+    var ctx = if (inst != null) parentCtx.withInstance(node.id + parentCtx.keyPath, inst) else parentCtx
+    val source = if (node.on["tap"] != null || node.on["longPress"] != null) remember { MutableInteractionSource() } else null
+    if (source != null) ctx = ctx.copy(pressed = source.collectIsPressedAsState())
+    val evaluated = ctx.evalProps(node) ?: return
+    // the screen container already paints the root background (behind the system bars too)
+    val p = animateProps(node, if (node === ctx.store.doc.root) evaluated - "background" else evaluated, ctx)
     val box = BoxProps.from(p).let {
         when (node.type) {
             "shape", "image", "scroll" -> it.greedy()
@@ -37,10 +47,11 @@ internal fun NodeView(node: Node, parentCtx: RenderContext) {
             else -> it
         }
     }
-    val m = Modifier.boxOuter(box, p, ctx).interactions(node, ctx).boxInner(box, p, ctx)
+    // scroll padding pads the scrolled content, not the viewport (parity ruling)
+    val m = extra.boxOuter(node, box, p, ctx).interactions(node, ctx, source).dragGesture(node, ctx).boxInner(box, p, ctx, padding = node.type != "scroll")
     when (node.type) {
         "stack" -> StackView(node, p, ctx, m)
-        "scroll" -> ScrollView(node, p, ctx, m)
+        "scroll" -> ScrollView(node, p, ctx, m, box.padding.let { PaddingValues(start = it.start.toFloat().dp, top = it.top.toFloat().dp, end = it.end.toFloat().dp, bottom = it.bottom.toFloat().dp) })
         "grid" -> GridView(node, p, ctx, m)
         "spacer" -> SpacerView(p, ctx, m)
         "text" -> TextView(p, ctx, m)
@@ -56,7 +67,7 @@ internal fun NodeView(node: Node, parentCtx: RenderContext) {
                 val props = p.str("url")?.let { u -> p + ("url" to Value.Str(wishbone?.resolve(u) ?: u)) } ?: p
                 renderer(props, m) { event, payload -> node.on[event]?.let { ctx.fire(it, payload) } }
             } else if (node.type != "lottie" && node.type != "rive") {
-                ctx.store.error("unknown primitive '${node.type}' (${node.id}) skipped")
+                ctx.store.warnOnce("t:${node.id}", "unknown primitive '${node.type}' (${node.id}) skipped")
             }
         }
     }

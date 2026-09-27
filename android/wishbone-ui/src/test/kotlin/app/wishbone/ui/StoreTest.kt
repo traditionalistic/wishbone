@@ -3,9 +3,13 @@ package app.wishbone.ui
 import app.wishbone.core.Document
 import app.wishbone.core.EffectSink
 import app.wishbone.core.Value
+import app.wishbone.core.bind
+import androidx.compose.runtime.snapshots.Snapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 
@@ -106,5 +110,36 @@ class StoreTest {
         assertEquals(n(2.0), s.state("a"))
         s.root.fire(listOf(app.wishbone.core.Stmt.Unknown("zap")), Value.rec())
         assertEquals(1, errors.size)
+    }
+
+    @Test
+    fun renderContextHasValueEquality() {
+        val s = store()
+        val a = s.root.copy(locals = null.bind("item", Value.rec("id" to Value.Str("x"))), keyPath = ".x", index = 1)
+        val b = s.root.copy(locals = null.bind("item", Value.rec("id" to Value.Str("x"))), keyPath = ".x", index = 1)
+        assertEquals(a, b) // rebuilt, structurally equal → Compose can skip
+        assertNotEquals(a, s.root.copy(locals = null.bind("item", Value.rec("id" to Value.Str("y"))), keyPath = ".x", index = 1))
+        assertNotEquals(a, b.copy(keyPath = ".y"))
+        assertEquals(s.root, s.root.withParent(Parent.None))
+    }
+
+    @Test
+    fun envChangeInvalidatesOnlyItsReaders() {
+        val s = Store(doc, emptyMap(), emptyMap(), theme, mapOf("colorScheme" to Value.Str("light"), "safeBottom" to Value.Num(0.0)), effects, CoroutineScope(Dispatchers.Unconfined))
+        val reads = HashSet<Any>()
+        Snapshot.observe(readObserver = { reads.add(it) }) { s.dark }
+        val applied = HashSet<Any>()
+        val handle = Snapshot.registerApplyObserver { changed, _ -> applied.addAll(changed) }
+        try {
+            s.env = mapOf("colorScheme" to Value.Str("light"), "safeBottom" to Value.Num(300.0))
+            Snapshot.sendApplyNotifications()
+            assertTrue(applied.intersect(reads).isEmpty()) // keyboard/inset changes don't touch colorScheme readers
+            s.env = mapOf("colorScheme" to Value.Str("dark"), "safeBottom" to Value.Num(300.0))
+            Snapshot.sendApplyNotifications()
+            assertTrue(applied.intersect(reads).isNotEmpty())
+            assertEquals(true, s.dark)
+        } finally {
+            handle.dispose()
+        }
     }
 }

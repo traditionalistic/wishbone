@@ -7,16 +7,15 @@ import android.view.View
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.AndroidUiDispatcher
 import app.wishbone.core.Document
 import app.wishbone.core.EffectSink
 import app.wishbone.core.Value
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 
 internal sealed interface LoadState {
@@ -31,48 +30,47 @@ internal sealed interface LoadState {
  * sink. Lives as long as the entry is on the stack, so state survives pushes on top of it.
  */
 internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, val entry: Entry) {
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    /** Main thread + the UI frame clock (transactions and `await play` count frames); a throwing host call is logged, not fatal. */
+    val scope = CoroutineScope(
+        SupervisorJob() + AndroidUiDispatcher.Main + CoroutineExceptionHandler { _, e -> wishbone.log("error", "screen ${entry.screen}: ${e.message ?: e}") },
+    )
     var state: LoadState by mutableStateOf(LoadState.Loading)
     var env: Map<String, Value> = emptyMap()
     var view: View? = null
     private val effects = ScreenEffects(this)
+    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.brand)
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
 
     fun load() {
-        state = if (store == null) LoadState.Loading else state
+        if (store == null) state = LoadState.Loading
         scope.launch {
-            val cached = withContext(Dispatchers.IO) { wishbone.cache.readScreen(entry.screen, entry.params) }
-            if (cached != null && store == null) apply(cached.document, cached.data, cached.revision)
-            try {
-                val r = wishbone.client.screen(entry.screen, entry.params, cached?.etag?.takeIf { store != null })
-                val doc = r.document ?: cached?.document ?: throw WishboneException("EMPTY", "no document", 200, true)
-                if (r.document != null || store == null) apply(doc, r.data, r.revision) else store?.data?.putAll(dataValues(r.data))
-                withContext(Dispatchers.IO) { wishbone.cache.writeScreen(entry.screen, entry.params, CachedScreen(r.etag, r.revision, doc, r.data)) }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                wishbone.log("warn", "screen ${entry.screen}: ${e.message}")
-                if (store == null) state = LoadState.Failed
-            }
+            val ok = loader.load(
+                hasContent = { store != null },
+                fetch = { etag -> wishbone.client.screen(entry.screen, entry.params, etag) },
+                show = ::apply,
+                refreshData = { data -> store?.data?.putAll(dataValues(data)) },
+                log = { wishbone.log("warn", it) },
+            )
+            if (!ok) state = LoadState.Failed
         }
     }
 
-    /** A document that fails to decode counts as a network error: the current one (if any) stays. */
     private var applied: Pair<JsonObject, JsonObject>? = null
 
     fun isApplied(document: JsonObject, data: JsonObject) = applied?.let { it.first === document && it.second === data } == true
 
-    fun apply(document: JsonObject, data: JsonObject, revision: Int) {
+    /** Rebuilds the store for a new document (keeping state); false when it doesn't decode (the current one stays). */
+    fun apply(document: JsonObject, data: JsonObject, revision: Int): Boolean {
         applied = document to data
         val doc = try {
             Document.decode(document)
         } catch (e: Exception) {
             wishbone.log("error", "screen ${entry.screen}: bad document: ${e.message}")
-            if (store == null) state = LoadState.Failed
-            return
+            return false
         }
         state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store))
+        return true
     }
 
     fun dispose() = scope.cancel()

@@ -61,4 +61,24 @@ class BoxPropsTest {
         assertEquals(Dim.Fill, b.width)
         assertEquals(Dim.Fixed(10.0), b.height)
     }
+
+    @Test
+    fun untrustedGeometryIsSanitized() {
+        val b = BoxProps.from(
+            mapOf(
+                "width" to n(Double.NaN), "height" to n(-20.0), "minWidth" to n(Double.POSITIVE_INFINITY), "maxHeight" to n(-1.0),
+                "padding" to n(-8.0), "corner" to n(-4.0), "opacity" to n(Double.NaN), "aspect" to n(-2.0),
+            ),
+        )
+        assertEquals(Dim.Wrap, b.width)
+        assertEquals(Dim.Fixed(0.0), b.height)
+        assertEquals(null, b.minWidth)
+        assertEquals(0.0, b.maxHeight)
+        assertEquals(Insets(0.0, 0.0, 0.0, 0.0), b.padding)
+        assertEquals(0.0, b.corner)
+        assertEquals(1.0, b.opacity)
+        assertEquals(null, b.aspect)
+        val rec = BoxProps.from(mapOf("padding" to Value.rec("top" to n(-3.0), "h" to n(Double.NEGATIVE_INFINITY), "v" to n(6.0)))).padding
+        assertEquals(Insets(top = 0.0, bottom = 6.0, start = 0.0, end = 0.0), rec)
+    }
 }

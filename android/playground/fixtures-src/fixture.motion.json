@@ -1,0 +1,30 @@
+{
+  "id": "fixture.motion",
+  "title": "Motion",
+  "script": "state open = false\nstate wide = false\nhandler toggle() { animate(@motion.smooth) { open = !open } }",
+  "timelines": [
+    {"name": "wiggle", "repeat": 2, "tracks": [{"target": "star", "prop": "rotation", "keys": [{"t": 0, "v": 0}, {"t": 150, "v": 25, "ease": "easeOut"}, {"t": 450, "v": -25}, {"t": 600, "v": 0}]}]},
+    {"name": "pop", "autoplay": true, "tracks": [{"target": "chip", "prop": "scale", "stagger": 120, "keys": [{"t": 0, "v": 0.2}, {"t": 400, "v": 1, "ease": "spring"}]}, {"target": "chip", "prop": "opacity", "stagger": 120, "keys": [{"t": 0, "v": 0}, {"t": 300, "v": 1}]}]}
+  ],
+  "root": {"type": "stack", "id": "root", "props": {"width": "fill", "height": "fill", "padding": 16, "spacing": 16, "background": "@color.bg1"}, "children": [
+    {"type": "text", "id": "title", "props": {"text": "Motion", "style": "@type.largeTitle"}},
+    {"type": "stack", "id": "chips", "props": {"axis": "h", "spacing": 8}, "children": [
+      {"type": "stack", "id": "chip", "repeat": {"over": "range(5)", "as": "i"}, "props": {"axis": "z", "width": 48, "height": 48, "corner": "@radius.pill", "background": "@color.accentTertiary"}, "children": [
+        {"type": "text", "id": "chipText", "props": {"text": "=str(i + 1)", "style": "@type.bodyStrong"}}]}]},
+    {"type": "stack", "id": "row", "props": {"axis": "h", "spacing": 12, "align": "center"}, "children": [
+      {"type": "stack", "id": "toggleBtn", "props": {"axis": "z", "padding": {"h": 20, "v": 12}, "corner": "@radius.pill", "background": "@color.accentPrimary", "scale": "=self.pressed ? 0.9 : 1"}, "animate": {"scale": "@motion.press"}, "on": {"tap": "toggle()"}, "a11y": {"role": "button"}, "children": [
+        {"type": "text", "id": "toggleText", "props": {"text": "=open ? \"Close\" : \"Open\"", "style": "@type.bodyStrong", "color": "@color.onAccent"}}]},
+      {"type": "stack", "id": "wiggleBtn", "props": {"axis": "z", "padding": {"h": 20, "v": 12}, "corner": "@radius.pill", "background": "@color.bg2"}, "on": {"tap": "play(wiggle)\nwide = !wide"}, "children": [
+        {"type": "text", "id": "wiggleText", "props": {"text": "Wiggle", "style": "@type.bodyStrong"}}]},
+      {"type": "icon", "id": "star", "props": {"name": "@icon.star", "size": 36, "color": "@color.warning"}}]},
+    {"type": "shape", "id": "bar", "props": {"kind": "capsule", "height": 12, "width": "=wide ? 300 : 60", "fill": "=wide ? @color.success : @color.el6"}, "animate": {"width": "@motion.bouncy", "fill": "@motion.smooth"}},
+    {"type": "stack", "id": "stage", "props": {"axis": "z", "width": "fill", "height": 220, "align": "topStart"}, "children": [
+      {"type": "stack", "id": "small", "when": "!open", "matchId": "\"card\"", "props": {"axis": "z", "width": 120, "height": 80, "corner": 16, "background": "@color.accentPrimary"}, "transition": {"in": "fade", "out": "fade"}, "children": [
+        {"type": "text", "id": "smallText", "props": {"text": "small", "color": "@color.onAccent"}}]},
+      {"type": "stack", "id": "big", "when": "open", "matchId": "\"card\"", "props": {"axis": "z", "width": "fill", "height": 220, "corner": 32, "background": "@color.accentSecondary"}, "transition": {"in": "fade", "out": "fade"}, "children": [
+        {"type": "text", "id": "bigText", "props": {"text": "matchId: card", "style": "@type.title", "color": "@color.onAccent"}}]}]},
+    {"type": "stack", "id": "track", "props": {"axis": "z", "width": "fill", "height": 72, "corner": "@radius.pill", "background": "@color.bg2"}, "children": [
+      {"type": "stack", "id": "knob", "drag": {"axis": "x", "snap": [-120, 0, 120], "bounds": [-140, 140]}, "props": {"axis": "z", "width": 64, "height": 64, "corner": "@radius.pill", "background": "@color.el16", "scale": "=1 + abs(drag.knob.x) / 600"}, "on": {"dragEnd": "track(\"dragEnd\", {x: event.x, vx: event.vx})"}, "children": [
+        {"type": "text", "id": "knobText", "props": {"text": "=formatNumber(drag.knob.x, 0)", "color": "@color.el1", "style": "@type.captionStrong"}}]}]}
+  ]}
+}

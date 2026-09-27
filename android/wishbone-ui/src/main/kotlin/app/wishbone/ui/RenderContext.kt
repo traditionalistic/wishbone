@@ -3,6 +3,8 @@ package app.wishbone.ui
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import app.wishbone.core.Expr
 import app.wishbone.core.Format
 import app.wishbone.core.Interpreter
@@ -26,24 +28,56 @@ internal sealed interface Parent {
     data class Scroll(val horizontal: Boolean) : Parent
 }
 
-/** A materialized child: the node, its context (repeat locals / key path) and a stable identity. */
-internal class Item(val node: Node, val ctx: RenderContext, val key: String)
+/**
+ * A materialized child: node, context (repeat locals / key path), stable identity. `visible` is false for a
+ * `when`-false node that animates out (it stays in the list so AnimatedVisibility can run its exit).
+ */
+internal data class Item(val node: Node, val ctx: RenderContext, val key: String, val visible: Boolean = true)
 
 /**
  * Where a node is evaluated: repeat locals, enclosing template instance, repeat key path, layout
- * parent. Implements the core [Scope] over the [store].
+ * parent. Implements the core [Scope] over the [store]. Value equality (store/instance/pressed by
+ * identity, locals structurally) lets Compose skip a NodeView whose context was rebuilt unchanged.
  */
+@Stable
 internal class RenderContext(
     val store: Store,
     val locals: Locals?,
     val instance: InstanceScope?,
     val keyPath: String,
     val parent: Parent,
+    /** Index of the innermost repeat that materialized this context (timeline stagger). */
+    val index: Int = 0,
+    /** Pressed state of the nearest enclosing tap target (`self.pressed`). */
+    val pressed: State<Boolean>? = null,
 ) : Scope {
-    private val interpreter = Interpreter(store.doc, this, store)
+    private val interpreter by lazy(LazyThreadSafetyMode.NONE) { Interpreter(store.doc, this, store) }
 
-    fun copy(locals: Locals? = this.locals, instance: InstanceScope? = this.instance, keyPath: String = this.keyPath, parent: Parent = this.parent) =
-        RenderContext(store, locals, instance, keyPath, parent)
+    override fun equals(other: Any?): Boolean = other is RenderContext && other.store === store && other.instance === instance &&
+        other.pressed === pressed && other.keyPath == keyPath && other.parent == parent && other.index == index && sameLocals(other.locals, locals)
+
+    override fun hashCode(): Int = keyPath.hashCode() * 31 + index
+
+    private fun sameLocals(a: Locals?, b: Locals?): Boolean {
+        var x = a
+        var y = b
+        while (x != null && y != null) {
+            if (x !== y && (x.name != y.name || x.value != y.value)) return false
+            if (x === y) return true
+            x = x.parent
+            y = y.parent
+        }
+        return x == null && y == null
+    }
+
+    fun copy(
+        locals: Locals? = this.locals,
+        instance: InstanceScope? = this.instance,
+        keyPath: String = this.keyPath,
+        parent: Parent = this.parent,
+        index: Int = this.index,
+        pressed: State<Boolean>? = this.pressed,
+    ) = RenderContext(store, locals, instance, keyPath, parent, index, pressed)
 
     fun withParent(p: Parent) = if (p == parent) this else copy(parent = p)
     fun withInstance(key: String, decls: Map<String, Expr>) = copy(instance = store.instance(key, decls, this))
@@ -70,14 +104,15 @@ internal class RenderContext(
         val out = ArrayList<Item>()
         val seen = HashSet<String>()
         fun add(node: Node, c: RenderContext) {
-            if (node.whenExpr != null && c.evalOrNull(node.whenExpr!!) != Value.TRUE) return
+            val shown = node.whenExpr == null || c.evalOrNull(node.whenExpr!!) == Value.TRUE
+            if (!shown && store.extras[node.id]?.animatedPresence != true) return
             var key = node.id + c.keyPath
             // ponytail: duplicate repeat keys get an index suffix instead of an error
             if (!seen.add(key)) {
                 key += "#${out.size}"
                 seen.add(key)
             }
-            out += Item(node, c, key)
+            out += Item(node, c, key, shown)
         }
         for (node in nodes) {
             val rep = node.rep
@@ -86,8 +121,9 @@ internal class RenderContext(
                 continue
             }
             val items = (evalOrNull(rep.over) as? Value.ListV)?.items ?: continue
+            store.timelines.counts[node.id] = items.size
             items.forEachIndexed { i, item ->
-                val c = copy(locals = locals.bind(rep.asName, item).bind(rep.indexName, Value.Num(i.toDouble())))
+                val c = copy(locals = locals.bind(rep.asName, item).bind(rep.indexName, Value.Num(i.toDouble())), index = i)
                 val k = rep.key?.let { c.evalOrNull(it) }?.let { Format.str(it) } ?: i.toString()
                 add(node, c.copy(keyPath = "$keyPath.$k"))
             }
@@ -102,10 +138,21 @@ internal class RenderContext(
     override fun param(name: String) = store.param(name)
     override fun env(name: String) = store.env(name)
     override fun token(group: String, name: String) = store.token(group, name)
-    override fun driver(kind: String, id: String, axis: String) = store.driver(kind, id, axis)
-    override fun selfPressed() = false // phase b
+    /** Drag cells are per materialized instance: the nearest `id + keyPath` prefix that has one. */
+    override fun driver(kind: String, id: String, axis: String): Double {
+        if (kind != "drag") return store.driver(kind, id, axis)
+        var path = keyPath
+        while (true) {
+            store.existingDriver(kind, id + path, axis)?.let { return it.doubleValue }
+            if (path.isEmpty()) return 0.0
+            path = path.substringBeforeLast('.', "")
+        }
+    }
+
+    override fun selfPressed() = pressed?.value ?: false
 
     override fun set(scope: String, name: String, path: List<Value>, value: Value, transaction: Value?) {
+        if (transaction != null) store.recordTransaction(transaction)
         if (scope == "i") {
             val cell = instance?.find(name) ?: return
             updatePath(cell.value, path, value)?.let { cell.value = it }

@@ -1,0 +1,12 @@
+{"id": "fixture.edge", "title": "Edge cases", "script": "state z = 0",
+ "root": {"type": "scroll", "id": "outer", "props": {"width": "fill", "height": "fill", "padding": 16, "spacing": 12, "background": "@color.bg1"}, "children": [
+   {"type": "text", "id": "t1", "props": {"text": "Nested same-axis scroll, negative padding, NaN/∞ sizes — must not crash", "style": "@type.bodyStrong"}},
+   {"type": "scroll", "id": "inner", "props": {"spacing": 8, "background": "@color.bg2", "corner": 12}, "children": [
+     {"type": "text", "id": "row", "repeat": {"over": "range(40)", "as": "i"}, "props": {"text": "=\"inner row ${i}\""}}]},
+   {"type": "scroll", "id": "innerLazy", "props": {"lazy": true, "background": "@color.bg3"}, "children": [
+     {"type": "text", "id": "lrow", "repeat": {"over": "range(5)", "as": "i"}, "props": {"text": "=\"lazy row ${i}\""}}]},
+   {"type": "stack", "id": "neg", "props": {"padding": -20, "background": "@color.accentTertiary", "width": "=z / z", "height": "=1 / z", "corner": -5}, "children": [
+     {"type": "text", "id": "negText", "props": {"text": "negative padding / NaN width / ∞ height"}}]},
+   {"type": "icon", "id": "negIcon", "props": {"name": "@icon.star", "size": -10}},
+   {"type": "text", "id": "end", "props": {"text": "end"}}
+ ]}}

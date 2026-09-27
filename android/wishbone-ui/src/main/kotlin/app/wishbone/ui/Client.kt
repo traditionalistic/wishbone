@@ -23,6 +23,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 const val WISHBONE_RUNTIME = "1.0.0"
 
@@ -148,7 +149,9 @@ class Client(
         return parseSessions(body)
     }
 
-    internal fun webSocket(request: Request, listener: okhttp3.WebSocketListener) = http.newWebSocket(request, listener)
+    /** Preview socket with keep-alive pings, so dead connections are noticed and reconnected. */
+    internal fun webSocket(request: Request, listener: okhttp3.WebSocketListener) =
+        http.newBuilder().pingInterval(20, TimeUnit.SECONDS).build().newWebSocket(request, listener)
 
     private suspend fun execute(r: Request): Pair<Int, String> = withContext(Dispatchers.IO) {
         http.newCall(r).execute().use { it.code to it.body?.string().orEmpty() }

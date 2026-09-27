@@ -39,25 +39,35 @@ import app.wishbone.core.Value
 
 private val Double.dpv: Dp get() = toFloat().dp
 
-/** Canonical box model, outer half: zIndex → transform layer → shadow → size/fill (renderer-decisions.md). */
-internal fun Modifier.boxOuter(b: BoxProps, p: Map<String, Value>, ctx: RenderContext): Modifier {
+/**
+ * Canonical box model, outer half: zIndex → transform layer → shadow → size/fill (renderer-decisions.md).
+ * The transform layer composes props with active timelines (×/+) and the drag translation; it reads
+ * those per frame inside the layer block, so only drawing is redone.
+ */
+internal fun Modifier.boxOuter(node: Node, b: BoxProps, p: Map<String, Value>, ctx: RenderContext): Modifier {
     var m = this
     if (b.zIndex != 0.0) m = m.zIndex(b.zIndex.toFloat())
-    if (b.hasTransform) {
+    val store = ctx.store
+    val timeline = store.timelines.isTarget(node.id)
+    val drag = store.extras[node.id]?.drag
+    val dx = drag?.let { store.driverCell("drag", node.id + ctx.keyPath, "x") }
+    val dy = drag?.let { store.driverCell("drag", node.id + ctx.keyPath, "y") }
+    if (b.hasTransform || timeline || drag != null) {
         m = m.graphicsLayer {
-            alpha = b.opacity.toFloat()
-            scaleX = b.scale.toFloat()
-            scaleY = b.scale.toFloat()
-            rotationZ = b.rotation.toFloat()
-            translationX = b.offsetX.dpv.toPx()
-            translationY = b.offsetY.dpv.toPx()
+            val t = if (timeline) store.timelines.transform(node.id, ctx.index, store.frameNanos.longValue, store.reduceMotion) else LayerTransform.IDENTITY
+            alpha = (b.opacity * t.opacity).toFloat().coerceIn(0f, 1f)
+            scaleX = (b.scale * t.scale).toFloat()
+            scaleY = scaleX
+            rotationZ = (b.rotation + t.rotation).toFloat()
+            translationX = (b.offsetX + t.offsetX + (dx?.doubleValue ?: 0.0)).dpv.toPx()
+            translationY = (b.offsetY + t.offsetY + (dy?.doubleValue ?: 0.0)).dpv.toPx()
         }
     }
     val shadow = p.rec("shadow")
     val shadowColor = shadow?.get("color")?.let { ctx.store.theme.color(it, ctx.store.dark) }
     if (shadow != null && shadowColor != null) {
-        fun n(k: String) = (shadow[k] as? Value.Num)?.value ?: 0.0
-        m = m.dropShadow(cornerShape(b.corner), Shadow(n("radius").dpv, shadowColor, offset = DpOffset(n("x").dpv, n("y").dpv)))
+        fun n(k: String) = (shadow[k] as? Value.Num)?.value?.takeIf { it.isFinite() } ?: 0.0
+        m = m.dropShadow(cornerShape(b.corner), Shadow(n("radius").coerceAtLeast(0.0).dpv, shadowColor, offset = DpOffset(n("x").dpv, n("y").dpv)))
     }
     return m.dims(b, ctx.parent)
 }
@@ -82,7 +92,7 @@ internal fun Modifier.dims(b: BoxProps, parent: Parent): Modifier {
 }
 
 /** Inner half: clip → background / material → border → padding. */
-internal fun Modifier.boxInner(b: BoxProps, p: Map<String, Value>, ctx: RenderContext): Modifier {
+internal fun Modifier.boxInner(b: BoxProps, p: Map<String, Value>, ctx: RenderContext, padding: Boolean = true): Modifier {
     val theme = ctx.store.theme
     val dark = ctx.store.dark
     val shape = cornerShape(b.corner)
@@ -100,14 +110,14 @@ internal fun Modifier.boxInner(b: BoxProps, p: Map<String, Value>, ctx: RenderCo
     val borderWidth = (border?.get("width") as? Value.Num)?.value
     if (borderColor != null && borderWidth != null && borderWidth > 0) m = m.border(borderWidth.dpv, borderColor, shape)
     val pad = b.padding
-    if (pad != Insets(0.0, 0.0, 0.0, 0.0)) m = m.padding(start = pad.start.dpv, top = pad.top.dpv, end = pad.end.dpv, bottom = pad.bottom.dpv)
+    if (padding && pad != Insets(0.0, 0.0, 0.0, 0.0)) m = m.padding(start = pad.start.dpv, top = pad.top.dpv, end = pad.end.dpv, bottom = pad.bottom.dpv)
     return m
 }
 
 /** Identifier `wb.<screen>.<id>[.<repeatKey>…]`, label, role, hidden; tap/longPress without indication; appear/disappear. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun Modifier.interactions(node: Node, ctx: RenderContext): Modifier {
+internal fun Modifier.interactions(node: Node, ctx: RenderContext, source: MutableInteractionSource?): Modifier {
     val ex = ctx.store.extras[node.id]
     val id = ctx.identifier(node)
     var m = if (ex?.a11yHidden?.let { ctx.evalOrNull(it) } == Value.TRUE) {
@@ -128,7 +138,7 @@ internal fun Modifier.interactions(node: Node, ctx: RenderContext): Modifier {
     val longPress = node.on["longPress"]
     if (tap != null || longPress != null) {
         m = m.combinedClickable(
-            interactionSource = remember { MutableInteractionSource() },
+            interactionSource = source ?: remember { MutableInteractionSource() },
             indication = null,
             onLongClick = longPress?.let { { ctx.fire(it) } },
             onClick = { tap?.let { ctx.fire(it) } },

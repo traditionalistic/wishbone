@@ -6,20 +6,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.wishbone.core.Document
 import app.wishbone.core.EffectSink
 import app.wishbone.core.Expr
 import app.wishbone.core.Node
+import app.wishbone.core.Stmt
 import app.wishbone.core.Value
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.floor
 
 /** Shared 1 s clock behind `env.now`; ticked by every visible Wishbone root. */
@@ -27,17 +33,50 @@ internal object Clock {
     val now = mutableLongStateOf(System.currentTimeMillis())
 }
 
+/** `drag` on a node (spec §4.3): axis x|y|both, snap points and bounds along the axis. */
+internal data class DragSpec(val axis: String, val snap: List<Double>, val bounds: Pair<Double, Double>?) {
+    fun clamp(v: Double) = bounds?.let { v.coerceIn(it.first, it.second) } ?: v
+}
+
 /** Renderer-only node fields the core keeps verbatim in `Node.raw` (spec §3.8). */
-internal data class NodeExtras(val inst: Map<String, Expr>?, val a11yLabel: Expr?, val a11yRole: String?, val a11yHidden: Expr?) {
+internal data class NodeExtras(
+    val inst: Map<String, Expr>? = null,
+    val a11yLabel: Expr? = null,
+    val a11yRole: String? = null,
+    val a11yHidden: Expr? = null,
+    val anim: Map<String, Expr>? = null,
+    val trIn: List<TransitionPart>? = null,
+    val trOut: List<TransitionPart>? = null,
+    val match: Expr? = null,
+    val drag: DragSpec? = null,
+) {
+    /** Rendered through AnimatedVisibility (enter/exit transitions, shared bounds). */
+    val animatedPresence get() = trIn != null || trOut != null || match != null
+
     companion object {
         fun index(root: Node): Map<String, NodeExtras> {
             val out = HashMap<String, NodeExtras>()
             fun walk(n: Node) {
                 runCatching {
-                    val inst = n.raw["inst"]?.jsonObject?.get("state")?.jsonObject?.mapValues { Expr.decode(it.value) }
-                    val a = n.raw["a11y"]?.jsonObject
-                    val hidden = a?.get("hidden")?.let { h -> (h as? JsonPrimitive)?.booleanOrNull?.let { Expr.Lit(Value.of(it)) } ?: Expr.decode(h) }
-                    if (inst != null || a != null) out[n.id] = NodeExtras(inst, a?.get("label")?.let { Expr.decode(it) }, (a?.get("role") as? JsonPrimitive)?.contentOrNull, hidden)
+                    val r = n.raw
+                    val a = r["a11y"]?.jsonObject
+                    val tr = r["tr"]?.jsonObject
+                    val drag = r["drag"]?.jsonObject?.let { d ->
+                        fun nums(k: String) = (d[k] as? JsonArray)?.mapNotNull { it.jsonPrimitive.doubleOrNull }
+                        DragSpec(d["axis"]?.jsonPrimitive?.contentOrNull ?: "both", nums("snap") ?: emptyList(), nums("bounds")?.takeIf { it.size == 2 }?.let { it[0] to it[1] })
+                    }
+                    val ex = NodeExtras(
+                        inst = r["inst"]?.jsonObject?.get("state")?.jsonObject?.mapValues { Expr.decode(it.value) },
+                        a11yLabel = a?.get("label")?.let { Expr.decode(it) },
+                        a11yRole = (a?.get("role") as? JsonPrimitive)?.contentOrNull,
+                        a11yHidden = a?.get("hidden")?.let { h -> (h as? JsonPrimitive)?.booleanOrNull?.let { Expr.Lit(Value.of(it)) } ?: Expr.decode(h) },
+                        anim = r["anim"]?.jsonObject?.mapValues { Expr.decode(it.value) },
+                        trIn = tr?.let { TransitionPart.list(it["in"] as? JsonArray) },
+                        trOut = tr?.let { TransitionPart.list(it["out"] as? JsonArray) },
+                        match = r["match"]?.let { Expr.decode(it) },
+                        drag = drag,
+                    )
+                    if (ex != NodeExtras()) out[n.id] = ex
                 }
                 n.children.forEach(::walk)
             }
@@ -46,6 +85,12 @@ internal data class NodeExtras(val inst: Map<String, Expr>?, val a11yLabel: Expr
         }
     }
 }
+
+private fun List<Stmt>.hasAnim(): Boolean = any {
+    it is Stmt.Anim || (it is Stmt.If && (it.then.hasAnim() || it.otherwise.hasAnim()))
+}
+
+private fun Node.hasAnim(): Boolean = on.values.any { it.hasAnim() } || children.any { it.hasAnim() }
 
 /** Template instance state: one cell per qualified name, resolved up the chain of enclosing instances. */
 internal class InstanceScope(val parent: InstanceScope?, val cells: Map<String, MutableState<Value>>) {
@@ -69,11 +114,31 @@ class Store(
     previous: Store? = null,
 ) : EffectSink {
     var theme by mutableStateOf(theme)
-    var env by mutableStateOf(env)
+
+    /** One cell per env key, written only on change, so a node re-renders only for the keys it reads. */
+    private val envCells = HashMap<String, MutableState<Value>>()
+    var env: Map<String, Value>
+        get() = envCells.mapValues { it.value.value }
+        set(values) {
+            for ((k, v) in values) {
+                val cell = envCells[k]
+                if (cell == null) envCells[k] = mutableStateOf(v) else if (cell.value != v) cell.value = v
+            }
+        }
     val data = mutableStateMapOf<String, Value>().apply { putAll(data) }
 
-    /** Active timelines: name → start time (ms). Rendered by the motion layer (phase b). */
-    val timelines = mutableStateMapOf<String, Long>()
+    internal val timelines: TimelineRegistry = TimelineRegistry(doc.timelines, System.nanoTime(), previous?.timelines)
+
+    /** Frame-clock time (ns) the transform layer samples timelines at; advanced only while one is running. */
+    internal val frameNanos = mutableLongStateOf(System.nanoTime())
+
+    /** Motion of the `animate(m) { … }` block whose writes are being rendered; cleared two frames after the last write. */
+    internal var transaction: MotionSpec? = null
+        private set
+    private var transactionId = 0
+
+    /** Without `animate(…)` statements, nodes without `anim` skip the animated-prop layer. */
+    internal val hasTransactions = doc.handlers.values.any { it.body.hasAnim() } || doc.root.hasAnim()
 
     private val cells = LinkedHashMap<String, MutableState<Value>>()
     internal val instances = HashMap<String, InstanceScope>()
@@ -82,19 +147,37 @@ class Store(
     internal val extras: Map<String, NodeExtras> = NodeExtras.index(doc.root)
     internal val root = RenderContext(this, null, null, "", Parent.None)
 
-    val dark: Boolean get() = env["colorScheme"] == Value.Str("dark")
+    val dark: Boolean get() = env("colorScheme") == Value.Str("dark")
 
     init {
+        this.env = env
         for ((name, expr) in doc.state) {
             cells[name] = mutableStateOf(previous?.cells?.get(name)?.value ?: root.evalOrNull(expr) ?: Value.Null)
         }
-        doc.timelines.filterValues { it.autoplay }.keys.forEach { timelines[it] = System.currentTimeMillis() }
+    }
+
+    internal val reduceMotion: Boolean get() = env("reduceMotion") == Value.TRUE
+
+    fun play(name: String) = timelines.play(name, System.nanoTime())
+
+    internal fun recordTransaction(motion: Value) {
+        transaction = theme.motionOf(motion) ?: return
+        val id = ++transactionId
+        scope.launch {
+            try {
+                withFrameNanos { }
+                withFrameNanos { }
+            } catch (_: IllegalStateException) {
+                // no frame clock (unit tests)
+            }
+            if (transactionId == id) transaction = null
+        }
     }
 
     fun state(name: String): Value = cells[name]?.value ?: Value.Null
     fun computed(name: String): Value = doc.computed[name]?.let { root.eval(it) } ?: Value.Null
     fun param(name: String): Value = params[name] ?: doc.params[name]?.let { root.eval(it) } ?: Value.Null
-    fun env(name: String): Value = env[name] ?: if (name == "now") Value.Num(Clock.now.longValue.toDouble()) else Value.Null
+    fun env(name: String): Value = envCells[name]?.value ?: if (name == "now") Value.Num(Clock.now.longValue.toDouble()) else Value.Null
 
     fun token(group: String, name: String): Value = when (group) {
         "space" -> Value.Num(theme.space[name] ?: 0.0)
@@ -105,6 +188,7 @@ class Store(
 
     fun driver(kind: String, id: String, axis: String): Double = driverCell(kind, id, axis).doubleValue
     internal fun driverCell(kind: String, id: String, axis: String) = drivers.getOrPut("$kind.$id.$axis") { mutableDoubleStateOf(0.0) }
+    internal fun existingDriver(kind: String, id: String, axis: String) = drivers["$kind.$id.$axis"]
 
     internal fun setState(name: String, path: List<Value>, value: Value) {
         val cell = cells[name] ?: return
@@ -131,15 +215,27 @@ class Store(
     override suspend fun perform(effect: String, args: List<Value>, await: Boolean) {
         val name = (args.firstOrNull() as? Value.Str)?.value
         when (effect) {
-            // ponytail: `await play` resumes immediately until the motion layer (phase b) knows durations
-            "play" -> if (name != null) timelines[name] = System.currentTimeMillis()
-            "stop" -> if (name != null) timelines.remove(name)
+            "play" -> if (name != null) {
+                play(name)
+                if (await && !reduceMotion) {
+                    val ms = timelines.duration(name)
+                    if (ms.isInfinite()) awaitCancellation() else delay(ms.toLong())
+                }
+            }
+            "stop" -> if (name != null) timelines.stop(name)
             "wait" -> delay(((args.firstOrNull() as? Value.Num)?.value ?: 0.0).toLong())
             else -> effects.perform(effect, args, await)
         }
     }
 
     override fun error(message: String) = effects.error(message)
+
+    private val warned = HashSet<String>()
+
+    /** Render-time problems are logged once per key, not on every recomposition. */
+    internal fun warnOnce(key: String, message: String) {
+        if (warned.add(key)) error(message)
+    }
 }
 
 /** Copy-on-write deep update; a missing field / out-of-range index / null on the path → null (no-op). */

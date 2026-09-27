@@ -1,7 +1,13 @@
 package app.wishbone.ui
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.center
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.LinearGradientShader
@@ -77,10 +83,19 @@ internal fun Theme.textStyle(v: Value?, color: Color, align: String?): TextStyle
     )
 }
 
+/** `shape kind: circle`: a centered circle of diameter min(w, h), not a stretched capsule (parity ruling). */
+internal object CenteredCircle : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val r = size.minDimension / 2
+        return Outline.Generic(Path().apply { addOval(Rect(size.center, r)) })
+    }
+}
+
 /** `corner` radius; Compose scales corners down to fit, so ≥ half the smaller side is a capsule. */
 internal fun cornerShape(corner: Double): Shape = if (corner > 0) RoundedCornerShape(corner.dp) else RectangleShape
 
-internal fun Map<String, Value>.num(k: String) = (this[k] as? Value.Num)?.value
+/** Finite numbers only — documents are untrusted and Compose throws on NaN/∞ geometry. */
+internal fun Map<String, Value>.num(k: String) = (this[k] as? Value.Num)?.value?.takeIf { it.isFinite() }
 internal fun Map<String, Value>.str(k: String) = (this[k] as? Value.Str)?.value
 internal fun Map<String, Value>.bool(k: String) = (this[k] as? Value.Bool)?.value
 internal fun Map<String, Value>.rec(k: String) = (this[k] as? Value.Rec)?.fields

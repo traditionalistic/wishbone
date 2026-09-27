@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
@@ -14,7 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -62,14 +61,14 @@ internal fun ImageView(p: Map<String, Value>, ctx: RenderContext, modifier: Modi
 @Composable
 internal fun IconView(p: Map<String, Value>, ctx: RenderContext, modifier: Modifier) {
     val name = (p.rec("name")?.get("\$icon") as? Value.Str)?.value
-    val res = Icons.table[name] ?: return ctx.store.error("unknown icon '$name'")
-    Image(painterResource(res), null, modifier.size((p.num("size") ?: 24.0).toFloat().dp), colorFilter = ColorFilter.tint(ctx.ink(p["color"])))
+    val res = Icons.table[name] ?: return ctx.store.warnOnce("icon:$name", "unknown icon '$name'")
+    Image(painterResource(res), null, modifier.size((p.num("size") ?: 24.0).coerceAtLeast(0.0).toFloat().dp), colorFilter = ColorFilter.tint(ctx.ink(p["color"])))
 }
 
 @Composable
 internal fun ShapeView(p: Map<String, Value>, box: BoxProps, ctx: RenderContext, modifier: Modifier) {
     val shape = when (p.str("kind")) {
-        "circle" -> CircleShape
+        "circle" -> CenteredCircle
         "capsule" -> RoundedCornerShape(50)
         else -> cornerShape(box.corner)
     }
@@ -89,7 +88,7 @@ internal fun ShapeView(p: Map<String, Value>, box: BoxProps, ctx: RenderContext,
 @Composable
 internal fun TextFieldView(node: Node, p: Map<String, Value>, ctx: RenderContext, modifier: Modifier) {
     val controlled = p["value"]
-    var local by remember { mutableStateOf(TextFieldValue((controlled as? Value.Str)?.value ?: "")) }
+    var local by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue((controlled as? Value.Str)?.value ?: "")) }
     val text = (controlled as? Value.Str)?.value ?: local.text
     val shown = if (local.text == text) local else TextFieldValue(text, TextRange(text.length))
     val color = ctx.ink(p["color"])
