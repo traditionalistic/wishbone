@@ -1,0 +1,23 @@
+{
+  "close": { "ios": "xmark", "android": "wb_ic_close" },
+  "back": { "ios": "chevron.left", "android": "wb_ic_back" },
+  "chevronRight": { "ios": "chevron.right", "android": "wb_ic_chevron_right" },
+  "chevronDown": { "ios": "chevron.down", "android": "wb_ic_chevron_down" },
+  "info": { "ios": "info.circle", "android": "wb_ic_info" },
+  "check": { "ios": "checkmark", "android": "wb_ic_check" },
+  "plus": { "ios": "plus", "android": "wb_ic_plus" },
+  "share": { "ios": "square.and.arrow.up", "android": "wb_ic_share" },
+  "copy": { "ios": "doc.on.doc", "android": "wb_ic_copy" },
+  "ticket": { "ios": "ticket", "android": "wb_ic_ticket" },
+  "gift": { "ios": "gift", "android": "wb_ic_gift" },
+  "clock": { "ios": "clock", "android": "wb_ic_clock" },
+  "warning": { "ios": "exclamationmark.triangle", "android": "wb_ic_warning" },
+  "retry": { "ios": "arrow.clockwise", "android": "wb_ic_retry" },
+  "heart": { "ios": "heart", "android": "wb_ic_heart" },
+  "star": { "ios": "star", "android": "wb_ic_star" },
+  "arrowRight": { "ios": "arrow.right", "android": "wb_ic_arrow_right" },
+  "sparkles": { "ios": "sparkles", "android": "wb_ic_sparkles" },
+  "lock": { "ios": "lock", "android": "wb_ic_lock" },
+  "mail": { "ios": "envelope", "android": "wb_ic_mail" },
+  "user": { "ios": "person", "android": "wb_ic_user" }
+}

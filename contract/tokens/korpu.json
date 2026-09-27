@@ -1,0 +1,347 @@
+{
+  "brand": "korpu",
+  "colors": {
+    "bgInput": {
+      "light": "#FFFFFFFF",
+      "dark": "#000000FF"
+    },
+    "bg1": {
+      "light": "#F8F8F8FF",
+      "dark": "#191919FF"
+    },
+    "bg1Elevated": {
+      "light": "#FFFFFFFF",
+      "dark": "#1F1F1FFF"
+    },
+    "bg2": {
+      "light": "#E0E0E0FF",
+      "dark": "#323232FF"
+    },
+    "bg3": {
+      "light": "#C8C8C8FF",
+      "dark": "#4B4B4BFF"
+    },
+    "bg4": {
+      "light": "#B0B0B0FF",
+      "dark": "#646464FF"
+    },
+    "bg5": {
+      "light": "#989898FF",
+      "dark": "#7D7D7DFF"
+    },
+    "bg6": {
+      "light": "#808080FF",
+      "dark": "#969696FF"
+    },
+    "bg7": {
+      "light": "#686868FF",
+      "dark": "#AFAFAFFF"
+    },
+    "bg8": {
+      "light": "#505050FF",
+      "dark": "#C8C8C8FF"
+    },
+    "bg9": {
+      "light": "#383838FF",
+      "dark": "#E1E1E1FF"
+    },
+    "bg10": {
+      "light": "#202020FF",
+      "dark": "#FAFAFAFF"
+    },
+    "el1": {
+      "light": "#FFFFFFFF",
+      "dark": "#000000FF"
+    },
+    "el2": {
+      "light": "#EEEEEEFF",
+      "dark": "#111111FF"
+    },
+    "el3": {
+      "light": "#DDDDDDFF",
+      "dark": "#222222FF"
+    },
+    "el4": {
+      "light": "#CCCCCCFF",
+      "dark": "#333333FF"
+    },
+    "el5": {
+      "light": "#BBBBBBFF",
+      "dark": "#444444FF"
+    },
+    "el6": {
+      "light": "#AAAAAAFF",
+      "dark": "#555555FF"
+    },
+    "el7": {
+      "light": "#999999FF",
+      "dark": "#666666FF"
+    },
+    "el8": {
+      "light": "#888888FF",
+      "dark": "#777777FF"
+    },
+    "el9": {
+      "light": "#777777FF",
+      "dark": "#888888FF"
+    },
+    "el10": {
+      "light": "#666666FF",
+      "dark": "#999999FF"
+    },
+    "el11": {
+      "light": "#555555FF",
+      "dark": "#AAAAAAFF"
+    },
+    "el12": {
+      "light": "#444444FF",
+      "dark": "#BBBBBBFF"
+    },
+    "el13": {
+      "light": "#333333FF",
+      "dark": "#CCCCCCFF"
+    },
+    "el14": {
+      "light": "#222222FF",
+      "dark": "#DDDDDDFF"
+    },
+    "el15": {
+      "light": "#111111FF",
+      "dark": "#EEEEEEFF"
+    },
+    "el16": {
+      "light": "#080808FF",
+      "dark": "#F5F5F5FF"
+    },
+    "error": {
+      "light": "#FF0026FF",
+      "dark": "#FF6B6BFF"
+    },
+    "errorPressed": {
+      "light": "#E6001AFF",
+      "dark": "#FF4D4DFF"
+    },
+    "errorDisabled": {
+      "light": "#FFE4E0FF",
+      "dark": "#4D1A1AFF"
+    },
+    "success": {
+      "light": "#00B478FF",
+      "dark": "#4DD9A4FF"
+    },
+    "successPressed": {
+      "light": "#05A16BFF",
+      "dark": "#33CC8FFF"
+    },
+    "successDisabled": {
+      "light": "#E7F3EEFF",
+      "dark": "#1A3D2EFF"
+    },
+    "warning": {
+      "light": "#FF8B00FF",
+      "dark": "#FFB84DFF"
+    },
+    "warningPressed": {
+      "light": "#D68100FF",
+      "dark": "#FFA726FF"
+    },
+    "warningDisabled": {
+      "light": "#FFFBA8FF",
+      "dark": "#4D3A1AFF"
+    },
+    "accentPrimary": {
+      "light": "#5A85D3FF",
+      "dark": "#6C97E5FF"
+    },
+    "accentSecondary": {
+      "light": "#86A6E2FF",
+      "dark": "#86A6E2FF"
+    },
+    "accentTertiary": {
+      "light": "#CBD9F6FF",
+      "dark": "#CBD9F6FF"
+    }
+  },
+  "type": {
+    "display": {
+      "family": "Montserrat",
+      "size": 40,
+      "weight": 800
+    },
+    "greeting": {
+      "family": "Manrope",
+      "size": 32,
+      "weight": 400
+    },
+    "largeTitle": {
+      "family": "Manrope",
+      "size": 28,
+      "weight": 700
+    },
+    "title": {
+      "family": "Manrope",
+      "size": 22,
+      "weight": 600
+    },
+    "headingSmall": {
+      "family": "Manrope",
+      "size": 18,
+      "weight": 600
+    },
+    "body": {
+      "family": "Manrope",
+      "size": 16,
+      "weight": 400
+    },
+    "bodyMedium": {
+      "family": "Manrope",
+      "size": 14,
+      "weight": 500
+    },
+    "bodyStrong": {
+      "family": "Manrope",
+      "size": 16,
+      "weight": 600
+    },
+    "bodySmall": {
+      "family": "Manrope",
+      "size": 14,
+      "weight": 400
+    },
+    "bodySmallStrong": {
+      "family": "Manrope",
+      "size": 14,
+      "weight": 600
+    },
+    "caption": {
+      "family": "Manrope",
+      "size": 12,
+      "weight": 400
+    },
+    "captionMedium": {
+      "family": "Manrope",
+      "size": 12,
+      "weight": 500
+    },
+    "captionStrong": {
+      "family": "Manrope",
+      "size": 12,
+      "weight": 600
+    },
+    "displayAction": {
+      "family": "GiorgioSansLCG",
+      "size": 24,
+      "weight": 800
+    },
+    "displayActionCompact": {
+      "family": "GiorgioSansLCG",
+      "size": 21,
+      "weight": 800
+    },
+    "sheetTitle": {
+      "family": "Montserrat",
+      "size": 24,
+      "weight": 600,
+      "lineHeight": 28,
+      "tracking": 0
+    },
+    "sheetMessage": {
+      "family": "Manrope",
+      "size": 18,
+      "weight": 400,
+      "lineHeight": 24,
+      "tracking": 0.1
+    },
+    "sheetAction": {
+      "family": "Manrope",
+      "size": 16,
+      "weight": 600,
+      "lineHeight": 18,
+      "tracking": 0.1
+    }
+  },
+  "space": {
+    "none": 0,
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24
+  },
+  "radius": {
+    "none": 0,
+    "sm": 8,
+    "md": 12,
+    "lg": 20,
+    "xl": 32,
+    "card": 32,
+    "pill": 9999
+  },
+  "motion": {
+    "press": {
+      "kind": "spring",
+      "response": 180,
+      "damping": 0.45
+    },
+    "interactive": {
+      "kind": "spring",
+      "response": 280,
+      "damping": 0.86
+    },
+    "snappy": {
+      "kind": "spring",
+      "response": 180,
+      "damping": 0.86
+    },
+    "bouncy": {
+      "kind": "spring",
+      "response": 468,
+      "damping": 0.66
+    },
+    "gentle": {
+      "kind": "spring",
+      "response": 468,
+      "damping": 0.71
+    },
+    "fast": {
+      "kind": "curve",
+      "duration": 150,
+      "bezier": [
+        0.38,
+        0.7,
+        0.125,
+        1.0
+      ]
+    },
+    "smooth": {
+      "kind": "curve",
+      "duration": 300,
+      "bezier": [
+        0.38,
+        0.7,
+        0.125,
+        1.0
+      ]
+    },
+    "standard": {
+      "kind": "curve",
+      "duration": 300,
+      "bezier": [
+        0.33,
+        0.52,
+        0.25,
+        0.99
+      ]
+    },
+    "slow": {
+      "kind": "curve",
+      "duration": 500,
+      "bezier": [
+        0.38,
+        0.7,
+        0.125,
+        1.0
+      ]
+    }
+  }
+}

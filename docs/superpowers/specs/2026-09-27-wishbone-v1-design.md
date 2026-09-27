@@ -324,7 +324,7 @@ protocol WishboneHost {
 Android — зеркально (`WishboneHost` interface, `@Composable fun WishboneScreen(...)`). Кэш — файловый (последний удачный ответ экрана и темы), политика stale-while-revalidate.
 
 ### 6.4 Тема
-`GET /v1/theme` отдаёт тему бренда: `colors {name: {light, dark}}`, `type {name: {family, size, weight, lineHeight?, tracking?}}`, `space`, `radius` (`pill` = -1), `motion {name: {kind: "spring", response, damping} | {kind: "curve", duration, bezier}}`. SDK содержит снапшот темы `korpu` как фоллбек и шрифт Manrope. Иконки — статическая таблица в SDK, сверяется с `contract/icons.json` тестом.
+`GET /v1/theme` отдаёт тему бренда: `colors {name: {light, dark}}`, `type {name: {family, size, weight, lineHeight?, tracking?}}`, `space`, `radius` (`pill` = 9999), `motion {name: {kind: "spring", response, damping} | {kind: "curve", duration, bezier}}`. SDK содержит снапшот темы `korpu` как фоллбек и шрифт Manrope. Иконки — статическая таблица в SDK, сверяется с `contract/icons.json` тестом.
 
 ## 7. Админка
 
