@@ -357,7 +357,7 @@ Vite + React + TypeScript, без UI-фреймворков; редактор к
 7. Шоукейсы + сквозная проверка + доки.
 
 ### 8.3 Не делаем в V1
-Таргетинг/эксперименты/сегменты, четыре глаза при публикации, SSO, редактирование шаблонов в админке, веб-рендер, видео, placement-слоты, CDN, Redis, omniapp.
+Таргетинг/эксперименты/сегменты, четыре глаза при публикации, SSO, редактирование шаблонов в админке, веб-рендер, видео, ~~placement-слоты~~ (см. [спеку 2026-09-28](2026-09-28-raffles-slots-host-nav-design.md)), CDN, Redis, omniapp.
 
 ### 8.4 Следующая веха — хосты
 Stratoapp: SPM-зависимость в Tuist-графе, адаптер `WishboneHost` на `AuthTransport`/`RootExternalRouteParser`/`AnalyticsTracking`, кэш через Postbox, диплинк `bdui/<id>` → `WishboneScreen`. most: composite build / Maven, адаптер на `Navigator`/Apollo-токен, `Screen.Wishbone(id)`.
