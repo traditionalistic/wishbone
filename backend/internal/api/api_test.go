@@ -83,7 +83,7 @@ func makeContract(chip string) (string, error) {
 			return "", err
 		}
 	}
-	for rel, s := range map[string]string{"templates/Chip.json": chip, "screens/t.seed.json": seedScreen, "assets/hello.txt": "hello asset", "assets/sub/x.txt": "x", "assets/fonts/F-Regular.ttf": "font"} {
+	for rel, s := range map[string]string{"templates/Chip.json": chip, "screens/t.seed.json": seedScreen, "assets/hello.txt": "hello asset", "assets/sub/x.txt": "x", "fonts/F-Regular.ttf": "font"} {
 		if err := write(dir, rel, s); err != nil {
 			return "", err
 		}

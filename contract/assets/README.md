@@ -4,22 +4,16 @@ Static files for the showcases. The backend serves them at `GET /assets/<path>`.
 URLs for the images. The screens reference Lottie and Rive files by server-relative paths such as
 `/assets/lottie/pulse.json`, and the renderers resolve those against the server base URL.
 
+Fonts are **not** here: they live in `../fonts/` (outside the served directory) — see `../fonts/README.md`.
+
 | File | What | Origin / license |
 |---|---|---|
-| `fonts/*` | DS fonts bundled by the SDKs (not served: `GET /assets/fonts/*` answers 404) | Manrope and Montserrat: SIL OFL 1.1, full text with copyright lines in `fonts/OFL.txt` (copied next to the bundled fonts in both SDKs); GiorgioSansLCG: commercial (Commercial Type), see below |
 | `avatar.png` | 256×256 abstract avatar (blue gradient, person glyph), used by `demo.profile` | generated for Wishbone with Python PIL; project-owned |
 | `offers/o1.jpg … o6.jpg` | 800×600 abstract gradient art, one per `demo.offers` item: two tickets, rings, sunrise, bokeh night, waves, confetti | generated for Wishbone with Python PIL; project-owned |
 | `lottie/pulse.json` | three rings pulse around a breathing dot (accent blue), 150 frames at 60 fps, loops | hand-authored Lottie 5.7; project-owned |
 | `lottie/sparkle.json` | a four-point star turns and breathes while two small stars twinkle (orange), 120 frames at 60 fps, loops | hand-authored Lottie 5.7; project-owned |
 | `lottie/check.json` | a green circle draws on, then the checkmark, then a soft disc fades in; 120 frames at 60 fps; play once | hand-authored Lottie 5.7; project-owned |
 | `rive/play_pause.riv` | play/pause button (Rive format 7.0, 3.3 KB) | see below |
-
-## Fonts: GiorgioSansLCG
-
-`fonts/GiorgioSansLCG-HeavyItalic.otf` is a commercial font: "(C)2012 Christian Schwartz with Vincent Chan, under
-exclusive license to Schwartzco Inc./Commercial Type. All rights reserved." (license URL in the file:
-<http://commercialtype.com/license>). It is not covered by `OFL.txt`. **The owner must confirm that the Korpu font
-license allows redistributing it inside the SDKs and apps** before either SDK ships outside the team.
 
 ## Rive: `play_pause.riv`
 

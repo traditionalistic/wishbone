@@ -143,9 +143,6 @@ func (s *Server) Handler() http.Handler {
 			s.fail(w, "NOT_FOUND", "preview session not found")
 		}
 	}))
-	mux.HandleFunc("GET /assets/fonts/", func(w http.ResponseWriter, r *http.Request) {
-		s.fail(w, "NOT_FOUND", "fonts are bundled in the SDKs, not served")
-	})
 	mux.HandleFunc("GET /assets/", s.asset)
 
 	admin := func(pattern string, h http.HandlerFunc) { mux.HandleFunc(pattern, s.auth(h)) }

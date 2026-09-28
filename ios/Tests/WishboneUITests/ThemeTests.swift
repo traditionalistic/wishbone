@@ -10,7 +10,7 @@ import Testing
     }
 
     @Test func bundledFontsAreExactCopiesOfTheContract() throws {
-        let dir = repoRoot.appendingPathComponent("contract/assets/fonts")
+        let dir = repoRoot.appendingPathComponent("contract/fonts")
         let contract = try FileManager.default.contentsOfDirectory(atPath: dir.path)
             .filter { ["ttf", "otf"].contains(($0 as NSString).pathExtension.lowercased()) }.sorted()
         #expect(Fonts.bundledURLs.map(\.lastPathComponent).sorted() == contract)

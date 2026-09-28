@@ -267,8 +267,8 @@ func TestAssets(t *testing.T) {
 	if code, _, b := e.do("GET", "/assets/sub/x.txt", nil); code != 200 || string(b) != "x" {
 		t.Fatalf("nested asset: %d %s", code, b)
 	}
-	// fonts ship inside the SDKs; the server does not serve them
-	for _, p := range []string{"/assets/nope.png", "/assets/", "/assets/sub", "/assets/sub/", "/assets/fonts/F-Regular.ttf", "/assets/fonts/"} {
+	// fonts live in contract/fonts, outside contract/assets, so no path or encoding under /assets/ reaches them
+	for _, p := range []string{"/assets/nope.png", "/assets/", "/assets/sub", "/assets/sub/", "/assets/fonts/F-Regular.ttf", "/assets/fonts%2FF-Regular.ttf", "/assets/FONTS/F-Regular.ttf"} {
 		code, _, b := e.do("GET", p, nil)
 		wantErr(t, code, b, 404, "NOT_FOUND")
 	}

@@ -64,16 +64,16 @@ cd backend && go run ./cmd/wbc conformance -contract ../contract
 
 **Как менять контракт.** `contract/primitives.json`, `stdlib.json`, `tokens/`, `templates/*.json`, `conformance/*.json` — один источник для компилятора и обоих клиентов. Правка, меняющая семантику DSL или примитивов, — один MR, трогающий компилятор (`backend/internal/dsl`, `backend/internal/compile`) и оба клиентских ядра (`ios/Sources/WishboneCore`, `android/wishbone-core`) вместе, чтобы не разъехаться по conformance-векторам.
 
-При смене токенов темы (`contract/tokens/*.json`) или шрифтов (`contract/assets/fonts/`) нужно вручную обновить бандлы-фоллбеки в обоих SDK (они не читают `contract/` на билде):
+При смене токенов темы (`contract/tokens/*.json`) или шрифтов (`contract/fonts/`) нужно вручную обновить бандлы-фоллбеки в обоих SDK (они не читают `contract/` на билде):
 - iOS: `ios/Sources/WishboneUI/Resources/korpu.json` (+ `Resources/Fonts/*`)
 - Android: `android/wishbone-ui/src/main/assets/wishbone/korpu.json` (+ `res/font/wb_*.ttf|otf`)
 
 Что проверяют тесты:
-- iOS `ThemeTests`: `Resources/korpu.json` побайтово равен `contract/tokens/korpu.json`; набор `*.ttf|*.otf` в `Resources/Fonts/` совпадает с `contract/assets/fonts/` по именам и побайтово; `Resources/Fonts/OFL.txt` побайтово равен контрактному.
+- iOS `ThemeTests`: `Resources/korpu.json` побайтово равен `contract/tokens/korpu.json`; набор `*.ttf|*.otf` в `Resources/Fonts/` совпадает с `contract/fonts/` по именам и побайтово; `Resources/Fonts/OFL.txt` побайтово равен контрактному.
 - Android `ThemeTest`: `assets/wishbone/korpu.json` равен контрактному **как JSON** (не побайтово); `assets/wishbone/OFL.txt` совпадает с контрактным. Шрифты `res/font/wb_*` (переименованы под правила ресурсов Android) **тестом не сверяются** — их копируют вручную.
 - Android `IconsTest`: таблица иконок SDK совпадает с `contract/icons.json` и каждая ссылается на существующий drawable.
 
-Шрифты зашиты в SDK и сервером не раздаются (`GET /assets/fonts/*` → 404). Лицензия Manrope и Montserrat — SIL OFL 1.1 (`contract/assets/fonts/OFL.txt`, копии рядом со шрифтами в обоих SDK); права на распространение GiorgioSansLCG (коммерческий шрифт) должен подтвердить владелец — см. `contract/assets/README.md`.
+Шрифты лежат в `contract/fonts/`, вне раздаваемого `contract/assets/` — сервером не раздаются по построению (не роутом-заглушкой). Лицензия Manrope и Montserrat — SIL OFL 1.1 (`contract/fonts/OFL.txt`, копии рядом со шрифтами в обоих SDK); права на распространение GiorgioSansLCG (коммерческий шрифт) должен подтвердить владелец — см. `contract/fonts/README.md`.
 
 **Переименование param шаблона.** Сервер при старте перекомпилирует все опубликованные экраны и **не стартует**, если хоть один перестал компилироваться (`published screens no longer compile: …`). Поэтому param переименовывают через мостовую ревизию шаблона:
 1. Добавить новый param, старый оставить (сделать необязательным — с `default`), шаблон учитывает оба; задеплоить.

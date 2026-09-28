@@ -21,7 +21,7 @@
 `If-None-Match` поддерживается → 304. 200 — содержимое `contract/tokens/<brand>.json` + `"version": "<sha256[:16]>"`; неизвестный бренд → тема `korpu`.
 
 ### `GET /assets/<path>`
-Статика из `contract/assets/`. Кроме `fonts/*`: шрифты зашиты в SDK и не раздаются — 404 `NOT_FOUND`.
+Статика из `contract/assets/`. Шрифты (`contract/fonts/`) вне этого дерева и не раздаются — 404 `NOT_FOUND`.
 
 ### Превью (устройства)
 

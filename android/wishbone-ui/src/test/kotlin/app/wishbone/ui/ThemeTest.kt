@@ -18,7 +18,7 @@ class ThemeTest {
     fun bundledFallbackEqualsContract() {
         val bundled = File("src/main/assets/wishbone/korpu.json").readText()
         assertEquals(Json.parseToJsonElement(contractFile.readText()), Json.parseToJsonElement(bundled))
-        assertEquals(File("../../contract/assets/fonts/OFL.txt").readText(), File("src/main/assets/wishbone/OFL.txt").readText())
+        assertEquals(File("../../contract/fonts/OFL.txt").readText(), File("src/main/assets/wishbone/OFL.txt").readText())
     }
 
     @Test

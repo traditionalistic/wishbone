@@ -2,7 +2,7 @@ import CoreText
 import Foundation
 import SwiftUI
 
-/// Fonts bundled from contract/assets/fonts. File names are `<Family>-<Style>.<ext>` and equal the
+/// Fonts bundled from contract/fonts. File names are `<Family>-<Style>.<ext>` and equal the
 /// PostScript name; the family matches the theme's `type.*.family`.
 enum Fonts {
     struct Face: Equatable {
