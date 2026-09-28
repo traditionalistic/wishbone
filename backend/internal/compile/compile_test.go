@@ -219,6 +219,9 @@ func TestScreenErrors(t *testing.T) {
 		{"number out of range", "", `{"type": "spacer", "id": "root", "props": {"opacity": 1e999}}`, "", "root/props/opacity", "out of range"},
 		{"number out of range nested", "", `{"type": "spacer", "id": "root", "props": {"padding": {"top": -1e999}}}`, "", "root/props/padding", "out of range"},
 		{"@ expression", "", `{"type": "spacer", "id": "root", "props": {"opacity": "@space.lg * 2 + 1"}}`, "", "root/props/opacity", "="},
+		{"lazy list in a card", `state xs = ["a"]`, `{"type": "scroll", "id": "root", "props": {"lazy": true}, "children": [{"type": "stack", "id": "card", "children": [{"type": "text", "id": "row", "repeat": {"over": "xs"}, "props": {"text": "=item"}}]}]}`, "", "root/children/0/children/0/repeat", "lazy scroll 'root': repeat 'row' is nested in 'card'"},
+		{"lazy list in a repeated section", `state xs = ["a"]`, `{"type": "scroll", "id": "root", "props": {"lazy": true}, "children": [{"type": "stack", "id": "sec", "repeat": {"over": "xs"}, "children": [{"type": "text", "id": "row", "repeat": {"over": "xs"}, "props": {"text": "=item"}}]}]}`, "", "root/children/0/children/0/repeat", "nested in 'sec'"},
+		{"lazy list from a template", "", `{"type": "scroll", "id": "root", "props": {"lazy": true}, "children": [{"type": "Inner", "id": "inn", "props": {"tag": "a"}}]}`, "", "root/children/0", "repeat 'inn/t' is nested in 'inn'"},
 	}
 	for _, c := range cases {
 		_, _, diags := Screen(contract(t), src(c.script, c.root, c.timelines), 1)
@@ -232,6 +235,24 @@ func TestScreenErrors(t *testing.T) {
 			t.Errorf("%s: diags %v, want path %q containing %q", c.name, diags, c.path, c.want)
 		}
 	}
+}
+
+// Rows as direct children of a lazy scroll, repeats inside horizontal containers (carousels) and nested lists in a
+// non-lazy scroll compile.
+func TestLazyScrollListsOK(t *testing.T) {
+	compileOK(t, src(`state xs = ["a"]`, `{"type": "stack", "id": "root", "children": [
+	{"type": "scroll", "id": "list", "props": {"lazy": true}, "children": [
+		{"type": "text", "id": "row", "repeat": {"over": "xs"}, "props": {"text": "=item"}},
+		{"type": "stack", "id": "chips", "props": {"axis": "h"}, "children": [{"type": "text", "id": "chip", "repeat": {"over": "xs"}, "props": {"text": "=item"}}]},
+		{"type": "stack", "id": "section", "children": [
+			{"type": "text", "id": "title", "props": {"text": "Карусель"}},
+			{"type": "scroll", "id": "rail", "props": {"axis": "h"}, "children": [
+				{"type": "stack", "id": "card", "repeat": {"over": "xs"}, "children": [{"type": "text", "id": "cardText", "props": {"text": "=item"}}]}
+			]}
+		]}
+	]},
+	{"type": "scroll", "id": "eager", "props": {"lazy": false}, "children": [{"type": "stack", "id": "box", "children": [{"type": "text", "id": "inner", "repeat": {"over": "xs"}, "props": {"text": "=item"}}]}]}
+	]}`, ""))
 }
 
 func TestDiagPosition(t *testing.T) {

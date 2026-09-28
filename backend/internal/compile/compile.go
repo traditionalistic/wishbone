@@ -116,6 +116,7 @@ func compileScreen(c *Contract, src []byte, rev int) (*unit, *Document) {
 		State: decls.State, Computed: decls.Computed, Fns: decls.Fns, Handlers: decls.Handlers, Data: decls.Data,
 		Timelines: u.tls, Root: root}
 	prune(doc)
+	u.lazyLists(root)
 	nodes, depth := count(root, 1)
 	if nodes > maxNodes {
 		u.errf("root", "limit: %d nodes after template expansion, the maximum is %d", nodes, maxNodes)
@@ -202,6 +203,52 @@ func prune(doc *Document) {
 		}
 	}
 	nodes(doc.Root)
+}
+
+// lazyLists rejects a repeat nested inside a child of a vertical lazy scroll (decisions/renderers.md): the lazy
+// container virtualizes only its direct children, and one child taller than the screen livelocks SwiftUI's
+// LazyVStack (iOS 26) and stops Compose from re-firing a paging `appear`. It runs on the expanded, pruned tree —
+// templates carry repeats too. Horizontal stacks and scrolls are not entered: a carousel can't outgrow the screen
+// height. A repeated child is checked inside as well (a repeated section with a nested list is the same problem).
+// A non-literal `lazy` counts as lazy and a non-literal `axis` as vertical.
+func (u *unit) lazyLists(n *Node) {
+	horizontal := func(m *Node) bool { return (m.T == "stack" || m.T == "scroll") && string(m.P["axis"]) == `["v","h"]` }
+	if n.T == "scroll" && n.P["lazy"] != nil && string(n.P["lazy"]) != `["v",false]` && !horizontal(n) {
+		for _, c := range n.C {
+			var nested func(m *Node)
+			nested = func(m *Node) {
+				if horizontal(m) {
+					return
+				}
+				for _, k := range m.C {
+					if k.Rep == nil {
+						nested(k)
+						continue
+					}
+					u.errf(u.repeatPath(k.ID), "lazy scroll '%s': repeat '%s' is nested in '%s' — make the rows direct children of the scroll (a child taller than the screen hangs iOS)", n.ID, k.ID, c.ID)
+				}
+			}
+			nested(c)
+		}
+	}
+	for _, c := range n.C {
+		u.lazyLists(c)
+	}
+}
+
+// repeatPath is the source path of an expanded node's repeat: `…/repeat` of a screen node, else the node of the
+// template instance it was expanded from (expanded ids are `<instance id>/<template id>`).
+func (u *unit) repeatPath(id string) string {
+	first, rest, _ := strings.Cut(id, "/")
+	s := u.ids[first]
+	switch {
+	case s == nil:
+		return "root"
+	case rest == "" && s.Repeat != nil:
+		return s.path + "/repeat"
+	default:
+		return s.path
+	}
 }
 
 // runtimeMin is the oldest runtime that understands the document.
