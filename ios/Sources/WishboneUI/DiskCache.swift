@@ -19,6 +19,11 @@ struct DiskCache: Sendable {
         try? data.write(to: url(key), options: .atomic)
     }
 
+    /// Deletes the entry; a missing one is fine.
+    func remove(_ key: String) {
+        try? FileManager.default.removeItem(at: url(key))
+    }
+
     private func url(_ key: String) -> URL {
         let digest = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
         return dir.appendingPathComponent(digest + ".json")

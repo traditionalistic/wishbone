@@ -191,14 +191,17 @@ final class ScreenModel {
     @ObservationIgnored let wishbone: Wishbone
     @ObservationIgnored let route: Route
     @ObservationIgnored let navigator: Navigator
+    /// `WishboneSlot`: an unpublished screen drops its cache (see `dropsCache`).
+    @ObservationIgnored let slot: Bool
     @ObservationIgnored private var cached: ScreenResponse?
     /// Handler runs of this screen's stores; cancelled when the screen goes away.
     @ObservationIgnored let tasks = TaskBag()
 
-    init(wishbone: Wishbone, route: Route, navigator: Navigator) {
+    init(wishbone: Wishbone, route: Route, navigator: Navigator, slot: Bool = false) {
         self.wishbone = wishbone
         self.route = route
         self.navigator = navigator
+        self.slot = slot
     }
 
     deinit { tasks.cancelAll() }
@@ -235,8 +238,21 @@ final class ScreenModel {
             wishbone.cache.write(key, try API.encodeScreen(fresh))
         } catch {
             wishbone.log("warn", "screen \(route.screen): \(error)")
+            if Self.dropsCache(after: error, slot: slot) {
+                wishbone.cache.remove(key)
+                cached = nil
+                return fail(error)
+            }
             if cached == nil { fail(error) }
         }
+    }
+
+    /// A slot's `SCREEN_NOT_FOUND` (unpublished or removed) drops its cache and shows nothing, even over
+    /// the cached content — otherwise a removed banner would live on in the cache (spec 2026-09-28 §2.3).
+    /// A screen keeps showing its cache on any error.
+    nonisolated static func dropsCache(after error: Error, slot: Bool) -> Bool {
+        guard slot, case let .server(_, code, _, _)? = error as? WishboneError else { return false }
+        return code == "SCREEN_NOT_FOUND"
     }
 
     /// Renders an answer (preview document, cache, network); state of the previous store survives.
