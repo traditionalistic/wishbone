@@ -83,34 +83,30 @@ struct StackHost: View {
         _navigator = State(initialValue: Navigator(presenter: presenter))
     }
 
-    var body: some View {
-        Group {
-            if let onNavigate {
+    /// Host-stack mode: just the route, no stack of its own. Plain mode: the SDK's own `NavigationStack`.
+    @ViewBuilder private var content: some View {
+        if onNavigate != nil {
+            RouteView(wishbone: wishbone, route: root, navigator: navigator)
+        } else {
+            NavigationStack(path: $navigator.path) {
                 RouteView(wishbone: wishbone, route: root, navigator: navigator)
-                    .sheet(item: $navigator.sheet) { route in
-                        StackHost(wishbone: wishbone, root: route, presenter: navigator)
-                            .presentationDetents([.large])
-                            .presentationDragIndicator(.visible)
-                    }
-                    .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
-                    .onAppear {
-                        navigator.exit = onExit ?? { dismiss() }
-                        navigator.forward = onNavigate
-                    }
-            } else {
-                NavigationStack(path: $navigator.path) {
-                    RouteView(wishbone: wishbone, route: root, navigator: navigator)
-                        .navigationDestination(for: Route.self) { RouteView(wishbone: wishbone, route: $0, navigator: navigator) }
-                }
-                .sheet(item: $navigator.sheet) { route in
-                    StackHost(wishbone: wishbone, root: route, presenter: navigator)
-                        .presentationDetents([.large])
-                        .presentationDragIndicator(.visible)
-                }
-                .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
-                .onAppear { navigator.exit = onExit ?? { dismiss() } }
+                    .navigationDestination(for: Route.self) { RouteView(wishbone: wishbone, route: $0, navigator: navigator) }
             }
         }
+    }
+
+    var body: some View {
+        content
+            .sheet(item: $navigator.sheet) { route in
+                StackHost(wishbone: wishbone, root: route, presenter: navigator)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+            .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
+            .onAppear {
+                navigator.exit = onExit ?? { dismiss() }
+                navigator.forward = onNavigate
+            }
     }
 }
 
