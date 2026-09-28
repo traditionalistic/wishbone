@@ -35,6 +35,14 @@ class ClientTest {
     }
 
     @Test
+    fun screenIdsOutsideTheServerRuleFailWithoutARequest() = runBlocking {
+        for (id in listOf("..", ".", "", "a/b", "Showcase")) {
+            val e = runCatching { Client("http://127.0.0.1:1/", "kz", host).screen(id, emptyMap(), null) }.exceptionOrNull()
+            assertEquals("SCREEN_NOT_FOUND", (e as? WishboneException)?.code, id)
+        }
+    }
+
+    @Test
     fun assetHeadersCarryHostAuthOnlyToTheServerOrigin() = runBlocking {
         assertEquals("Bearer t", client.assetHeaders("http://10.0.2.2:8080/assets/a.riv".toHttpUrl())["Authorization"])
         for (other in listOf("http://cdn.example.com:8080/a.riv", "http://10.0.2.2:9090/a.riv", "https://10.0.2.2:8080/a.riv")) {

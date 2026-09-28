@@ -57,6 +57,8 @@ fun dataValues(data: JsonObject): Map<String, Value> = data.mapValues { (_, r) -
     if (o?.get("ok")?.jsonPrimitive?.booleanOrNull == true) o["value"]?.let { Value.fromJson(it) } ?: Value.Null else Value.Null
 }
 
+private val screenId = Regex("[a-z0-9][a-z0-9._-]{0,63}")
+
 internal fun parseError(status: Int, body: String): WishboneException {
     val e = runCatching { Json.parseToJsonElement(body).jsonObject["error"]!!.jsonObject }.getOrNull()
         ?: return WishboneException("HTTP", "HTTP $status", status, status >= 500)
@@ -120,6 +122,8 @@ class Client(
     internal fun url(path: String) = base.newBuilder().addPathSegments(path).build()
 
     suspend fun screen(id: String, params: Map<String, Value>, etag: String?): ScreenResponse {
+        // the server's id rule: anything else (e.g. `..` from a deeplink) would resolve to another path
+        if (!screenId.matches(id)) throw WishboneException("SCREEN_NOT_FOUND", "invalid screen id \"$id\"", 404, false)
         val (code, body) = execute(screenRequest(id, params, etag, headers()))
         if (code != 200) throw parseError(code, body)
         return ScreenResponse.parse(body)

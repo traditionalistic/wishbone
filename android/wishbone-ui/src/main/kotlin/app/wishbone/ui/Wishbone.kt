@@ -43,8 +43,11 @@ class Wishbone(
     val baseUrl: String,
     val brand: String = "korpu",
     val host: WishboneHost = object : WishboneHost {},
-    val colorScheme: String? = null,
+    colorScheme: String? = null,
 ) {
+    /** `"light"`/`"dark"` overrides the system scheme (e.g. the host's own theme setting), null follows the system. */
+    var colorScheme: String? by mutableStateOf(colorScheme)
+
     val client = Client(baseUrl, brand, host)
     internal val cache = DiskCache(File(context.cacheDir, "wishbone"))
 

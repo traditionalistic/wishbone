@@ -68,6 +68,10 @@ enum API {
         return req
     }
 
+    static func isScreenID(_ s: String) -> Bool {
+        s.wholeMatch(of: /[a-z0-9][a-z0-9._-]{0,63}/) != nil
+    }
+
     static func pathSegment(_ s: String) -> String {
         s.addingPercentEncoding(withAllowedCharacters: queryAllowed) ?? s
     }

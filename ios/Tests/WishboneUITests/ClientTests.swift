@@ -18,6 +18,11 @@ import Testing
         #expect(req.url?.absoluteString == "http://localhost:8080/v1/screens/showcase.promo")
     }
 
+    @Test func screenIDsFollowTheServerRule() {
+        for id in ["host.hello", "showcase.promo", "a-b_c9"] { #expect(API.isScreenID(id), "\(id)") }
+        for id in ["..", ".", "", "a/b", "Showcase", String(repeating: "a", count: 65)] { #expect(!API.isScreenID(id), "\(id)") }
+    }
+
     @Test func screenParamsAreStrictlyEncoded() throws {
         let req = API.screen(info, id: "a b", params: ["q": .string("1+1 & x=y")], etag: "\"4-abc\"")
         #expect(req.url?.absoluteString == "http://localhost:8080/v1/screens/a%20b?params=%7B%22q%22%3A%221%2B1%20%26%20x%3Dy%22%7D")

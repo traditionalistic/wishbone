@@ -169,6 +169,10 @@ final class ScreenModel {
             do { try apply(throwing: API.parseScreen(local)) } catch { fail(error) }
             return
         }
+        // the server's id rule: anything else (e.g. `..` from a deeplink) would resolve to another path
+        guard API.isScreenID(route.screen) else {
+            return fail(WishboneError.server(status: 404, code: "SCREEN_NOT_FOUND", message: "invalid screen id \"\(route.screen)\"", retryable: false))
+        }
         let key = DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
         if cached == nil, let data = wishbone.cache.read(key), let r = try? API.parseScreen(data), r.document != nil,
            (try? apply(throwing: r)) != nil {
