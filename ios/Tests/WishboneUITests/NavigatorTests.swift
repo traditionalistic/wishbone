@@ -50,4 +50,41 @@ import Testing
         nav.dismiss()
         #expect(nav.path.isEmpty)
     }
+
+    @Test func hostStackReceivesPushes() {
+        let nav = Navigator()
+        var pushed: [WishboneRoute] = []
+        var exited = false
+        nav.forward = { pushed.append($0) }
+        nav.exit = { exited = true }
+        nav.navigate(Route(screen: "raffle.tickets", params: ["n": .number(1)], fade: true))
+        #expect(nav.path.isEmpty)
+        #expect(pushed.map(\.screen) == ["raffle.tickets"])
+        #expect(pushed.first?.transition == "fade")
+        #expect(pushed.first?.params["n"] == .number(1))
+        nav.back()
+        #expect(exited) // the host pops
+    }
+
+    @Test func hostStackKeepsSheetsInTheSDK() {
+        let root = Navigator()
+        var pushed = 0
+        root.forward = { _ in pushed += 1 }
+        root.present(Route(screen: "raffle.rules", params: [:]))
+        #expect(root.sheet?.screen == "raffle.rules")
+        let sheet = Navigator(presenter: root)
+        sheet.navigate(Route(screen: "inner", params: [:])) // a sheet's navigator has no forward: pushes inside
+        #expect(sheet.path.map(\.screen) == ["inner"] && pushed == 0)
+        sheet.dismiss()
+        #expect(root.sheet == nil)
+    }
+
+    @Test func slotForwardsPresent() {
+        let nav = Navigator()
+        var pushed: [WishboneRoute] = []
+        nav.forward = { pushed.append($0) }
+        nav.forwardsPresent = true
+        nav.present(Route(screen: "raffle.rules", params: [:]))
+        #expect(nav.sheet == nil && pushed.first?.transition == "present")
+    }
 }

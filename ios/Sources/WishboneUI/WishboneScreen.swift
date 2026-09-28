@@ -2,25 +2,49 @@ import Observation
 import SwiftUI
 import WishboneCore
 
-/// A server-driven screen with its own navigation stack (spec §6.3):
-/// `WishboneScreen(wishbone, id: "showcase.promo", params: [:])`. `onExit` runs when the screen asks to leave the
-/// SDK — `back()`/`dismiss()` at the root; without it the SDK calls SwiftUI's `dismiss`. It is read once, when the
-/// screen appears (pass a closure over a stable router, not one that changes between renders).
+/// A server-driven screen (spec §6.3, §1.2). Two navigation modes, chosen by whether `onNavigate` is
+/// passed: without it, `WishboneScreen(wishbone, id: "showcase.promo", params: [:])` owns its own
+/// `NavigationStack` and DSL `navigate` pushes into it. With `onNavigate`, DSL `navigate` instead calls
+/// `onNavigate(route)` and the SDK does not wrap the screen in a stack of its own — the host is expected
+/// to push `WishboneScreen(wishbone, route:)` into ITS stack (a `NavigationStack`, a reducer's own
+/// destination stack, whatever the host uses). `present`/`dismiss` are unaffected: a sheet always keeps
+/// its own stack inside the SDK, in both modes. `onExit` runs when the screen asks to leave the SDK —
+/// `back()`/`dismiss()` at the root; without it the SDK calls SwiftUI's `dismiss`. Both `onExit` and
+/// `onNavigate` are read once, when the screen appears (pass closures over a stable router, not ones that
+/// change between renders).
 public struct WishboneScreen: View {
     let wishbone: Wishbone
     let root: Route
     let onExit: (() -> Void)?
+    let onNavigate: ((WishboneRoute) -> Void)?
+    /// `init(id:)`: identity = id + params (re-navigating to the same id/params reuses the store).
+    /// `init(route:)`: identity = the route's own `id` — each host push is its own stack record, even to
+    /// the same screen id (e.g. `raffle.tickets` pushed twice with different `offset`).
+    let identity: String
 
-    public init(_ wishbone: Wishbone, id: String, params: [String: Value] = [:], onExit: (() -> Void)? = nil) {
+    public init(_ wishbone: Wishbone, id: String, params: [String: Value] = [:], onExit: (() -> Void)? = nil,
+                onNavigate: ((WishboneRoute) -> Void)? = nil) {
         self.wishbone = wishbone
         root = Route(screen: id, params: params)
         self.onExit = onExit
+        self.onNavigate = onNavigate
+        identity = "\(id)|\(API.jsonString(.record(params)))"
+    }
+
+    /// Rebuilds the screen the host just pushed from the `WishboneRoute` its own `onNavigate` received.
+    public init(_ wishbone: Wishbone, route: WishboneRoute, onExit: (() -> Void)? = nil,
+                onNavigate: ((WishboneRoute) -> Void)? = nil) {
+        self.wishbone = wishbone
+        root = Route(route)
+        self.onExit = onExit
+        self.onNavigate = onNavigate
+        identity = route.id.uuidString
     }
 
     public var body: some View {
-        // A different id/params is a different screen: fresh stack, model and store.
-        StackHost(wishbone: wishbone, root: root, presenter: nil, onExit: onExit)
-            .id("\(root.screen)|\(API.jsonString(.record(root.params)))")
+        // A different id/params (or a different host push) is a different screen: fresh stack, model and store.
+        StackHost(wishbone: wishbone, root: root, presenter: nil, onExit: onExit, onNavigate: onNavigate)
+            .id(identity)
     }
 }
 
@@ -44,28 +68,49 @@ struct StackHost: View {
     let wishbone: Wishbone
     let root: Route
     let onExit: (() -> Void)?
+    /// Host-stack mode (spec §1.2): non-nil only at the top of a screen's own stack, never passed down to
+    /// a presented sheet (`.sheet` below omits it) — a sheet always keeps its own stack inside the SDK.
+    let onNavigate: ((WishboneRoute) -> Void)?
     @State private var navigator: Navigator
     @Environment(\.dismiss) private var dismiss
 
-    init(wishbone: Wishbone, root: Route, presenter: Navigator?, onExit: (() -> Void)? = nil) {
+    init(wishbone: Wishbone, root: Route, presenter: Navigator?, onExit: (() -> Void)? = nil,
+         onNavigate: ((WishboneRoute) -> Void)? = nil) {
         self.wishbone = wishbone
         self.root = root
         self.onExit = onExit
+        self.onNavigate = onNavigate
         _navigator = State(initialValue: Navigator(presenter: presenter))
     }
 
     var body: some View {
-        NavigationStack(path: $navigator.path) {
-            RouteView(wishbone: wishbone, route: root, navigator: navigator)
-                .navigationDestination(for: Route.self) { RouteView(wishbone: wishbone, route: $0, navigator: navigator) }
+        Group {
+            if let onNavigate {
+                RouteView(wishbone: wishbone, route: root, navigator: navigator)
+                    .sheet(item: $navigator.sheet) { route in
+                        StackHost(wishbone: wishbone, root: route, presenter: navigator)
+                            .presentationDetents([.large])
+                            .presentationDragIndicator(.visible)
+                    }
+                    .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
+                    .onAppear {
+                        navigator.exit = onExit ?? { dismiss() }
+                        navigator.forward = onNavigate
+                    }
+            } else {
+                NavigationStack(path: $navigator.path) {
+                    RouteView(wishbone: wishbone, route: root, navigator: navigator)
+                        .navigationDestination(for: Route.self) { RouteView(wishbone: wishbone, route: $0, navigator: navigator) }
+                }
+                .sheet(item: $navigator.sheet) { route in
+                    StackHost(wishbone: wishbone, root: route, presenter: navigator)
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.visible)
+                }
+                .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
+                .onAppear { navigator.exit = onExit ?? { dismiss() } }
+            }
         }
-        .sheet(item: $navigator.sheet) { route in
-            StackHost(wishbone: wishbone, root: route, presenter: navigator)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-        }
-        .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
-        .onAppear { navigator.exit = onExit ?? { dismiss() } }
     }
 }
 
