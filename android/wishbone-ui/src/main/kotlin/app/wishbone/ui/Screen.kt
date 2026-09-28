@@ -253,8 +253,9 @@ private class SavedRoot(private var pending: StoreSnapshot?) {
     }
 
     companion object {
-        // the saved-instance Bundle is capped by the binder (~1 MB, TransactionTooLargeException): bigger state starts fresh
-        private const val MAX_CHARS = 64_000
+        // the saved-instance Bundle is capped by the binder (~1 MB, TransactionTooLargeException) and shared by the whole
+        // back stack (every entry's saved state goes into it): bigger state starts fresh
+        private const val MAX_CHARS = 16_000
 
         val Saver = Saver<SavedRoot, String>(
             save = { (it.holder?.snapshot() ?: it.pending)?.encode()?.takeIf { s -> s.length <= MAX_CHARS } },
