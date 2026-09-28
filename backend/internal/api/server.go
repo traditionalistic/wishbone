@@ -167,6 +167,7 @@ func (s *Server) Handler() http.Handler {
 	admin("GET /admin/api/", func(w http.ResponseWriter, r *http.Request) { s.fail(w, "NOT_FOUND", "no such admin API route") })
 	mux.HandleFunc("GET /admin/", s.spa)
 	mux.Handle("GET /admin", http.RedirectHandler("/admin/", http.StatusMovedPermanently))
+	mux.Handle("GET /{$}", http.RedirectHandler("/admin/", http.StatusFound)) // the bare address opens the admin
 	return logRequests(mux)
 }
 

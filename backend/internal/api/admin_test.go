@@ -205,6 +205,12 @@ func TestAdminSPA(t *testing.T) {
 			t.Errorf("%s: %d %s", path, code, b)
 		}
 	}
+	if code, _, b := e.do("GET", "/", nil); code != 200 || string(b) != "<!doctype html>admin" { // redirected to /admin/
+		t.Errorf("bare address: %d %s", code, b)
+	}
+	if code, _, _ := e.do("GET", "/nope", nil); code != 404 {
+		t.Errorf("unknown path: %d", code)
+	}
 	e.srv.AdminDir = t.TempDir() + "/missing"
 	if code, _, b := e.do("GET", "/admin/", nil); code != 404 || !strings.Contains(string(b), "npm run build") {
 		t.Fatalf("missing build: %d %s", code, b)
