@@ -423,6 +423,11 @@ func (c *ctx) ident(e *Ident) *Type {
 		e.Ref = RefData
 		return d.T
 	case *StateDecl:
+		if c.vis == visState && c.p.Env.Template {
+			// instance state travels as a JSON object (inst.state): clients initialize it in no particular order
+			c.errf(e.P, "a template state initializer cannot read state '%s': instance state has no initialization order", e.Name)
+			return d.T
+		}
 		if c.vis != visAll && (c.vis != visState || c.p.stateN[e.Name] >= c.stateN) {
 			return hidden()
 		}

@@ -92,11 +92,21 @@ import Testing
         ]))
     }
 
+    @MainActor @Test func cacheScopeSeparatesServersAccountsAndBrands() {
+        struct Account: WishboneHost { var cacheScope: String }
+        let a = URL(string: "http://a")!, b = URL(string: "http://b")!
+        let scopes = [
+            Wishbone.cacheScope(a, DefaultHost(), "korpu"), Wishbone.cacheScope(b, DefaultHost(), "korpu"),
+            Wishbone.cacheScope(a, DefaultHost(), "kz"), Wishbone.cacheScope(a, Account(cacheScope: "user-2"), "korpu"),
+        ]
+        #expect(Set(scopes).count == 4)
+    }
+
     @Test func diskCache() {
         let cache = DiskCache(dir: tempDir())
-        let k1 = DiskCache.screenKey(brand: "korpu", id: "s", params: [:])
-        let k2 = DiskCache.screenKey(brand: "korpu", id: "s", params: ["id": .string("1")])
-        let k3 = DiskCache.screenKey(brand: "kz", id: "s", params: [:])
+        let k1 = DiskCache.screenKey(scope: "korpu", id: "s", params: [:])
+        let k2 = DiskCache.screenKey(scope: "korpu", id: "s", params: ["id": .string("1")])
+        let k3 = DiskCache.screenKey(scope: "kz", id: "s", params: [:])
         #expect(Set([k1, k2, k3]).count == 3)
         #expect(cache.read(k1) == nil)
         cache.write(k1, Data("one".utf8))

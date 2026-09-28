@@ -33,7 +33,7 @@ type Config struct {
 	AdminDir    string // built admin SPA (admin/dist)
 	Store       *store.Store
 	Ops         map[string]ops.Handler
-	Hub         *preview.Hub
+	Hub         *preview.Hub // nil disables every preview endpoint (server -preview=false)
 	Password    string
 }
 
@@ -130,11 +130,21 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/data", s.postData)
 	mux.HandleFunc("POST /v1/call", s.postCall)
 	mux.HandleFunc("GET /v1/theme", s.getTheme)
-	mux.HandleFunc("GET /v1/preview/sessions", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, s.Hub.Sessions()) })
-	mux.HandleFunc("GET /v1/preview/ws", func(w http.ResponseWriter, r *http.Request) {
+	// pv turns a preview handler into NOT_FOUND when preview is disabled
+	pv := func(h http.HandlerFunc) http.HandlerFunc {
+		if s.Hub != nil {
+			return h
+		}
+		return func(w http.ResponseWriter, r *http.Request) { s.fail(w, "NOT_FOUND", "preview is disabled") }
+	}
+	mux.HandleFunc("GET /v1/preview/sessions", pv(func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, s.Hub.Sessions()) }))
+	mux.HandleFunc("GET /v1/preview/ws", pv(func(w http.ResponseWriter, r *http.Request) {
 		if !s.Hub.ServeDevice(w, r, r.URL.Query().Get("session"), base(r)) {
 			s.fail(w, "NOT_FOUND", "preview session not found")
 		}
+	}))
+	mux.HandleFunc("GET /assets/fonts/", func(w http.ResponseWriter, r *http.Request) {
+		s.fail(w, "NOT_FOUND", "fonts are bundled in the SDKs, not served")
 	})
 	mux.HandleFunc("GET /assets/", s.asset)
 
@@ -149,14 +159,14 @@ func (s *Server) Handler() http.Handler {
 	admin("POST /admin/api/compile", s.compileSource)
 	admin("GET /admin/api/catalog", func(w http.ResponseWriter, r *http.Request) { writeRaw(w, 200, s.catalog) })
 	admin("GET /admin/api/templates/{name}", s.template)
-	admin("POST /admin/api/preview", s.createPreview)
-	admin("POST /admin/api/preview/{code}/document", s.previewDocument)
-	admin("POST /admin/api/preview/{code}/play", s.previewPlay)
-	admin("GET /admin/api/preview/{code}/ws", func(w http.ResponseWriter, r *http.Request) {
+	admin("POST /admin/api/preview", pv(s.createPreview))
+	admin("POST /admin/api/preview/{code}/document", pv(s.previewDocument))
+	admin("POST /admin/api/preview/{code}/play", pv(s.previewPlay))
+	admin("GET /admin/api/preview/{code}/ws", pv(func(w http.ResponseWriter, r *http.Request) {
 		if !s.Hub.ServeAdmin(w, r, r.PathValue("code")) {
 			s.fail(w, "NOT_FOUND", "preview session not found")
 		}
-	})
+	}))
 	admin("GET /admin/api/", func(w http.ResponseWriter, r *http.Request) { s.fail(w, "NOT_FOUND", "no such admin API route") })
 	mux.HandleFunc("GET /admin/", s.spa)
 	mux.Handle("GET /admin", http.RedirectHandler("/admin/", http.StatusMovedPermanently))

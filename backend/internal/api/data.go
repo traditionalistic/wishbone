@@ -80,6 +80,9 @@ func (s *Server) meta(ctx context.Context, screen string, rev int) (*revMeta, er
 	var raw json.RawMessage
 	if rev == 0 {
 		var ok bool
+		if s.Hub == nil {
+			return nil, store.ErrNoRevision
+		}
 		if raw, ok = s.Hub.Meta(screen); !ok {
 			return nil, store.ErrNoRevision
 		}

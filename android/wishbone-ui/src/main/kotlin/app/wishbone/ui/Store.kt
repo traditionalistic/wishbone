@@ -55,7 +55,8 @@ internal data class NodeExtras(
     val animatedPresence get() = trIn != null || trOut != null || match != null
 
     companion object {
-        fun index(root: Node): Map<String, NodeExtras> {
+        /** A node whose renderer fields fail to decode renders without them; the failure goes to [onError]. */
+        fun index(root: Node, onError: (String) -> Unit = {}): Map<String, NodeExtras> {
             val out = HashMap<String, NodeExtras>()
             fun walk(n: Node) {
                 runCatching {
@@ -78,7 +79,7 @@ internal data class NodeExtras(
                         drag = drag,
                     )
                     if (ex != NodeExtras()) out[n.id] = ex
-                }
+                }.onFailure { onError("node ${n.id}: bad renderer fields: ${it.message ?: it}") }
                 n.children.forEach(::walk)
             }
             walk(root)
@@ -149,7 +150,7 @@ class Store(
 
     /** Bumped when a drag cell is created, so a reader that missed it (composed earlier) re-reads. */
     private val dragCellsVersion = mutableIntStateOf(0)
-    internal val extras: Map<String, NodeExtras> = NodeExtras.index(doc.root)
+    internal val extras: Map<String, NodeExtras> = NodeExtras.index(doc.root) { effects.error(it) }
     internal val root = RenderContext(this, null, null, "", Parent.None)
 
     val dark: Boolean get() = env("colorScheme") == Value.Str("dark")

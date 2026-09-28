@@ -58,6 +58,8 @@ final class Store {
     private let previousInstances: [String: InstanceScope]
     /// `scroll.<id>.x|y` and `drag.<id+repeat path>.x|y` cells, created on first read or write.
     private var drivers: [String: Cell] = [:]
+    /// Changes whenever a drag cell is created.
+    private let dragCells = Cell(.number(0))
     let timelines: Timelines
     /// The screen has `drag` nodes (the full-width swipe-back would fight them).
     let hasDrag: Bool
@@ -102,7 +104,15 @@ final class Store {
         if let cell = drivers[key] { return cell }
         let cell = Cell(.number(0))
         drivers[key] = cell
+        if key.hasPrefix("drag:") { dragCells.value = .number(Double(drivers.count)) }
         return cell
+    }
+
+    /// An existing cell, or nil after subscribing to drag-cell creation (so the reader re-reads once it exists).
+    func existingDriver(_ key: String) -> Cell? {
+        if let cell = drivers[key] { return cell }
+        _ = dragCells.value
+        return nil
     }
 
     /// The instance scope of a node carrying `inst`, created on first render with its initializers.

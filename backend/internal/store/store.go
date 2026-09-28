@@ -330,3 +330,9 @@ func (s *Store) ClearInFlight(ctx context.Context) error {
 	_, err := s.db.Exec(ctx, `DELETE FROM idempotency WHERE status = 'in_flight'`)
 	return err
 }
+
+// PruneIdempotency drops call records older than maxAge: retries come within seconds, not days.
+func (s *Store) PruneIdempotency(ctx context.Context, maxAge time.Duration) error {
+	_, err := s.db.Exec(ctx, `DELETE FROM idempotency WHERE created_at < $1`, time.Now().Add(-maxAge))
+	return err
+}

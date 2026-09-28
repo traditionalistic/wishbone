@@ -164,7 +164,7 @@ final class ScreenModel {
             do { try apply(throwing: API.parseScreen(local)) } catch { fail(error) }
             return
         }
-        let key = DiskCache.screenKey(brand: wishbone.brand, id: route.screen, params: route.params)
+        let key = DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
         if cached == nil, let data = wishbone.cache.read(key), let r = try? API.parseScreen(data), r.document != nil,
            (try? apply(throwing: r)) != nil {
             cached = r

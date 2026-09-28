@@ -14,6 +14,9 @@ public protocol WishboneHost {
     func nativeView(name: String, props: [String: Any]) -> AnyView?
     /// Extra URL schemes `open()` may pass besides https.
     var allowedSchemes: Set<String> { get }
+    /// Partitions the disk cache (with the server address and brand), e.g. the signed-in account id,
+    /// so an account switch never shows another user's cached screens.
+    var cacheScope: String { get }
 }
 
 extension WishboneHost {
@@ -23,6 +26,7 @@ extension WishboneHost {
     public func action(name: String, args: [String: Any]) async {}
     public func nativeView(name: String, props: [String: Any]) -> AnyView? { nil }
     public var allowedSchemes: Set<String> { [] }
+    public var cacheScope: String { "" }
 }
 
 final class DefaultHost: WishboneHost {}
@@ -60,8 +64,14 @@ public final class Wishbone {
         self.brand = brand
         self.host = host
         self.cache = cache
-        theme = Self.cachedTheme(cache, brand) ?? .bundledKorpu
+        theme = Self.cachedTheme(cache, Self.cacheScope(baseURL, host, brand)) ?? .bundledKorpu
         _ = Fonts.register
+    }
+
+    /// Only a leading single `/` is the server's own path, appended to `base` with its path kept
+    /// (`http://h/api` + `/assets/a` → `http://h/api/assets/a`); anything else is taken as is (as on Android).
+    nonisolated static func resolve(_ raw: String, base: URL) -> URL? {
+        raw.hasPrefix("/") && !raw.hasPrefix("//") ? URL(string: base.absoluteString.trimmingSuffix("/") + raw) : URL(string: raw)
     }
 
     func requestInfo() async -> RequestInfo {
@@ -78,19 +88,27 @@ public final class Wishbone {
 
     // MARK: theme (cached per brand, revalidated with ETag)
 
-    private static func cachedTheme(_ cache: DiskCache, _ brand: String) -> Theme? {
-        cache.read(DiskCache.themeKey(brand: brand)).flatMap { try? Theme(json: $0) }
+    /// Cache partition of screen and theme answers: server, host scope, brand.
+    static func cacheScope(_ baseURL: URL, _ host: any WishboneHost, _ brand: String) -> String {
+        "\(baseURL.absoluteString)|\(host.cacheScope)|\(brand)"
+    }
+
+    var cacheScope: String { Self.cacheScope(baseURL, host, brand) }
+
+    private static func cachedTheme(_ cache: DiskCache, _ scope: String) -> Theme? {
+        cache.read(DiskCache.themeKey(scope: scope)).flatMap { try? Theme(json: $0) }
     }
 
     private func loadTheme() {
         // No usable cache for this brand → bundled korpu until the server answers, and no ETag
         // (a 304 would leave us without the brand's theme).
-        let cached = Self.cachedTheme(cache, brand)
+        let scope = cacheScope
+        let cached = Self.cachedTheme(cache, scope)
         theme = cached ?? .bundledKorpu
         themeTask?.cancel()
         themeTask = Task { [weak self] in
             guard let self else { return }
-            let key = DiskCache.themeKey(brand: brand)
+            let key = DiskCache.themeKey(scope: scope)
             let etag = cached == nil ? nil : cache.read(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
             let req = API.theme(await requestInfo(), etag: etag)
             do {

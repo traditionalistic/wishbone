@@ -10,7 +10,8 @@ if [ ! -f backend/go.mod ]; then
 	exit 1
 fi
 
-if [ -f admin/package.json ] && [ ! -d admin/dist ]; then
+# always rebuild: a stale admin/dist would serve an old editor
+if [ -f admin/package.json ]; then
 	(cd admin && npm run build)
 fi
 

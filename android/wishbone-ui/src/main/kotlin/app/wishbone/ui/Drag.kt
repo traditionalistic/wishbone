@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
  * `drag` (spec §4.3): the translation follows the finger along `axis` (clamped to `bounds`) and lives in the
  * instance's `drag.<id>.x|y` cells, which the transform layer adds to offsetX/Y. On release `dragEnd` fires
  * at once with the release translation and velocity (dp/s), then the node springs (`@motion.interactive`)
- * to the nearest `snap` point (or 0).
+ * to the nearest `snap` point (or 0). A cancelled gesture only springs back, without `dragEnd`.
  */
 @Composable
 internal fun Modifier.dragGesture(node: Node, ctx: RenderContext): Modifier {
@@ -57,13 +57,14 @@ internal fun Modifier.dragGesture(node: Node, ctx: RenderContext): Modifier {
             if (spec.axis != "y") x.doubleValue = spec.clamp((total.x / density).toDouble())
             if (spec.axis != "x") y.doubleValue = spec.clamp((total.y / density).toDouble())
         }
-        val onEnd = {
+        // a cancelled gesture (no real release) just settles, without dragEnd — as on iOS
+        fun release(cancelled: Boolean) {
             val v = tracker.calculateVelocity()
             val rx = x.doubleValue
             val ry = y.doubleValue
             val vx = (v.x / density).toDouble()
             val vy = (v.y / density).toDouble()
-            node.on["dragEnd"]?.let { current.fire(it, Value.rec("x" to Value.Num(rx), "y" to Value.Num(ry), "vx" to Value.Num(vx), "vy" to Value.Num(vy))) }
+            if (!cancelled) node.on["dragEnd"]?.let { current.fire(it, Value.rec("x" to Value.Num(rx), "y" to Value.Num(ry), "vx" to Value.Num(vx), "vy" to Value.Num(vy))) }
             settle = scope.launch {
                 val motion = current.store.theme.motions["interactive"] ?: MotionSpec.INTERACTIVE_FALLBACK
                 suspend fun settleAxis(cell: MutableDoubleState, from: Double, velocity: Double) =
@@ -72,10 +73,12 @@ internal fun Modifier.dragGesture(node: Node, ctx: RenderContext): Modifier {
                 if (spec.axis != "x") launch { settleAxis(y, ry, vy) }
             }
         }
+        val onEnd = { release(cancelled = false) }
+        val onCancel = { release(cancelled = true) }
         when (spec.axis) {
-            "x" -> detectHorizontalDragGestures(onStart, onEnd, onEnd) { change, dx -> move(change, dx, 0f) }
-            "y" -> detectVerticalDragGestures(onStart, onEnd, onEnd) { change, dy -> move(change, 0f, dy) }
-            else -> detectDragGestures(onStart, onEnd, onEnd) { change, d -> move(change, d.x, d.y) }
+            "x" -> detectHorizontalDragGestures(onStart, onEnd, onCancel) { change, dx -> move(change, dx, 0f) }
+            "y" -> detectVerticalDragGestures(onStart, onEnd, onCancel) { change, dy -> move(change, 0f, dy) }
+            else -> detectDragGestures(onStart, onEnd, onCancel) { change, d -> move(change, d.x, d.y) }
         }
     }
 }

@@ -11,11 +11,14 @@ import Testing
 
     @Test func bundledFontsAreExactCopiesOfTheContract() throws {
         let dir = repoRoot.appendingPathComponent("contract/assets/fonts")
-        let contract = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { !$0.hasPrefix(".") }.sorted()
+        let contract = try FileManager.default.contentsOfDirectory(atPath: dir.path)
+            .filter { ["ttf", "otf"].contains(($0 as NSString).pathExtension.lowercased()) }.sorted()
         #expect(Fonts.bundledURLs.map(\.lastPathComponent).sorted() == contract)
         for url in Fonts.bundledURLs {
             #expect(try Data(contentsOf: url) == Data(contentsOf: dir.appendingPathComponent(url.lastPathComponent)))
         }
+        let license = try #require(Fonts.bundledURLs.first).deletingLastPathComponent().appendingPathComponent("OFL.txt")
+        #expect(try Data(contentsOf: license) == Data(contentsOf: dir.appendingPathComponent("OFL.txt")))
     }
 
     @Test func hexColors() {

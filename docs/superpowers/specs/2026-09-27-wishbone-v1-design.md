@@ -96,7 +96,7 @@ wishbone/
 - `param name: Type = default` → подставляется в выражения инстанса (внутри шаблона — обычное имя).
 - `event tap` + `emit tap` в операторах шаблона → на месте `emit` инлайнятся операторы из `on.tap` инстанса. Событие может нести payload: `event change(value: string)` + `emit change(expr)` → в обработчике инстанса `event.value` (payload — запись из объявленных полей; при инлайне выражение payload привязывается к гигиенично переименованной локальной).
 - Узлы с литеральным `when: false` (после подстановки параметров) вырезаются компилятором вместе с поддеревом и таймлайн-треками на них.
-- `state` внутри шаблона — **локальный стейт экземпляра**: имена на проводе квалифицированы шаблоном (`state on` в `Toggle` → `["i", "Toggle.on"]`), корень инстанса несёт `inst.state`; клиент хранит его на материализованном экземпляре (включая экземпляры внутри `repeat`) и резолвит имя, поднимаясь по цепочке вложенных экземпляров до объявившего его.
+- `state` внутри шаблона — **локальный стейт экземпляра**: имена на проводе квалифицированы шаблоном (`state on` в `Toggle` → `["i", "Toggle.on"]`), корень инстанса несёт `inst.state`; клиент хранит его на материализованном экземпляре (включая экземпляры внутри `repeat`) и резолвит имя, поднимаясь по цепочке вложенных экземпляров до объявившего его. `inst.state` — объект без порядка, поэтому инициализатор `state` шаблона не может читать стейт экземпляра (компилятор это отвергает).
 - Локальные имена шаблона (repeat-переменные, параметры лямбд и обработчиков, `let`) при раскрытии переименовываются (гигиена); `let` шаблона подставляется в места использования, `fn` поднимаются в документ как `<Шаблон>.<fn>`, обработчики шаблона инлайнятся.
 - `slot` — узел-заглушка `{"type": "slot"}` в дереве шаблона, заменяется `children` инстанса.
 - Общие props (модификаторы §2.1) и общие поля узла (`when`, `repeat`, `animate`, `transition`, `matchId`, `drag`, `a11y`) инстанса переносятся на корень раскрытого шаблона и перекрывают его значения; события инстанса, объявленные шаблоном через `event`, инлайнятся в `emit`, остальные общие события (`appear`, `disappear`, …) вешаются на корень.
@@ -256,7 +256,7 @@ next()                    // вызов другого handler (дожидает
 - **Неявные:** `animate: {"<prop>"|"*": motion}` на узле — изменение значения prop анимируется этим моушеном. iOS — scoped `.animation(_:body:)`; Android — `animate*AsState(spec)`.
 - **Транзакция:** `animate(m) { … }` в обработчике — все визуальные изменения, вызванные присваиваниями внутри, анимируются `m`. iOS — `withAnimation`; Android — стор выставляет «спек текущей транзакции», props берут `anim[prop] ?: txSpec ?: snap`.
 - **Появление/исчезновение:** `transition: {in, out}` для узлов с `when`; виды: `fade`, `slide(edge)`, `scale(from)`, `offset(x, y)`, комбинируются списком. iOS — `.transition(.asymmetric)`; Android — `AnimatedVisibility(enter, exit)`.
-- **Лэйаут и общий элемент:** изменение размеров внутри анимированной транзакции анимируется (iOS — нативно; Android — `animateContentSize` на узлах с `animate` по `width/height/"*"`). `matchId` — общий элемент между ветками `when` одного экрана: iOS `matchedGeometryEffect`, Android `SharedTransitionLayout` + `sharedBounds`.
+- **Лэйаут и общий элемент:** изменение размеров внутри анимированной транзакции анимируется (iOS — нативно; Android — значения `width`/`height` под `animate` или транзакцией). **Ограничение V1 (Android):** `animateContentSize` в V1 нет — ресайз без `animate` (размер меняется из-за содержимого, а не значения `width`/`height`) происходит скачком; на iOS он анимируется внутри транзакции. `matchId` — общий элемент между ветками `when` одного экрана: iOS `matchedGeometryEffect`, Android `SharedTransitionLayout` + `sharedBounds`.
 - **Экраны:** `navigate(…, "push"|"fade")`, `present` — модальный шит. SDK владеет своим стеком навигации.
 
 ### 4.2 Таймлайны
@@ -291,11 +291,11 @@ Go-модуль `backend/`, бинарь `cmd/server`, net/http (маршрут�
 Заголовки запроса: `X-Wishbone-Runtime` (semver), `X-Wishbone-Platform`, `X-Wishbone-Brand`, `Accept-Language`, `Authorization` (прокидывается в операции).
 
 - `GET /v1/screens/{id}?params=<json>` (+`If-None-Match`) → `{ "etag", "document" | null (не изменился), "data": { name: {ok, value?, error?} } }`; ошибки — `{error: {code, message, retryable}}` с HTTP-статусом по `errors.json` (`SCREEN_NOT_FOUND` 404, `UNSUPPORTED_RUNTIME` 409, `DATA_REQUIRED_FAILED` 503).
-- `POST /v1/data` `{screen, revision, sources: [{name, args}]}` → `{name: {ok, value?, error?}}` (для `refresh`).
+- `POST /v1/data` `{"screen": "id", "revision": 4, "params": {…}, "sources": ["me", "offers"]}` → `{name: {ok, value?, error?}}` (для `refresh`); аргументы источников сервер берёт из ревизии с подстановкой `params` (`contract/api.md`).
 - `POST /v1/call` `{screen, revision, op, args, idempotencyKey}` → `{ok, value?, error?, fieldErrors?}`; операция должна быть использована в ревизии (`OPERATION_NOT_BOUND`), write без ключа — `IDEMPOTENCY_REQUIRED`, повтор с тем же ключом отдаёт сохранённый ответ.
 - `GET /v1/theme?brand=` (+`If-None-Match`) → тема (§6.4).
 - `GET /v1/preview/sessions` → активные сессии; `GET /v1/preview/ws?session=` — WebSocket устройства.
-- `GET /assets/*` — статика шоукейса (lottie/rive/картинки) из `contract/assets/`. URL, начинающиеся с `/`, клиенты резолвят относительно базового адреса сервера.
+- `GET /assets/*` — статика шоукейса (lottie/rive/картинки) из `contract/assets/`. URL, начинающиеся с одиночного `/` (не `//`), клиенты дописывают к базовому адресу сервера, сохраняя его путь; остальные берутся как есть.
 
 ### 5.3 Admin API
 `/admin/api/*`, авторизация — пароль из `WISHBONE_ADMIN_PASSWORD` (Bearer). Ресурсы: `GET/POST /screens`, `GET/PUT /screens/{id}` (черновик), `POST /screens/{id}/publish`, `GET /screens/{id}/revisions`, `POST /screens/{id}/rollback/{rev}`, `POST /compile` (диагностика без сохранения), `GET /catalog` (примитивы, stdlib, шаблоны с сигнатурами, токены, иконки, операции), `POST /preview` (новая сессия → код), `POST /preview/{code}/document` (компиляция + рассылка), `POST /preview/{code}/play` (запуск таймлайна на устройствах), `GET /preview/{code}/ws` (устройства и их логи).
@@ -306,7 +306,7 @@ Go-модуль `backend/`, бинарь `cmd/server`, net/http (маршрут�
 ## 6. SDK
 
 ### 6.1 Состав
-**iOS** (`ios/Package.swift`, iOS 18, Swift 6): `WishboneCore` (AST, интерпретатор, стор, сэмплер таймлайнов, плюрали/форматы, сетевой клиент, кэш) · `WishboneUI` (SwiftUI-рендерер, тема, навигация, превью) · `WishboneLottie` · `WishboneRive`. Playground — Tuist-проект `ios/Playground`.
+**iOS** (`ios/Package.swift`, iOS 18, Swift 6): `WishboneCore` (AST, интерпретатор, сэмплер таймлайнов, плюрали/форматы) · `WishboneUI` (стор, сетевой клиент, кэш, SwiftUI-рендерер, тема, навигация, превью) · `WishboneLottie` · `WishboneRive`. Playground — Tuist-проект `ios/Playground`. Стор, клиент и кэш — в `WishboneUI` (на Android — в `:wishbone-ui`): ядро остаётся чистой логикой без I/O и UI-наблюдения.
 **Android** (`android/`, minSdk 33, Kotlin 2.3, Compose BOM как в most): `:wishbone-core` (чистый Kotlin/JVM: AST, интерпретатор, сэмплер, плюрали, форматы) · `:wishbone-ui` (стор на snapshot-state, клиент на OkHttp, рендерер, тема, навигация, превью) · `:wishbone-lottie` · `:wishbone-rive` · `:playground`.
 
 ### 6.2 Реактивность
@@ -323,6 +323,7 @@ protocol WishboneHost {
   func track(event: String, params: [String: Any])
   func action(name: String, args: [String: Any]) async
   func nativeView(name: String, props: [String: Any]) -> AnyView?
+  var cacheScope: String { get }             // по умолчанию ""; вместе с адресом сервера и брендом — ключ кэша (напр. id аккаунта)
 }
 ```
 Android — зеркально (`WishboneHost` interface, `@Composable fun WishboneScreen(...)`). Кэш — файловый (последний удачный ответ экрана и темы), политика stale-while-revalidate.

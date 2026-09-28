@@ -30,7 +30,7 @@ Backend-Driven UI: экраны собираются на бэкенде дек�
    ```sh
    cd backend && go run ./cmd/server
    ```
-   Флаги: `-addr` (по умолчанию `:8080`, или `$PORT`), `-contract` (по умолчанию `../contract`), `-admin` (по умолчанию `../admin/dist`).
+   Флаги: `-addr` (по умолчанию `localhost:8080`, или `localhost:$PORT` — сервер слушает только loopback; для реального устройства в сети — `-addr :8080`), `-contract` (по умолчанию `../contract`), `-admin` (по умолчанию `../admin/dist`), `-preview` (по умолчанию `true`; `-preview=false` выключает все эндпоинты превью — публичные `/v1/preview/*` и admin `/admin/api/preview*` отвечают 404 `NOT_FOUND`).
    Переменные окружения: `DATABASE_URL` (по умолчанию `postgres:///wishbone?sslmode=disable`), `WISHBONE_ADMIN_PASSWORD` (по умолчанию `wishbone` — сервер это логирует как warning, для не-локального запуска задайте своё значение).
 4. **Админка** — http://localhost:8080/admin/, пароль из `WISHBONE_ADMIN_PASSWORD` (Bearer).
 5. **iOS Playground**:
@@ -50,7 +50,7 @@ Backend-Driven UI: экраны собираются на бэкенде дек�
 
 **Тесты по частям:**
 ```sh
-cd backend && go test ./...      # часть тестов store/api пропускается сама, если Postgres недоступен
+cd backend && go test ./...      # тесты store/api пропускаются, если Postgres недоступен; WISHBONE_REQUIRE_DB=1 делает это падением
 cd ios && swift test
 cd android && ./gradlew :wishbone-core:test :wishbone-ui:testDebugUnitTest
 cd admin && npm test
@@ -68,6 +68,16 @@ cd backend && go run ./cmd/wbc conformance -contract ../contract
 - iOS: `ios/Sources/WishboneUI/Resources/korpu.json` (+ `Resources/Fonts/*`)
 - Android: `android/wishbone-ui/src/main/assets/wishbone/korpu.json` (+ `res/font/wb_*.ttf|otf`)
 
-Тесты (`ThemeTests` на iOS, `ThemeTest`/`IconsTest` на Android) сверяют эти копии побайтово с `contract/` и падают, если копию забыли обновить.
+Что проверяют тесты:
+- iOS `ThemeTests`: `Resources/korpu.json` побайтово равен `contract/tokens/korpu.json`; набор `*.ttf|*.otf` в `Resources/Fonts/` совпадает с `contract/assets/fonts/` по именам и побайтово; `Resources/Fonts/OFL.txt` побайтово равен контрактному.
+- Android `ThemeTest`: `assets/wishbone/korpu.json` равен контрактному **как JSON** (не побайтово); `assets/wishbone/OFL.txt` совпадает с контрактным. Шрифты `res/font/wb_*` (переименованы под правила ресурсов Android) **тестом не сверяются** — их копируют вручную.
+- Android `IconsTest`: таблица иконок SDK совпадает с `contract/icons.json` и каждая ссылается на существующий drawable.
+
+Шрифты зашиты в SDK и сервером не раздаются (`GET /assets/fonts/*` → 404). Лицензия Manrope и Montserrat — SIL OFL 1.1 (`contract/assets/fonts/OFL.txt`, копии рядом со шрифтами в обоих SDK); права на распространение GiorgioSansLCG (коммерческий шрифт) должен подтвердить владелец — см. `contract/assets/README.md`.
+
+**Переименование param шаблона.** Сервер при старте перекомпилирует все опубликованные экраны и **не стартует**, если хоть один перестал компилироваться (`published screens no longer compile: …`). Поэтому param переименовывают через мостовую ревизию шаблона:
+1. Добавить новый param, старый оставить (сделать необязательным — с `default`), шаблон учитывает оба; задеплоить.
+2. Во всех экранах, передающих старый param, заменить его на новый и **опубликовать** (черновики не в счёт — перекомпилируются только опубликованные ревизии).
+3. Следующим деплоем удалить старый param.
 
 **Где живёт дизайн-система.** `contract/tokens/` (цвета/типографика/spacing/radius/motion по брендам) и `contract/templates/*.json` (DS-шаблоны компонентов) — данные, которые сервер раскрывает при компиляции экрана. Правки дизайнеров (новый токен, перекраска, новый шаблон) требуют только редеплоя бэкенда — он перекомпилирует уже опубликованные экраны при старте — и не требуют релиза клиентов.

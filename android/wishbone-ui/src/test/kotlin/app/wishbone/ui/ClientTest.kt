@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okio.Buffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,6 +32,15 @@ class ClientTest {
         assertEquals("kz", h["X-Wishbone-Brand"])
         assertEquals("ru", h["Accept-Language"])
         assertEquals("Bearer t", h["Authorization"])
+    }
+
+    @Test
+    fun assetHeadersCarryHostAuthOnlyToTheServerOrigin() = runBlocking {
+        assertEquals("Bearer t", client.assetHeaders("http://10.0.2.2:8080/assets/a.riv".toHttpUrl())["Authorization"])
+        for (other in listOf("http://cdn.example.com:8080/a.riv", "http://10.0.2.2:9090/a.riv", "https://10.0.2.2:8080/a.riv")) {
+            val h = client.assetHeaders(other.toHttpUrl())
+            assertEquals(setOf("X-Wishbone-Runtime", "X-Wishbone-Platform", "X-Wishbone-Brand"), h.keys, other)
+        }
     }
 
     @Test

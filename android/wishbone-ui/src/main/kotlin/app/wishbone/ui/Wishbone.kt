@@ -26,6 +26,12 @@ interface WishboneHost {
 
     /** Content for a `native` node, or null to render nothing. */
     fun nativeView(name: String, props: Map<String, Any?>): (@Composable () -> Unit)? = null
+
+    /**
+     * Partitions the disk cache (with the server address and brand), e.g. the signed-in account id,
+     * so an account switch never shows another user's cached screens.
+     */
+    val cacheScope: String get() = ""
 }
 
 /**
@@ -42,9 +48,12 @@ class Wishbone(
     val client = Client(baseUrl, brand, host)
     internal val cache = DiskCache(File(context.cacheDir, "wishbone"))
 
+    /** Cache partition of screen and theme answers: server, host scope, brand. */
+    internal val cacheScope: String get() = DiskCache.scope(baseUrl, host.cacheScope, brand)
+
     // ponytail: the cached/bundled theme is read on the calling thread (a few KB, once per instance)
     var theme: Theme by mutableStateOf(
-        cache.read("theme-$brand")?.let { runCatching { Theme.parse(it) }.getOrNull() }
+        cache.read("theme-$cacheScope")?.let { runCatching { Theme.parse(it) }.getOrNull() }
             ?: Theme.parse(context.assets.open("wishbone/korpu.json").bufferedReader().use { it.readText() }),
     )
         private set
@@ -56,13 +65,14 @@ class Wishbone(
     internal suspend fun refreshTheme() {
         if (themeRequested) return
         themeRequested = true
-        val etag = withContext(Dispatchers.IO) { cache.read("theme-etag-$brand") }
+        val scope = cacheScope
+        val etag = withContext(Dispatchers.IO) { cache.read("theme-etag-$scope") }
         val fetched = runCatching { client.theme(etag) }.onFailure { log("warn", "theme: ${it.message}") }.getOrNull() ?: return
         val parsed = runCatching { Theme.parse(fetched.body) }.getOrNull() ?: return
         theme = parsed
         withContext(Dispatchers.IO) {
-            cache.write("theme-$brand", fetched.body)
-            fetched.etag?.let { cache.write("theme-etag-$brand", it) }
+            cache.write("theme-$scope", fetched.body)
+            fetched.etag?.let { cache.write("theme-etag-$scope", it) }
         }
     }
 

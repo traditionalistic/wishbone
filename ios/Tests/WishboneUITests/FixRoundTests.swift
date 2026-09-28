@@ -34,6 +34,25 @@ import Testing
         #expect(host.opened.map(\.absoluteString) == ["http://localhost:8080/assets/a.png", "https://ok.example"])
     }
 
+    @Test func relativeURLsKeepTheBasePath() {
+        let base = URL(string: "http://h:8080/api/")!
+        #expect(Wishbone.resolve("/assets/a.png", base: base)?.absoluteString == "http://h:8080/api/assets/a.png")
+        #expect(Wishbone.resolve("//cdn.example/a.png", base: base)?.absoluteString == "//cdn.example/a.png")
+        #expect(Wishbone.resolve("https://x.example/a", base: base)?.absoluteString == "https://x.example/a")
+        #expect(Wishbone.resolve("a.png", base: base)?.absoluteString == "a.png")
+    }
+
+    @Test func dragReaderUsesTheNearestRepeatPathWithACell() {
+        let store = Store(document: doc, params: [:], data: [:], wishbone: testWishbone())
+        store.driver("drag:card.a:x").value = .number(12)
+        var ctx = RenderContext(store: store)
+        ctx.idSuffix = ".a.inner"                 // a reader nested deeper than the dragged instance
+        #expect(ctx.driver("drag", "card", "x") == 12)
+        ctx.idSuffix = ".b"                       // another instance, not dragged yet
+        #expect(ctx.driver("drag", "card", "x") == 0)
+        #expect(store.existingDriver("drag:card.b:x") == nil) // reading creates no cells
+    }
+
     @Test func evalErrorsAreLoggedOncePerNodeAndMessage() {
         let wb = testWishbone()
         var logs: [String] = []
@@ -51,8 +70,9 @@ import Testing
         let cache = DiskCache(dir: tempDir())
         var kz = try! JSONSerialization.jsonObject(with: contractFile("tokens/kz.json")) as! [String: Any]
         kz["version"] = "v1"
-        cache.write(DiskCache.themeKey(brand: "kz"), try! JSONSerialization.data(withJSONObject: kz))
-        let wb = Wishbone(baseURL: URL(string: "http://localhost:1")!, brand: "korpu", host: DefaultHost(), cache: cache)
+        let base = URL(string: "http://localhost:1")!
+        cache.write(DiskCache.themeKey(scope: Wishbone.cacheScope(base, DefaultHost(), "kz")), try! JSONSerialization.data(withJSONObject: kz))
+        let wb = Wishbone(baseURL: base, brand: "korpu", host: DefaultHost(), cache: cache)
         wb.brand = "kz"
         #expect(wb.theme.brand == "kz")
         wb.brand = "unknown"

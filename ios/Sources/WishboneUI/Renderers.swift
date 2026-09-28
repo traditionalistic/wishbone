@@ -24,10 +24,10 @@ public struct WishboneNodeContext {
         if case let .string(s)? = props[key] { s } else { nil }
     }
 
-    /// Resolves a (possibly relative) `url` prop against the server.
+    /// Resolves a (possibly server-relative) `url` prop against the server.
     public func url(_ key: String = "url") -> URL? {
         guard case let .string(s)? = props[key] else { return nil }
-        return URL(string: s, relativeTo: baseURL)?.absoluteURL
+        return Wishbone.resolve(s, base: baseURL)
     }
 }
 

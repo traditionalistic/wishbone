@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonObject
  * `If-None-Match`, swap in the fresh document. The cache is written only after a document decoded
  * (a bad server document never replaces the last good one); a `document: null` answer refreshes data.
  */
-internal class ScreenLoader(private val cache: DiskCache, private val id: String, private val params: Map<String, Value>, private val brand: String) {
+internal class ScreenLoader(private val cache: DiskCache, private val id: String, private val params: Map<String, Value>, private val scope: String) {
     /**
      * [show] renders a document and returns false when it doesn't decode; [hasContent] tells whether
      * something is on screen. Returns false when nothing can be shown (→ fallback view).
@@ -23,7 +23,7 @@ internal class ScreenLoader(private val cache: DiskCache, private val id: String
         refreshData: (JsonObject) -> Unit,
         log: (String) -> Unit,
     ): Boolean {
-        val cached = withContext(Dispatchers.IO) { cache.readScreen(id, params, brand) }
+        val cached = withContext(Dispatchers.IO) { cache.readScreen(id, params, scope) }
         if (cached != null && !hasContent()) show(cached.document, cached.data, cached.revision)
         val r = try {
             fetch(cached?.etag?.takeIf { hasContent() })
@@ -39,7 +39,7 @@ internal class ScreenLoader(private val cache: DiskCache, private val id: String
             cached != null && hasContent() -> CachedScreen(cached.etag, cached.revision, cached.document, r.data).also { refreshData(r.data) }
             else -> null
         }
-        if (stored != null) withContext(Dispatchers.IO) { cache.writeScreen(id, params, brand, stored) }
+        if (stored != null) withContext(Dispatchers.IO) { cache.writeScreen(id, params, scope, stored) }
         return hasContent()
     }
 }

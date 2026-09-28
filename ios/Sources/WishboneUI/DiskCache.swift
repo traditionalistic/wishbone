@@ -24,10 +24,10 @@ struct DiskCache: Sendable {
         return dir.appendingPathComponent(digest + ".json")
     }
 
-    /// One entry per brand × screen × params.
-    static func screenKey(brand: String, id: String, params: [String: Value]) -> String {
-        "screen|\(brand)|\(id)|\(API.jsonString(.record(params)))"
+    /// One entry per cache scope (server × host scope × brand, `Wishbone.cacheScope`) × screen × params.
+    static func screenKey(scope: String, id: String, params: [String: Value]) -> String {
+        "screen|\(scope)|\(id)|\(API.jsonString(.record(params)))"
     }
 
-    static func themeKey(brand: String) -> String { "theme|\(brand)" }
+    static func themeKey(scope: String) -> String { "theme|\(scope)" }
 }

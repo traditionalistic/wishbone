@@ -38,10 +38,17 @@ struct RenderContext: Scope {
         store.wishbone.env.value(name, clock: store.wishbone.clock, brand: store.wishbone.brand, geometry: store.geometry)
     }
     func token(_ group: String, _ name: String) -> Value { store.token(group, name) }
-    /// Drag state is per materialized instance (id + repeat path); scrolls are looked up by id.
+    /// Drag cells are per materialized instance: the nearest `id + repeat path` prefix that has one
+    /// (as on Android); scrolls are looked up by id.
     func driver(_ kind: String, _ id: String, _ axis: String) -> Double {
-        let key = kind == "drag" ? "drag:\(id)\(idSuffix):\(axis)" : "\(kind):\(id):\(axis)"
-        if case let .number(n) = store.driver(key).value { return n }
+        var cell = kind == "drag" ? nil : store.driver("\(kind):\(id):\(axis)")
+        var path = Substring(idSuffix)
+        while kind == "drag", cell == nil {
+            cell = store.existingDriver("drag:\(id)\(path):\(axis)")
+            if path.isEmpty { break }
+            path = path[..<(path.lastIndex(of: ".") ?? path.startIndex)]
+        }
+        if case let .number(n)? = cell?.value { return n }
         return 0
     }
     func selfPressed() -> Bool { pressed }
@@ -108,7 +115,7 @@ extension Store {
         case "open":
             // `/…` is the Wishbone server's own path; otherwise https or a host-allowed scheme.
             let raw = str(0) ?? "", local = raw.hasPrefix("/") && !raw.hasPrefix("//")
-            guard let url = URL(string: raw, relativeTo: wishbone.baseURL)?.absoluteURL, let scheme = url.scheme?.lowercased(),
+            guard let url = Wishbone.resolve(raw, base: wishbone.baseURL), let scheme = url.scheme?.lowercased(),
                   local || scheme == "https" || host.allowedSchemes.contains(scheme)
             else { return log("open: ignored \(raw)", level: "warn") }
             host.open(url: url)

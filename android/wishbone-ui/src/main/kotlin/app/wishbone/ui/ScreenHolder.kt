@@ -38,7 +38,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     var env: Map<String, Value> = emptyMap()
     var view: View? = null
     private val effects = ScreenEffects(this)
-    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.brand)
+    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope)
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
 
@@ -96,7 +96,7 @@ private class ScreenEffects(private val holder: ScreenHolder) : EffectSink {
             "open" -> str(0)?.let { raw ->
                 val uri = Uri.parse(wishbone.resolve(raw))
                 val scheme = uri.scheme?.lowercase()
-                val ownServer = raw.startsWith("/") // server-relative (dev servers may be plain http)
+                val ownServer = raw.startsWith("/") && !raw.startsWith("//") // server-relative (dev servers may be plain http)
                 if (scheme == "https" || ownServer || scheme in wishbone.host.allowedSchemes) wishbone.host.open(uri)
             }
             "haptic" -> holder.view?.performHapticFeedback(haptic(str(0)))

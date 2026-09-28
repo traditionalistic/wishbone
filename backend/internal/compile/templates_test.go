@@ -146,6 +146,7 @@ func TestTemplateDefinitionErrors(t *testing.T) {
 		{"id mismatch", `{"id": "Other", "title": "", "script": "", "root": {"type": "spacer", "id": "root"}}`, "file name"},
 		{"data", `{"id": "T", "title": "", "script": "data me = demo.profile()", "root": {"type": "spacer", "id": "root"}}`, "data"},
 		{"handler recursion", `{"id": "T", "title": "", "script": "handler a() { a() }", "root": {"type": "spacer", "id": "root"}}`, "recurs"},
+		{"instance state read in a state initializer", `{"id": "T", "title": "", "script": "state a = 1\nstate b = a + 1", "root": {"type": "spacer", "id": "root"}}`, "cannot read state 'a'"},
 		{"required param default ok", `{"id": "T", "title": "", "script": "param p: number\nparam q: string = \"\"", "root": {"type": "spacer", "id": "root"}}`, ""},
 	}
 	for _, x := range cases {

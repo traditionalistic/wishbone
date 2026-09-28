@@ -44,7 +44,8 @@ final class EnvState {
     var dark = false
     var reduceMotion = false
 
-    let locale = (Locale.preferredLanguages.first ?? "en").lowercased()
+    /// Language code only, lowercase ("ru-RU" → "ru"), as on Android; also the `Accept-Language` header.
+    let locale = Locale(identifier: Locale.preferredLanguages.first ?? "en").language.languageCode?.identifier.lowercased() ?? "en"
 
     func value(_ name: String, clock: Clock, brand: String, geometry g: ScreenGeometry) -> Value {
         switch name {

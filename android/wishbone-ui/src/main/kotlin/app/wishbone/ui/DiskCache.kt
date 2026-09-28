@@ -29,21 +29,25 @@ class DiskCache(private val dir: File) {
         }
     }
 
-    fun readScreen(id: String, params: Map<String, Value>, brand: String): CachedScreen? = runCatching {
-        val o = Json.parseToJsonElement(read(screenKey(id, params, brand)) ?: return null).jsonObject
+    /** [scope] = the Wishbone's cache partition ([DiskCache.scope]). */
+    fun readScreen(id: String, params: Map<String, Value>, scope: String): CachedScreen? = runCatching {
+        val o = Json.parseToJsonElement(read(screenKey(id, params, scope)) ?: return null).jsonObject
         CachedScreen(o["etag"]!!.jsonPrimitive.content, o["revision"]!!.jsonPrimitive.int, o["document"]!!.jsonObject, o["data"]!!.jsonObject)
     }.getOrNull()
 
-    fun writeScreen(id: String, params: Map<String, Value>, brand: String, s: CachedScreen) {
+    fun writeScreen(id: String, params: Map<String, Value>, scope: String, s: CachedScreen) {
         val o = JsonObject(mapOf("etag" to JsonPrimitive(s.etag), "revision" to JsonPrimitive(s.revision), "document" to s.document, "data" to s.data))
-        write(screenKey(id, params, brand), o.toString())
+        write(screenKey(id, params, scope), o.toString())
     }
 
     private fun file(key: String) = File(dir, sha256(key).take(32) + ".json")
 
     companion object {
-        fun screenKey(id: String, params: Map<String, Value>, brand: String): String =
-            "screen\n$brand\n$id\n" + canonical(Value.Rec(params).toJson())
+        /** Server × host scope (e.g. the account) × brand: one cache partition. */
+        fun scope(baseUrl: String, hostScope: String, brand: String) = "$baseUrl\n$hostScope\n$brand"
+
+        fun screenKey(id: String, params: Map<String, Value>, scope: String): String =
+            "screen\n$scope\n$id\n" + canonical(Value.Rec(params).toJson())
 
         private fun canonical(e: JsonElement): JsonElement = when (e) {
             is JsonObject -> JsonObject(e.toSortedMap().mapValues { canonical(it.value) })

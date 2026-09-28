@@ -26,7 +26,16 @@ class DiskCacheTest {
         assertEquals(CachedScreen("\"4-abc\"", 4, doc, data), cache.readScreen("s", a, "korpu"))
         assertNull(cache.readScreen("s", b, "korpu"))
         assertNull(cache.readScreen("other", a, "korpu"))
-        assertNull(cache.readScreen("s", a, "kz")) // brand is part of the key
+        assertNull(cache.readScreen("s", a, "kz")) // the scope is part of the key
+    }
+
+    @Test
+    fun scopeSeparatesServersAccountsAndBrands() {
+        val scopes = listOf(
+            DiskCache.scope("http://a", "", "korpu"), DiskCache.scope("http://b", "", "korpu"),
+            DiskCache.scope("http://a", "", "kz"), DiskCache.scope("http://a", "user-2", "korpu"),
+        )
+        assertEquals(4, scopes.map { DiskCache.screenKey("s", emptyMap(), it) }.toSet().size)
     }
 
     @Test

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 var testURL = "postgres:///wishbone_store_test?sslmode=disable"
@@ -17,6 +18,10 @@ func TestMain(m *testing.M) {
 	}
 	ctx := context.Background()
 	if err := DropDatabase(ctx, testURL); err != nil {
+		if os.Getenv("WISHBONE_REQUIRE_DB") == "1" {
+			fmt.Println("FAIL store tests: postgres unavailable and WISHBONE_REQUIRE_DB=1:", err)
+			os.Exit(1)
+		}
 		fmt.Println("SKIP store tests: postgres unavailable:", err)
 		os.Exit(0)
 	}
@@ -222,5 +227,30 @@ func TestIdempotency(t *testing.T) {
 	}
 	if done, err := s.Reserve(ctx, "k1", "demo.subscribe", h1); err != nil || done == nil {
 		t.Fatalf("done rows survive ClearInFlight: %s %v", done, err)
+	}
+}
+
+func TestPruneIdempotency(t *testing.T) {
+	s := fresh(t)
+	for _, k := range []string{"old", "new"} {
+		if _, err := s.Reserve(ctx, k, "demo.subscribe", []byte{1}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.db.Exec(ctx, `UPDATE idempotency SET created_at = now() - interval '25 hours' WHERE key = 'old'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PruneIdempotency(ctx, 24*time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	rows, _ := s.db.Query(ctx, `SELECT key FROM idempotency`)
+	for rows.Next() {
+		var k string
+		_ = rows.Scan(&k)
+		keys = append(keys, k)
+	}
+	if rows.Err() != nil || len(keys) != 1 || keys[0] != "new" {
+		t.Fatalf("after prune: %v %v", keys, rows.Err())
 	}
 }

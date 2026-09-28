@@ -157,7 +157,7 @@ struct ImageNode: View {
     var body: some View {
         let wb = ctx.store.wishbone
         let placeholder = wb.theme.color(props["placeholder"], dark: wb.env.dark)?.color ?? .clear
-        let url = props.string("url").flatMap { URL(string: $0, relativeTo: wb.baseURL)?.absoluteURL }
+        let url = props.string("url").flatMap { Wishbone.resolve($0, base: wb.baseURL) }
         let fit = props.string("fit") == "fit"
         AsyncImage(url: url) { phase in
             if let image = phase.image {

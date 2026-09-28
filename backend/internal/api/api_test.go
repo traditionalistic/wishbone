@@ -43,6 +43,10 @@ func TestMain(m *testing.M) {
 	}
 	ctx := context.Background()
 	if err := store.DropDatabase(ctx, testURL); err != nil {
+		if os.Getenv("WISHBONE_REQUIRE_DB") == "1" {
+			fmt.Println("FAIL api tests: postgres unavailable and WISHBONE_REQUIRE_DB=1:", err)
+			os.Exit(1)
+		}
 		fmt.Println("SKIP api tests: postgres unavailable:", err)
 		os.Exit(0)
 	}
@@ -79,7 +83,7 @@ func makeContract(chip string) (string, error) {
 			return "", err
 		}
 	}
-	for rel, s := range map[string]string{"templates/Chip.json": chip, "screens/t.seed.json": seedScreen, "assets/hello.txt": "hello asset", "assets/sub/x.txt": "x"} {
+	for rel, s := range map[string]string{"templates/Chip.json": chip, "screens/t.seed.json": seedScreen, "assets/hello.txt": "hello asset", "assets/sub/x.txt": "x", "assets/fonts/F-Regular.ttf": "font"} {
 		if err := write(dir, rel, s); err != nil {
 			return "", err
 		}

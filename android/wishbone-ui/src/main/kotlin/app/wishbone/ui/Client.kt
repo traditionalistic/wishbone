@@ -15,6 +15,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers.Companion.toHeaders
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -80,12 +81,17 @@ class Client(
     private val base = baseUrl.trimEnd('/').toHttpUrl()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
 
-    internal suspend fun headers(): Map<String, String> = linkedMapOf(
+    private fun sdkHeaders(): Map<String, String> = linkedMapOf(
         "X-Wishbone-Runtime" to WISHBONE_RUNTIME,
         "X-Wishbone-Platform" to "android",
         "X-Wishbone-Brand" to brand,
-        "Accept-Language" to locale(),
-    ) + host.authHeaders()
+    )
+
+    internal suspend fun headers(): Map<String, String> = sdkHeaders() + ("Accept-Language" to locale()) + host.authHeaders()
+
+    /** Host headers (auth) go only to the server's own origin; any other host gets just the X-Wishbone-* ones. */
+    internal suspend fun assetHeaders(url: HttpUrl): Map<String, String> =
+        if (url.scheme == base.scheme && url.host == base.host && url.port == base.port) headers() else sdkHeaders()
 
     internal fun screenRequest(id: String, params: Map<String, Value>, etag: String?, headers: Map<String, String>): Request {
         val url = base.newBuilder().addPathSegments("v1/screens").addPathSegment(id)
@@ -155,9 +161,10 @@ class Client(
         return parseSessions(body)
     }
 
-    /** GET an asset (e.g. a Rive file) with the SDK/host headers; OkHttp timeouts, cancelled with the caller. */
+    /** GET an asset (e.g. a Rive file) with the SDK headers (+ host headers on the server's origin); cancelled with the caller. */
     suspend fun bytes(url: String): ByteArray {
-        val call = http.newCall(Request.Builder().url(url).headers(headers().toHeaders()).build())
+        val u = url.toHttpUrl()
+        val call = http.newCall(Request.Builder().url(u).headers(assetHeaders(u).toHeaders()).build())
         return suspendCancellableCoroutine { cont ->
             cont.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {

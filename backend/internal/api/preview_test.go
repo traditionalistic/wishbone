@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -147,4 +148,26 @@ func TestPreviewUnknownSession(t *testing.T) {
 	if _, resp, err := websocket.Dial(context.Background(), "ws"+strings.TrimPrefix(e.url, "http")+"/admin/api/preview/ZZZZ/ws?token=nope", nil); err == nil || resp.StatusCode != 401 {
 		t.Fatalf("admin ws without the password: %v", err)
 	}
+}
+
+func TestPreviewDisabled(t *testing.T) {
+	e := newEnv(t)
+	e.srv.Hub = nil // what -preview=false passes
+	ts := httptest.NewServer(e.srv.Handler())
+	t.Cleanup(ts.Close)
+	e.url = ts.URL
+	code, _, b := e.do("GET", "/v1/preview/sessions", nil)
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, _, b = e.do("GET", "/v1/preview/ws?session=ZZZZ", nil)
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, b = e.admin("POST", "/preview", map[string]string{"screen": "t.prev"})
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, b = e.admin("POST", "/preview/ZZZZ/document", map[string]any{"source": json.RawMessage(previewSrc)})
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, b = e.admin("POST", "/preview/ZZZZ/play", map[string]string{"timeline": "intro"})
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, b = e.admin("GET", "/preview/ZZZZ/ws", nil)
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, _, b = e.do("POST", "/v1/data", map[string]any{"screen": "t.prev", "revision": 0, "sources": []string{"me"}})
+	wantErr(t, code, b, 409, "REVISION_NOT_FOUND")
 }

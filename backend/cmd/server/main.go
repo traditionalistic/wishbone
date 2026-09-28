@@ -20,25 +20,26 @@ import (
 )
 
 func main() {
-	addr := ":8080"
+	addr := "localhost:8080"
 	if p := os.Getenv("PORT"); p != "" {
-		addr = ":" + p
+		addr = "localhost:" + p
 	}
-	flag.StringVar(&addr, "addr", addr, "listen address")
+	flag.StringVar(&addr, "addr", addr, "listen address (\":8080\" listens on every interface)")
 	contractDir := flag.String("contract", "../contract", "contract directory")
 	adminDir := flag.String("admin", "../admin/dist", "built admin SPA")
+	withPreview := flag.Bool("preview", true, "serve the live-preview endpoints (public and admin)")
 	flag.Parse()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, addr, *contractDir, *adminDir); err != nil {
+	if err := run(ctx, addr, *contractDir, *adminDir, *withPreview); err != nil {
 		slog.Error("server stopped", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, addr, contractDir, adminDir string) error {
+func run(ctx context.Context, addr, contractDir, adminDir string, withPreview bool) error {
 	c, err := compile.LoadContract(contractDir)
 	if err != nil {
 		return err
@@ -63,14 +64,18 @@ func run(ctx context.Context, addr, contractDir, adminDir string) error {
 	if err := st.ClearInFlight(ctx); err != nil {
 		return err
 	}
+	go pruneIdempotency(ctx, st)
 
 	password := os.Getenv("WISHBONE_ADMIN_PASSWORD")
 	if password == "" {
 		password = "wishbone"
 		slog.Warn("WISHBONE_ADMIN_PASSWORD is not set; using the default admin password")
 	}
-	hub := preview.New()
-	go hub.Run(ctx)
+	var hub *preview.Hub // nil: preview endpoints answer NOT_FOUND
+	if withPreview {
+		hub = preview.New()
+		go hub.Run(ctx)
+	}
 	srv, err := api.New(api.Config{Contract: c, ContractDir: contractDir, AdminDir: adminDir, Store: st, Ops: handlers, Hub: hub, Password: password})
 	if err != nil {
 		return err
@@ -90,7 +95,7 @@ func run(ctx context.Context, addr, contractDir, adminDir string) error {
 		defer cancel()
 		stopped <- hs.Shutdown(shutdown)
 	}()
-	slog.Info("listening", "addr", addr, "contract", contractDir, "templates", len(c.Templates))
+	slog.Info("listening", "addr", addr, "contract", contractDir, "templates", len(c.Templates), "preview", withPreview)
 	if err := hs.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
@@ -98,4 +103,20 @@ func run(ctx context.Context, addr, contractDir, adminDir string) error {
 	err = <-stopped
 	slog.Info("stopped", "err", err)
 	return err
+}
+
+// pruneIdempotency drops call records older than 24 h now and then every hour.
+func pruneIdempotency(ctx context.Context, st *store.Store) {
+	tick := time.NewTicker(time.Hour)
+	defer tick.Stop()
+	for {
+		if err := st.PruneIdempotency(ctx, 24*time.Hour); err != nil && ctx.Err() == nil {
+			slog.Warn("prune idempotency", "err", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+	}
 }

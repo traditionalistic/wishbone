@@ -1,6 +1,8 @@
 # Wishbone — BDUI (Backend-Driven UI)
 
-Выдача экранов с сервера декларативным Screen Document: один пейлоад рендерят iOS, Android и omniapp, бэкенд компонует закрытый каталог DS-компонентов. Проект вынесен из Stratoapp 2026-09-25: BDUI кросс-платформенный, а Stratoapp — только iOS-приложение.
+Выдача экранов с сервера декларативным документом: один пейлоад рендерят iOS и Android; бэкенд раскрывает DS-шаблоны поверх примитивов и компилирует DSL. Проект вынесен из Stratoapp 2026-09-25: BDUI кросс-платформенный, а Stratoapp — только iOS-приложение.
+
+> **Актуальная модель — [спека Wishbone V1](superpowers/specs/2026-09-27-wishbone-v1-design.md), её §0 замещает доки ниже.** Утверждения BDUI-доков про закрытый каталог DS-компонентов, omniapp как третьего потребителя и iOS-рендерер как Tuist-модуль Stratoapp — исторические.
 
 ## Репозитории
 
@@ -12,7 +14,7 @@
 | **bdui-contracts** | `~/projects/bdui-contracts` (`main`, скелет 0.1.0); `~/projects/bdui-contracts-wave1` (ветка `wave1/contract`, контракт 0.2.0) | `ssh://git@git.korputeam.ru/shared/bdui-contracts.git` | контракт: JSON Schema, каталог токенов/узлов/иконок, профили, реестр операций, фикстуры, CI-гейт `tools/validate.py` |
 | **Stratoapp** | `~/projects/Stratoapp` (ветка `dev`) | `git@git.korputeam.ru:ios/stratoapp.git` | iOS-потребитель: Tuist-модули, `DesignSystem`/`ThemeKit`, Postbox, Apollo-codegen. Архитектурные правила — `docs/Architecture/*.md`, `CLAUDE.md` |
 | **most** | `~/projects/most` (ветка `develop`) | `ssh://git@git.korputeam.ru/android/most.git` | Android-потребитель: `:core:ui`, `feature/giveaway`, `graphql/`, `MviViewModel` |
-| **omniapp** (VYSOTA) | `~/projects/omniapp` | `git@github.com:TruerTrue/omniapp.git` | третий потребитель (iOS, dark-only DS, бэкенд Go + REST) |
+| **omniapp** (VYSOTA) | `~/projects/omniapp` | `git@github.com:TruerTrue/omniapp.git` | вне V1 (спека §0; исторически — третий потребитель: iOS, dark-only DS, бэкенд Go + REST) |
 | **multiapp** | `~/projects/multiapp` | `git@git.korputeam.ru:ios/multiapp.git` | legacy iOS: исходный раффл `Korpu/Modules/Raffle`, `Korpu/API/GraphQL/Raffle` |
 | **NewBackend** | `~/projects/NewBackend` | группа `newbackend` | исходники текущего бэкенда (63 репо): основной граф, сабграфы, схема |
 
@@ -46,4 +48,4 @@
 
 - Компоненты DS под BDUI уже в коде Stratoapp: `Modules/ThemeKit/Sources/BDUITokenRoles.swift`, `Modules/DesignSystem/Sources/Components+{CountdownLabel,Badge,Stepper}.swift` и др. (P-7).
 - Итог запросов к бэкенду — `Stratoapp/docs/Backend-Requests.md`.
-- iOS-рендерер (волна 2B) по-прежнему встраивается в Stratoapp как Tuist-модуль и подчиняется его правилам (`Stratoapp/CLAUDE.md`).
+- ~~iOS-рендерер (волна 2B) встраивается в Stratoapp как Tuist-модуль~~ — историческое. По спеке V1 (§0) рендерер — самостоятельный SDK в `ios/` (и `android/`), хосты подключают его зависимостью; интеграция в Stratoapp и most — следующая веха (§8.4).
