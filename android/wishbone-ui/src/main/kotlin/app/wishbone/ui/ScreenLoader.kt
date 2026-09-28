@@ -10,8 +10,9 @@ import kotlinx.serialization.json.JsonObject
  * Stale-while-revalidate for one screen (spec §6.3): show the cached response, fetch with
  * `If-None-Match`, swap in the fresh document. The cache is written only after a document decoded
  * (a bad server document never replaces the last good one); a `document: null` answer refreshes data.
+ * A [slot]'s `SCREEN_NOT_FOUND` drops its cache and shows nothing, even over the cached content.
  */
-internal class ScreenLoader(private val cache: DiskCache, private val id: String, private val params: Map<String, Value>, private val scope: String) {
+internal class ScreenLoader(private val cache: DiskCache, private val id: String, private val params: Map<String, Value>, private val scope: String, private val slot: Boolean = false) {
     /**
      * [show] renders a document and returns false when it doesn't decode; [hasContent] tells whether
      * something is on screen. Returns false when nothing can be shown (→ fallback view).
@@ -31,6 +32,11 @@ internal class ScreenLoader(private val cache: DiskCache, private val id: String
             throw e
         } catch (e: Exception) {
             log("screen $id: ${e.message}")
+            if (slot && (e as? WishboneException)?.code == "SCREEN_NOT_FOUND") {
+                // unpublished: a cached banner must not outlive it (spec 2026-09-28 §2.3)
+                withContext(Dispatchers.IO) { cache.remove(DiskCache.screenKey(id, params, scope)) }
+                return false
+            }
             return hasContent()
         }
         val fresh = r.document

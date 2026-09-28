@@ -29,6 +29,11 @@ class DiskCache(private val dir: File) {
         }
     }
 
+    /** Deletes the entry; a missing one is fine. */
+    fun remove(key: String) {
+        runCatching { file(key).delete() }
+    }
+
     /** [scope] = the Wishbone's cache partition ([DiskCache.scope]). */
     fun readScreen(id: String, params: Map<String, Value>, scope: String): CachedScreen? = runCatching {
         val o = Json.parseToJsonElement(read(screenKey(id, params, scope)) ?: return null).jsonObject

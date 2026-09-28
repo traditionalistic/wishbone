@@ -166,23 +166,8 @@ private fun WishboneRoot(
     navigator.forward = onNavigate?.let { { r: WishboneRoute -> nav?.invoke(r) } }
     val holders = remember(navigator) { HashMap<Long, ScreenHolder>() }
     val saveable = rememberSaveableStateHolder() // scroll/pager positions survive a push on top, like NavigationStack
-    val dark = when (wishbone.colorScheme) {
-        "dark" -> true
-        "light" -> false
-        else -> isSystemInDarkTheme()
-    }
-    val env = rememberEnv(wishbone.brand, dark)
-    LaunchedEffect(wishbone) { wishbone.refreshTheme() }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                val t = System.currentTimeMillis()
-                Clock.now.longValue = t
-                delay(1000 - t % 1000)
-            }
-        }
-    }
+    val env = rememberEnv(wishbone)
+    val dark = env["colorScheme"] == Value.Str("dark")
     DisposableEffect(navigator) { onDispose { holders.values.forEach { it.dispose() } } }
 
     fun holder(entry: Entry) = holders.getOrPut(entry.key) {
@@ -274,7 +259,6 @@ private fun navTransition(from: Entry, to: Entry): ContentTransform {
  * The screen lays out inside the safe area (like SwiftUI); the root node's `background` also paints
  * behind the system bars (like a SwiftUI ShapeStyle background). `env.safeTop/safeBottom` report the insets.
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: Theme, safeArea: Boolean) {
     holder.env = env
@@ -284,32 +268,39 @@ private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: 
         LoadState.Failed -> Fallback { holder.load() }
         is LoadState.Ready -> {
             val store = s.store
-            SideEffect {
-                store.env = env
-                store.theme = theme
-            }
-            // Timelines: advance the frame clock only while one is running (restarted by play/stop).
-            LaunchedEffect(store) {
-                store.timelines.firstFrame(withFrameNanos { it })
-                snapshotFlow { store.timelines.version }.collectLatest {
-                    do {
-                        val t = withFrameNanos { it }
-                        store.frameNanos.longValue = t
-                    } while (store.timelines.running(t, store.reduceMotion))
-                }
-            }
             val rootBg = store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }
             val bg = theme.brush(rootBg, store.dark)
             val ignore = (store.doc.root.props["ignoreSafeArea"]?.let { store.root.evalOrNull(it) } as? Value.Str)?.value
-            SharedTransitionLayout(Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)) {
-                CompositionLocalProvider(LocalSharedScope provides this) {
-                    Box(
-                        Modifier.fillMaxSize().then(if (safeArea) Modifier.windowInsetsPadding(safeInsets(ignore)) else Modifier),
-                        contentAlignment = Alignment.Center,
-                    ) { NodeView(store.doc.root, store.root) }
-                }
+            StoreContent(store, env, theme, Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)) {
+                Box(
+                    Modifier.fillMaxSize().then(if (safeArea) Modifier.windowInsetsPadding(safeInsets(ignore)) else Modifier),
+                    contentAlignment = Alignment.Center,
+                ) { NodeView(store.doc.root, store.root) }
             }
         }
+    }
+}
+
+/** A loaded store's wiring (screen and slot): env/theme sync, the timeline frame clock, the shared-transition scope around [content]. */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+internal fun StoreContent(store: Store, env: Map<String, Value>, theme: Theme, modifier: Modifier, content: @Composable () -> Unit) {
+    SideEffect {
+        store.env = env
+        store.theme = theme
+    }
+    // Timelines: advance the frame clock only while one is running (restarted by play/stop).
+    LaunchedEffect(store) {
+        store.timelines.firstFrame(withFrameNanos { it })
+        snapshotFlow { store.timelines.version }.collectLatest {
+            do {
+                val t = withFrameNanos { it }
+                store.frameNanos.longValue = t
+            } while (store.timelines.running(t, store.reduceMotion))
+        }
+    }
+    SharedTransitionLayout(modifier) {
+        CompositionLocalProvider(LocalSharedScope provides this) { content() }
     }
 }
 
@@ -336,8 +327,28 @@ private fun Fallback(onRetry: () -> Unit) {
     }
 }
 
+/**
+ * What every Wishbone root (screen or slot) sets up: theme refresh, light/dark ([Wishbone.colorScheme], else the
+ * system), the shared 1 s clock behind `env.now` (ticks while started), and the env values.
+ */
 @Composable
-private fun rememberEnv(brand: String, dark: Boolean): Map<String, Value> {
+internal fun rememberEnv(wishbone: Wishbone): Map<String, Value> {
+    val dark = when (wishbone.colorScheme) {
+        "dark" -> true
+        "light" -> false
+        else -> isSystemInDarkTheme()
+    }
+    LaunchedEffect(wishbone) { wishbone.refreshTheme() }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                val t = System.currentTimeMillis()
+                Clock.now.longValue = t
+                delay(1000 - t % 1000)
+            }
+        }
+    }
     val density = LocalDensity.current
     val locale = LocalConfiguration.current.locales[0].language.lowercase()
     val window = LocalWindowInfo.current.containerSize
@@ -348,7 +359,7 @@ private fun rememberEnv(brand: String, dark: Boolean): Map<String, Value> {
     return mapOf(
         "platform" to Value.Str("android"),
         "locale" to Value.Str(locale),
-        "brand" to Value.Str(brand),
+        "brand" to Value.Str(wishbone.brand),
         "colorScheme" to Value.Str(if (dark) "dark" else "light"),
         "reduceMotion" to Value.of(reduceMotion),
         "screenWidth" to dp(window.width),

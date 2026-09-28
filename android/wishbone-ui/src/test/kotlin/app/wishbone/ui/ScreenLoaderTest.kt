@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -32,10 +33,10 @@ class ScreenLoaderTest {
     }
 
     private val cache get() = DiskCache(dir)
-    private fun loader() = ScreenLoader(cache, "s", emptyMap(), "korpu")
+    private fun loader(slot: Boolean) = ScreenLoader(cache, "s", emptyMap(), "korpu", slot)
 
-    private fun run(screen: Screen, response: () -> ScreenResponse) = runBlocking {
-        loader().load({ screen.shown.isNotEmpty() }, { etag -> screen.etags += etag; response() }, screen::show, { screen.refreshed = it }, {})
+    private fun run(screen: Screen, slot: Boolean = false, response: () -> ScreenResponse) = runBlocking {
+        loader(slot).load({ screen.shown.isNotEmpty() }, { etag -> screen.etags += etag; response() }, screen::show, { screen.refreshed = it }, {})
     }
 
     @Test
@@ -81,5 +82,30 @@ class ScreenLoaderTest {
         assertFalse(run(Screen()) { throw IOException("offline") })
         assertFalse(run(Screen()) { ScreenResponse("\"1-x\"", 1, bad, data1) })
         assertEquals(null, cache.readScreen("s", emptyMap(), "korpu"))
+    }
+
+    private val notFound = WishboneException("SCREEN_NOT_FOUND", "not found", 404, false)
+
+    @Test
+    fun unpublishedSlotDropsItsCacheAndShowsNothing() {
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"1-a\"", 1, v1, data1))
+        val s = Screen()
+        assertFalse(run(s, slot = true) { throw notFound }) // → Failed: the slot renders nothing
+        assertEquals(listOf(v1), s.shown) // the cached one was on screen until the answer came
+        assertNull(cache.readScreen("s", emptyMap(), "korpu"))
+    }
+
+    @Test
+    fun otherSlotFailuresKeepTheCache() {
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"1-a\"", 1, v1, data1))
+        assertTrue(run(Screen(), slot = true) { throw IOException("offline") })
+        assertEquals(CachedScreen("\"1-a\"", 1, v1, data1), cache.readScreen("s", emptyMap(), "korpu"))
+    }
+
+    @Test
+    fun unpublishedScreenKeepsItsCache() {
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"1-a\"", 1, v1, data1))
+        assertTrue(run(Screen()) { throw notFound })
+        assertEquals(CachedScreen("\"1-a\"", 1, v1, data1), cache.readScreen("s", emptyMap(), "korpu"))
     }
 }

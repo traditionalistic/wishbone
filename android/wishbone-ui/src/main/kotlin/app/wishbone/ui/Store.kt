@@ -114,6 +114,8 @@ class Store(
     internal val scope: CoroutineScope,
     val revision: Int = doc.revision,
     previous: Store? = null,
+    /** Rendered by [WishboneSlot]: the root keeps its own background (a screen paints it behind the system bars). */
+    internal val slot: Boolean = false,
 ) : EffectSink {
     var theme by mutableStateOf(theme)
 

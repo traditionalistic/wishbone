@@ -29,7 +29,7 @@ internal sealed interface LoadState {
  * `If-None-Match` fetch), the [Store] (rebuilt on a new document, keeping state), and the effects
  * sink. Lives as long as the entry is on the stack, so state survives pushes on top of it.
  */
-internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, val entry: Entry) {
+internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, val entry: Entry, private val slot: Boolean = false) {
     /** Main thread + the UI frame clock (transactions and `await play` count frames); a throwing host call is logged, not fatal. */
     val scope = CoroutineScope(
         SupervisorJob() + AndroidUiDispatcher.Main + CoroutineExceptionHandler { _, e -> wishbone.log("error", "screen ${entry.screen}: ${e.message ?: e}") },
@@ -38,7 +38,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     var env: Map<String, Value> = emptyMap()
     var view: View? = null
     private val effects = ScreenEffects(this)
-    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope)
+    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope, slot)
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
 
@@ -69,7 +69,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
             wishbone.log("error", "screen ${entry.screen}: bad document: ${e.message}")
             return false
         }
-        state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store))
+        state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store, slot))
         return true
     }
 

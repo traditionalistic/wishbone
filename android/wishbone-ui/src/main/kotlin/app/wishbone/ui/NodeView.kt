@@ -53,8 +53,8 @@ internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Mo
     val source = if (node.on["tap"] != null || node.on["longPress"] != null) remember { MutableInteractionSource() } else null
     if (source != null) ctx = ctx.copy(pressed = source.collectIsPressedAsState())
     val evaluated = ctx.evalProps(node) ?: return
-    // the screen container already paints the root background (behind the system bars too)
-    val p = animateProps(node, if (node === ctx.store.doc.root) evaluated - "background" else evaluated, ctx)
+    // the screen container already paints the root background (behind the system bars too); a slot's stays inside it
+    val p = animateProps(node, if (node === ctx.store.doc.root && !ctx.store.slot) evaluated - "background" else evaluated, ctx)
     val box = BoxProps.from(p).let {
         when (node.type) {
             "shape", "image", "scroll" -> it.greedy()

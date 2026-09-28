@@ -60,4 +60,13 @@ class DiskCacheTest {
         cache.write("theme-korpu", "{\"x\":1}")
         assertEquals("{\"x\":1}", cache.read("theme-korpu"))
     }
+
+    @Test
+    fun removeDeletesTheEntry() {
+        val cache = DiskCache(dir)
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"4-abc\"", 4, doc, data))
+        cache.remove(DiskCache.screenKey("s", emptyMap(), "korpu"))
+        assertNull(cache.readScreen("s", emptyMap(), "korpu"))
+        cache.remove("absent") // no-op
+    }
 }
