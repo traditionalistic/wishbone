@@ -153,20 +153,29 @@ struct TextNode: View {
 struct ImageNode: View {
     let props: Props
     let ctx: RenderContext
+    /// The picture this view loaded; kept even if the shared cache evicts it.
+    @State private var loaded: (url: URL, image: PlatformImage)?
 
     var body: some View {
         let wb = ctx.store.wishbone
         let placeholder = wb.theme.color(props["placeholder"], dark: wb.env.dark)?.color ?? .clear
         let url = props.string("url").flatMap { Wishbone.resolve($0, base: wb.baseURL) }
         let fit = props.string("fit") == "fit"
-        AsyncImage(url: url) { phase in
-            if let image = phase.image {
-                image.resizable().aspectRatio(contentMode: fit ? .fit : .fill)
+        let image = url.flatMap { loaded?.url == $0 ? loaded?.image : ImageLoader.cached($0) }
+        Group {
+            if let image {
+                Image(platformImage: image).resizable().aspectRatio(contentMode: fit ? .fit : .fill)
             } else {
                 Rectangle().fill(placeholder)
             }
         }
         .clipped()
+        .task(id: url) {
+            // Runs on every appearance and is cancelled on disappear, so a load a lazy container cut off
+            // is retried when the cell comes back; a failed load leaves the placeholder.
+            guard let url, loaded?.url != url else { return }
+            if let image = try? await ImageLoader.load(url) { loaded = (url, image) }
+        }
     }
 }
 
