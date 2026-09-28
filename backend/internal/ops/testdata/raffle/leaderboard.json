@@ -1,0 +1,90 @@
+{
+ "data": {
+  "getRaffleUsersInfo": {
+   "total": 330,
+   "currentUserPosition": 11,
+   "items": [
+    {
+     "userId": 1833,
+     "ticketsCount": 690
+    },
+    {
+     "userId": 1277,
+     "ticketsCount": 660
+    },
+    {
+     "userId": 1615,
+     "ticketsCount": 640
+    },
+    {
+     "userId": 1243,
+     "ticketsCount": 580
+    },
+    {
+     "userId": 1735,
+     "ticketsCount": 550
+    },
+    {
+     "userId": 5,
+     "ticketsCount": 540
+    },
+    {
+     "userId": 86,
+     "ticketsCount": 530
+    },
+    {
+     "userId": 1748,
+     "ticketsCount": 520
+    },
+    {
+     "userId": 1441,
+     "ticketsCount": 500
+    },
+    {
+     "userId": 47,
+     "ticketsCount": 490
+    },
+    {
+     "userId": 1373,
+     "ticketsCount": 490
+    },
+    {
+     "userId": 125,
+     "ticketsCount": 450
+    },
+    {
+     "userId": 18,
+     "ticketsCount": 435
+    },
+    {
+     "userId": 19,
+     "ticketsCount": 430
+    },
+    {
+     "userId": 1437,
+     "ticketsCount": 430
+    },
+    {
+     "userId": null,
+     "ticketsCount": 424
+    },
+    {
+     "userId": 93,
+     "ticketsCount": 420
+    },
+    {
+     "userId": 1818,
+     "ticketsCount": 410
+    },
+    {
+     "userId": 152,
+     "ticketsCount": 400
+    },
+    {
+     "userId": 1413,
+     "ticketsCount": 400
+    }
+   ]
+  }
+ }
+}

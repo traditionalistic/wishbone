@@ -1,0 +1,783 @@
+{
+ "data": {
+  "dailyBonusRewards": [
+   {
+    "streakDay": 1,
+    "amount": 2
+   },
+   {
+    "streakDay": 2,
+    "amount": 2
+   },
+   {
+    "streakDay": 3,
+    "amount": 5
+   },
+   {
+    "streakDay": 4,
+    "amount": 5
+   },
+   {
+    "streakDay": 5,
+    "amount": 10
+   },
+   {
+    "streakDay": 6,
+    "amount": 15
+   },
+   {
+    "streakDay": 7,
+    "amount": 20
+   }
+  ],
+  "currentDailyBonus": {
+   "streakDay": 1,
+   "claimedToday": false
+  },
+  "getMyProgressRaffle": {
+   "ticketsCount": 1250,
+   "hidden": false,
+   "items": [
+    {
+     "taskType": "SELF_EVENT_CREATED",
+     "name": "Создай своё событие",
+     "count": 0,
+     "subDescription": "Билеты начисляются после одобрения мероприятия модератором.",
+     "priority": 120,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_TAG_KORPU_VIDEO",
+     "name": "Расскажи о KÖRPÜ",
+     "count": 0,
+     "subDescription": "",
+     "priority": 116,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_TAG_KORPU_STORY",
+     "name": "Расскажи о KÖRPÜ",
+     "count": 0,
+     "subDescription": "50 билетов за отметку.",
+     "priority": 115,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_DATING_LIKE",
+     "name": "Найди новых друзей",
+     "count": 0,
+     "subDescription": "",
+     "priority": 112,
+     "progress": 0,
+     "target": 5,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_DIALOG_STARTED",
+     "name": "Начни общение",
+     "count": 0,
+     "subDescription": "",
+     "priority": 111,
+     "progress": 0,
+     "target": 3,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_COMMENT_POSTED",
+     "name": "Участвуй в обсуждении",
+     "count": 1,
+     "subDescription": "",
+     "priority": 108,
+     "progress": 1,
+     "target": 5,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_REACTION_GIVEN",
+     "name": "Прояви активность",
+     "count": 3,
+     "subDescription": "",
+     "priority": 105,
+     "progress": 3,
+     "target": 20,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_HOUR_IN_APP",
+     "name": "Будь активен в KÖRPÜ",
+     "count": 100,
+     "subDescription": "Получай билеты за каждый полный час, проведённый в приложении.",
+     "priority": 100,
+     "progress": 360000,
+     "target": 100,
+     "completed": true,
+     "nextAvailableAt": null,
+     "ticketsEarned": 1000
+    },
+    {
+     "taskType": "SELF_STEPS_GOAL",
+     "name": "Следи за здоровьем в KÖRPÜ",
+     "count": 0,
+     "subDescription": "Пройди 200 000 шагов за период акции и получи билеты",
+     "priority": 90,
+     "progress": 50427,
+     "target": 200000,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_DATING_SUBSCRIPTION",
+     "name": "Добавь анкету",
+     "count": 1,
+     "subDescription": "Зарегистрируй свою анкету в разделе «Семья»",
+     "priority": 80,
+     "progress": 1,
+     "target": 1,
+     "completed": true,
+     "nextAvailableAt": null,
+     "ticketsEarned": 100
+    },
+    {
+     "taskType": "SELF_PUBLISH_POST",
+     "name": "Публикация в ленте",
+     "count": 2,
+     "subDescription": "Выложи публикацию — после начислим билеты.",
+     "priority": 70,
+     "progress": 2,
+     "target": 3,
+     "completed": true,
+     "nextAvailableAt": null,
+     "ticketsEarned": 90
+    },
+    {
+     "taskType": "SELF_PUBLISH_STORY",
+     "name": "Публикация в сторис (историях)",
+     "count": 3,
+     "subDescription": "Выложи историю — после публикации начислим билеты.",
+     "priority": 60,
+     "progress": 3,
+     "target": 5,
+     "completed": true,
+     "nextAvailableAt": null,
+     "ticketsEarned": 50
+    },
+    {
+     "taskType": "SELF_PUBLISH_VIDEO",
+     "name": "Публикация в клипах",
+     "count": 1,
+     "subDescription": "Выложи клип — после публикации начислим билеты.",
+     "priority": 50,
+     "progress": 1,
+     "target": 5,
+     "completed": true,
+     "nextAvailableAt": null,
+     "ticketsEarned": 10
+    },
+    {
+     "taskType": "SELF_FOLLOW_KORPU",
+     "name": "Подписка на @korpu",
+     "count": 0,
+     "subDescription": "Засчитывается первая оформленная подписка приглашённого друга.",
+     "priority": 40,
+     "progress": 0,
+     "target": 1,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "SELF_FOLLOW_SHEVGI",
+     "name": "Подписка на @Shevgi",
+     "count": 0,
+     "subDescription": "Стань подписчиком одного из создателей KÖRPÜ и получи дополнительные билеты.",
+     "priority": 30,
+     "progress": 0,
+     "target": 1,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "INVITE_FRIENDS",
+     "name": "Приглашай друзей",
+     "count": 0,
+     "subDescription": "",
+     "priority": 6,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "TOP_10_PRIZE",
+     "name": "Попади в топ-16",
+     "count": 0,
+     "subDescription": "",
+     "priority": 5,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "PROMO_PUBLISH_POST",
+     "name": "10 билетов",
+     "count": 0,
+     "subDescription": "",
+     "priority": 4,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "PROMO_PUBLISH_STORY",
+     "name": "10 билетов",
+     "count": 0,
+     "subDescription": "",
+     "priority": 3,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "PROMO_PUBLISH_VIDEO",
+     "name": "10 билетов",
+     "count": 0,
+     "subDescription": "",
+     "priority": 2,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "PROMO_COMPLETE_TASKS",
+     "name": "Выполняй задания",
+     "count": 0,
+     "subDescription": "",
+     "priority": 1,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "REFERRAL_ONE_HOUR",
+     "name": "Друг провёл час в KÖRPÜ",
+     "count": 0,
+     "subDescription": "Засчитывается один раз за каждого приглашённого друга.",
+     "priority": 0,
+     "progress": 0,
+     "target": null,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    },
+    {
+     "taskType": "REFERRAL_REGISTRATION",
+     "name": "Пригласи друга",
+     "count": 0,
+     "subDescription": "Засчитывается один раз за каждого приглашённого друга.",
+     "priority": 0,
+     "progress": 0,
+     "target": 1,
+     "completed": false,
+     "nextAvailableAt": null,
+     "ticketsEarned": 0
+    }
+   ]
+  },
+  "getPrizes": {
+   "mainPrize": {
+    "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+    "prize": {
+     "ticketsCount": 12000,
+     "name": "Автомобиль",
+     "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v2.geely.png"
+    }
+   },
+   "prizes": [
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 12000,
+      "name": "Автомобиль",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/geely.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 11000,
+      "name": "Отдых в SEA BREEZE на 2 персон",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.pool.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 10000,
+      "name": "iPhone 17 Pro Max",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.iphone.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 9000,
+      "name": "Телефон Samsung Galaxy S26 Ultra",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.s24.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 7000,
+      "name": "2 билета на фестиваль DreamFest",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.ramale.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 5000,
+      "name": "MacBook",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.macbook.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 3000,
+      "name": "Игровая приставка Sony Playstation",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.playstation.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 3000,
+      "name": "Наушники AirPods Max",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.airmax.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 2500,
+      "name": "Часы Apple Watch",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.apple-watch.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 2000,
+      "name": "Часы Samsung Galaxy Watch",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.watch.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 1000,
+      "name": "10 000 Acoin",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.acoin.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 400,
+      "name": "7 000 Acoin",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.acoin.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 200,
+      "name": "5 000 Acoin",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.acoin.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 150,
+      "name": "Бесплатная подписка на раздел (для 5 пользователей)",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.aysel.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 100,
+      "name": "Комплекс витаминов от компании IPSUM",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.ipsum-vitamins.png"
+     }
+    },
+    {
+     "raffleId": "219ddcf2-1603-4391-b4fc-6fcaf513c4ab",
+     "prize": {
+      "ticketsCount": 50,
+      "name": "2 000 Acoin",
+      "imageUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/v1.acoin.png"
+     }
+    }
+   ]
+  },
+  "getRaffleUsersInfo": {
+   "total": 330,
+   "currentUserPosition": 11,
+   "items": [
+    {
+     "userId": 1181,
+     "ticketsCount": 2530
+    },
+    {
+     "userId": 2,
+     "ticketsCount": 2166
+    },
+    {
+     "userId": 1777,
+     "ticketsCount": 1910
+    },
+    {
+     "userId": 6,
+     "ticketsCount": 1885
+    },
+    {
+     "userId": null,
+     "ticketsCount": 1842
+    },
+    {
+     "userId": 1636,
+     "ticketsCount": 1830
+    },
+    {
+     "userId": 1830,
+     "ticketsCount": 1820
+    },
+    {
+     "userId": 4,
+     "ticketsCount": 1710
+    },
+    {
+     "userId": null,
+     "ticketsCount": 1705
+    },
+    {
+     "userId": 1643,
+     "ticketsCount": 1270
+    },
+    {
+     "userId": 1188,
+     "ticketsCount": 1250
+    },
+    {
+     "userId": 8,
+     "ticketsCount": 1210
+    },
+    {
+     "userId": 13,
+     "ticketsCount": 1185
+    },
+    {
+     "userId": 1529,
+     "ticketsCount": 1180
+    },
+    {
+     "userId": null,
+     "ticketsCount": 1127
+    },
+    {
+     "userId": 7,
+     "ticketsCount": 1075
+    },
+    {
+     "userId": null,
+     "ticketsCount": 1045
+    },
+    {
+     "userId": 1444,
+     "ticketsCount": 1000
+    },
+    {
+     "userId": 1827,
+     "ticketsCount": 995
+    },
+    {
+     "userId": 103,
+     "ticketsCount": 822
+    }
+   ]
+  },
+  "getRaffleTaskRules": [
+   {
+    "taskType": "SELF_EVENT_CREATED",
+    "name": "Создай своё событие",
+    "ticketsCount": 150,
+    "description": "Создай мероприятие в KÖRPÜ.",
+    "iconUrl": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/create-event-large-e8d666435d59.png",
+    "iconUrlSmall": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/create-event-small-cd08bbc20e66.png",
+    "priority": 120,
+    "target": null,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_TAG_KORPU_VIDEO",
+    "name": "Расскажи о KÖRPÜ",
+    "ticketsCount": 100,
+    "description": "Публикуй клип о KÖRPÜ с отметкой @korpu.",
+    "iconUrl": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/tag-korpu-video-large-cde619c9182e.png",
+    "iconUrlSmall": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/tag-korpu-video-small-9c5ac1eef76d.png",
+    "priority": 116,
+    "target": null,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_TAG_KORPU_STORY",
+    "name": "Расскажи о KÖRPÜ",
+    "ticketsCount": 50,
+    "description": "Опубликуй историю о KÖRPÜ с отметкой @korpu.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/story.png",
+    "priority": 115,
+    "target": null,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_DATING_LIKE",
+    "name": "Найди новых друзей",
+    "ticketsCount": 30,
+    "description": "Отправь 5 запросов дружбы.",
+    "iconUrl": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/dating-like-large-11769301cf1c.png",
+    "iconUrlSmall": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/dating-like-small-9f0cbfa99b00.png",
+    "priority": 112,
+    "target": 5,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_DIALOG_STARTED",
+    "name": "Начни общение",
+    "ticketsCount": 30,
+    "description": "Начни 3 новых диалога.",
+    "iconUrl": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/start-dialog-large-c2e9b6a7a690.png",
+    "iconUrlSmall": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/start-dialog-small-a9957afbe81c.png",
+    "priority": 111,
+    "target": 3,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_COMMENT_POSTED",
+    "name": "Участвуй в обсуждении",
+    "ticketsCount": 20,
+    "description": "Оставь 5 комментариев.",
+    "iconUrl": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/leave-comment-large-70e3bc7ac7d7.png",
+    "iconUrlSmall": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/leave-comment-small-07793d42eca4.png",
+    "priority": 108,
+    "target": 5,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_REACTION_GIVEN",
+    "name": "Прояви активность",
+    "ticketsCount": 15,
+    "description": "Поставь реакции 20 публикациям.",
+    "iconUrl": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/give-reaction-large-41135156bd97.png",
+    "iconUrlSmall": "https://korpu-media-prod.s3.twcstorage.ru/raffle/tasks/generated-v1/give-reaction-small-12b2cf92a176.png",
+    "priority": 105,
+    "target": 20,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_HOUR_IN_APP",
+    "name": "Будь активен в KÖRPÜ",
+    "ticketsCount": 10,
+    "description": "Получай билеты за каждый полный час в приложении.\n10 билетов за час.\nМаксимум 1000 билетов за розыгрыш.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/timer.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/timer.png",
+    "priority": 100,
+    "target": 100,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_STEPS_GOAL",
+    "name": "Следи за здоровьем в KÖRPÜ",
+    "ticketsCount": 200,
+    "description": "Пройди 200 000 шагов за период акции.\nПри достижении начисляется 200 билетов.\nЗасчитывается один раз за розыгрыш",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/heath.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/heath.png",
+    "priority": 90,
+    "target": 200000,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_DATING_SUBSCRIPTION",
+    "name": "Добавь анкету",
+    "ticketsCount": 100,
+    "description": "Зарегистрируй свою анкету в разделе «Семья».\nНачисляется 100 билетов.\nЗасчитывается один раз за розыгрыш",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/family.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/family.png",
+    "priority": 80,
+    "target": 1,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_PUBLISH_POST",
+    "name": "Публикация в ленте",
+    "ticketsCount": 10,
+    "description": "Выставление публикаций.\nЗа 3 публикации билеты выдаются 1 раз.\nПовторно получить билеты можно через 5 дней.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/post.png",
+    "priority": 70,
+    "target": 3,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_PUBLISH_STORY",
+    "name": "Публикация в сторис (историях)",
+    "ticketsCount": 10,
+    "description": "Выставление истории.\nЗа 5 историй билеты выдаются 1 раз.\nПовторно получить билеты можно через 5 дней.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/story.png",
+    "priority": 60,
+    "target": 5,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_PUBLISH_VIDEO",
+    "name": "Публикация в клипах",
+    "ticketsCount": 10,
+    "description": "Выставление клипа.\nЗа 5 клипов билеты выдаются 1 раз.\nПовторно получить билеты можно через 5 дней.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/reels.png",
+    "priority": 50,
+    "target": 5,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_FOLLOW_KORPU",
+    "name": "Подписка на @korpu",
+    "ticketsCount": 20,
+    "description": "Подпишись на официальную страницу KÖRPÜ.\nНачисляется 20 билетов.\nЗасчитывается один раз за розыгрыш",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/subs.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/subs.png",
+    "priority": 40,
+    "target": 1,
+    "isPromo": false
+   },
+   {
+    "taskType": "SELF_FOLLOW_SHEVGI",
+    "name": "Подписка на @Shevgi",
+    "ticketsCount": 20,
+    "description": "Стань подписчиком одного из создателей KÖRPÜ.\nНачисляется 20 билетов.\nЗасчитывается один раз за розыгрыш",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/subs.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/subs.png",
+    "priority": 30,
+    "target": 1,
+    "isPromo": false
+   },
+   {
+    "taskType": "INVITE_FRIENDS",
+    "name": "Приглашай друзей",
+    "ticketsCount": 30,
+    "description": "30 билетов за каждого друга: 10 сразу после регистрации + 20, когда друг проведёт час в приложении.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "priority": 6,
+    "target": null,
+    "isPromo": true
+   },
+   {
+    "taskType": "TOP_10_PRIZE",
+    "name": "Попади в топ-16",
+    "ticketsCount": 0,
+    "description": "Попади в топ-16 по итогам розыгрыша и получи гарантированно приз.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "priority": 5,
+    "target": null,
+    "isPromo": true
+   },
+   {
+    "taskType": "PROMO_PUBLISH_POST",
+    "name": "10 билетов",
+    "ticketsCount": 10,
+    "description": "Выставление публикаций.\nЗа 3 публикации билеты выдаются 1 раз.\nПовторно получить билеты можно через 5 дней.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "priority": 4,
+    "target": null,
+    "isPromo": true
+   },
+   {
+    "taskType": "PROMO_PUBLISH_STORY",
+    "name": "10 билетов",
+    "ticketsCount": 10,
+    "description": "Выставление истории.\nЗа 5 историй билеты выдаются 1 раз.\nПовторно получить билеты можно через 5 дней.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "priority": 3,
+    "target": null,
+    "isPromo": true
+   },
+   {
+    "taskType": "PROMO_PUBLISH_VIDEO",
+    "name": "10 билетов",
+    "ticketsCount": 10,
+    "description": "Выставление клипа.\nЗа 5 клипов билеты выдаются 1 раз.\nПовторно получить билеты можно через 5 дней.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/cup.png",
+    "priority": 2,
+    "target": null,
+    "isPromo": true
+   },
+   {
+    "taskType": "PROMO_COMPLETE_TASKS",
+    "name": "Выполняй задания",
+    "ticketsCount": 0,
+    "description": "Чтобы заработать дополнительные очки, выполняй задания, чтобы увеличить шанс на победу.",
+    "iconUrl": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/star.png",
+    "iconUrlSmall": "https://2d17a7ad-2b97-4482-b88a-06557b385f0b.selstorage.ru/raffle/star.png",
+    "priority": 1,
+    "target": null,
+    "isPromo": true
+   }
+  ],
+  "getRaffleTime": {
+   "start": "2026-04-30T00:00:00Z",
+   "end": "2026-10-10T18:00:00Z"
+  }
+ }
+}

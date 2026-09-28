@@ -1,0 +1,56 @@
+{
+ "data": {
+  "getUsersForRaffle": [
+   {
+    "id": 1181,
+    "firstname": "Жужужу",
+    "lastname": "Тютютю"
+   },
+   {
+    "id": 2,
+    "firstname": "Максим",
+    "lastname": "Шиндир"
+   },
+   {
+    "id": 1777,
+    "firstname": "Лллл",
+    "lastname": "Лооол"
+   },
+   {
+    "id": 6,
+    "firstname": "Test",
+    "lastname": "Testing"
+   },
+   {
+    "id": 1636,
+    "firstname": "Захар",
+    "lastname": "Литвинчук"
+   },
+   {
+    "id": 1830,
+    "firstname": "Di",
+    "lastname": "Di"
+   },
+   {
+    "id": 4,
+    "firstname": "Захар",
+    "lastname": "Литвинчук"
+   },
+   {
+    "id": 1643,
+    "firstname": "Elvis",
+    "lastname": "Ametov"
+   },
+   {
+    "id": 13,
+    "firstname": "Anton",
+    "lastname": "Kogan"
+   },
+   {
+    "id": 1529,
+    "firstname": "Тест",
+    "lastname": "Тестовый"
+   }
+  ]
+ }
+}

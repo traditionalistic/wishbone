@@ -1,0 +1,89 @@
+{
+ "data": {
+  "getMyTickets": {
+   "total": 1250,
+   "items": [
+    {
+     "ticketId": "eebc507d-a59b-4cfa-bf3b-40a9e6241375",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "ea052a01-8934-442c-8fa0-f7b808a4bdab",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "dfc1bf09-6439-45f2-8aa2-1fc114d99067",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "dca3755d-1dc1-4c8f-a1af-f49ec124fc44",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "be9e2ec4-95cd-485d-8aa1-384063fb3f35",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "9b64ec2f-3a30-47b2-b78d-a6f2ced297c1",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "87873786-2e29-499c-95ad-905554d3fe0d",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "3caf187a-cca4-4f22-88d2-fed25cee3f86",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "391430f1-0feb-4609-ab7d-6a9b7d041030",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "02dc8b50-de5d-4780-8588-76b84db2b750",
+     "createdAt": "2026-09-10T15:09:41.60322Z"
+    },
+    {
+     "ticketId": "c62d6cf7-175d-4ee5-9d9b-23bab158e5d3",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "b9538463-0564-4662-8501-cd496be07126",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "a7a09ccd-5fe0-426a-945a-1e54f2399521",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "937b4ad9-e0f6-4698-97b3-af099f2b95d3",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "8b5194c6-e7a9-4d0d-ad0e-3b33c1c2f209",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "6dc4003d-c57a-4a96-84c3-8aa9771e6fbc",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "31f82fb3-b221-4a38-b240-5e630c1075ff",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "1ece362f-0bd1-4d20-94d0-c32f604e17cb",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "16023e9d-4ed4-4eae-aed3-b5750f01b0e4",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    },
+    {
+     "ticketId": "0d3a8902-cf05-40bc-b65a-44d3308ee907",
+     "createdAt": "2026-09-10T09:42:11.610769Z"
+    }
+   ]
+  }
+ }
+}

@@ -21,7 +21,7 @@ public struct WishboneRoute: Hashable, Identifiable, Sendable {
   public let id: UUID            // каждый пуш — отдельная запись стека хоста
   public let screen: String
   public let params: [String: Value]
-  public let transition: String? // "push" | "fade" | nil — подсказка хосту
+  public let transition: String? // "push" | "fade" | "present" (только из слота) | nil — подсказка хосту
 }
 WishboneScreen(wishbone, id:, params:, onExit:, onNavigate: ((WishboneRoute) -> Void)? = nil)
 WishboneScreen(wishbone, route: WishboneRoute, onExit:, onNavigate:)
@@ -64,7 +64,7 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
   - `SCREEN_NOT_FOUND` (не опубликован или снят) — дополнительно **стирает кэш слота**, иначе снятый баннер жил бы в кэше;
   - `DATA_REQUIRED_FAILED` и прочие ошибки без кэша (с кэшем — показывается кэш, как у экрана);
   - корень документа с `when == false`.
-- `navigate` → `onNavigate`; `present` → шит SDK поверх; `back`/`dismiss` — no-op.
+- `navigate` и `present` → `onNavigate` (у `present` — `transition: "present"`, хост решает, открыть ли модалкой); `back`/`dismiss` — no-op. Своих шитов у слота нет.
 - Загрузка — при появлении вьюхи (кэш сразу, затем сеть, как у экрана). Принудительное обновление — сменой identity вьюхи у хоста.
 
 ### 2.4 Сервер и админка
@@ -84,7 +84,7 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
 - `WISHBONE_GRAPHQL_FALLBACK_TOKEN` (необязательный): для **read**-операций запросов без `Authorization` (превью в админке, плейграунд) подставляется `Bearer <token>` тестового stage-аккаунта. Write без токена → `UNAUTHENTICATED`.
 - Ошибки: `extensions.code == "UNAUTHENTICATED"` → `UNAUTHENTICATED`; прочие GraphQL-ошибки, таймаут (10 с), не-200 → `UPSTREAM_FAILED` (новый код в `errors.json`, retryable; приходит как доменная ошибка `{ok: false}` источника или `call`). Токен и тела ответов не логируются.
 - Образ сервера `FROM scratch` получает CA-бандл (иначе TLS до stage не пройдёт): `push.sh` кладёт системный бандл в контекст сборки, `Dockerfile` копирует его в `/etc/ssl/certs/ca-certificates.crt`.
-- Таймаут: у операции в `operations.json` необязательное `timeoutMs` (по умолчанию 500 — прежний таймаут источника); у `raffle.*` — 3000. Бюджет резолва данных экрана = max(1200 мс, наибольший `timeoutMs` источников экрана + 200 мс). Тот же таймаут действует на `call`.
+- Таймаут: у операции в `operations.json` необязательное `timeoutMs` (по умолчанию 500 — прежний таймаут источника); у `raffle.*` — 3000. Бюджет резолва данных экрана = max(1200 мс, наибольший `timeoutMs` источников экрана + 200 мс). `call` не ограничен таймаутом источника (у write — `WithoutCancel`); GraphQL-клиент сам обрывает запрос через 10 с.
 - Один апстрим: токены dev/georgiaStage/featureStand на stage не валидны → экраны показывают ошибку, слот пуст. Потолок; при необходимости — allowlist «контур → URL» по заголовку хоста.
 
 ### 3.2 Операции (`contract/operations.json`, `backend/internal/ops/raffle.go`)

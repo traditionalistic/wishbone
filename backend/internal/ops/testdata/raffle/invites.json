@@ -1,0 +1,9 @@
+{
+ "data": {
+  "getMyReferralInvites": {
+   "total": 0,
+   "maxTicketsPerInvite": 30,
+   "items": []
+  }
+ }
+}

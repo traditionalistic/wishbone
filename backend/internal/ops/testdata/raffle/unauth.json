@@ -1,0 +1,13 @@
+{
+ "errors": [
+  {
+   "message": "ACCESS_TOKEN_NOT_VALID",
+   "extensions": {
+    "code": "UNAUTHENTICATED",
+    "httpCode": 401,
+    "serviceName": "raffle"
+   }
+  }
+ ],
+ "data": null
+}
