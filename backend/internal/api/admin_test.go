@@ -241,6 +241,44 @@ func TestSeed(t *testing.T) {
 	if code, _, b := e.do("GET", "/v1/screens/t.seed", nil); code != 200 || obj(t, b)["revision"] != 1 {
 		t.Fatalf("a seeded screen without a revision is published, once: %d %s", code, b)
 	}
+
+	if code, b := e.admin("POST", "/screens/t.seed/unpublish", nil); code != 204 {
+		t.Fatalf("unpublish: %d %s", code, b)
+	}
+	if err := e.srv.Seed(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, b := e.do("GET", "/v1/screens/t.seed", nil); code != 404 {
+		t.Fatalf("a restart-like Seed must not republish an unpublished screen: %d %s", code, b)
+	}
+}
+
+func TestUnpublish(t *testing.T) {
+	e := newEnv(t)
+	e.admin("POST", "/screens", map[string]string{"id": "t.slot", "title": "Slot"})
+	if code, b := e.admin("POST", "/screens/t.slot/publish", nil); code != 200 {
+		t.Fatalf("publish: %d %s", code, b)
+	}
+	if code, _, _ := e.do("GET", "/v1/screens/t.slot", nil); code != 200 {
+		t.Fatalf("live before unpublish: %d", code)
+	}
+	if code, b := e.admin("POST", "/screens/t.slot/unpublish", nil); code != 204 {
+		t.Fatalf("unpublish: %d %s", code, b)
+	}
+	code, _, b := e.do("GET", "/v1/screens/t.slot", nil)
+	wantErr(t, code, b, 404, "SCREEN_NOT_FOUND")
+	_, b = e.admin("GET", "/screens/t.slot", nil)
+	if m := obj(t, b); m["unpublished"] != true || m["publishedRev"] == nil {
+		t.Fatalf("admin view of an unpublished screen: %s", b)
+	}
+	if code, b := e.admin("POST", "/screens/t.slot/publish", nil); code != 200 {
+		t.Fatalf("republish: %d %s", code, b)
+	}
+	if code, _, _ := e.do("GET", "/v1/screens/t.slot", nil); code != 200 {
+		t.Fatalf("publish puts it back on the air: %d", code)
+	}
+	code, b = e.admin("POST", "/screens/nope/unpublish", nil)
+	wantErr(t, code, b, 404, "SCREEN_NOT_FOUND")
 }
 
 // A screen file that does not parse or compile (e.g. mid-edit on disk) is logged and skipped, never fatal.

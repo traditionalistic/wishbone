@@ -64,10 +64,11 @@ type screenJSON struct {
 	Draft        json.RawMessage `json:"draft,omitempty"`
 	PublishedRev *int            `json:"publishedRev"`
 	UpdatedAt    time.Time       `json:"updatedAt"`
+	Unpublished  bool            `json:"unpublished"`
 }
 
 func toJSON(sc *store.Screen) screenJSON {
-	return screenJSON{sc.ID, sc.Title, sc.Draft, sc.PublishedRev, sc.UpdatedAt}
+	return screenJSON{sc.ID, sc.Title, sc.Draft, sc.PublishedRev, sc.UpdatedAt, sc.Unpublished}
 }
 
 func (s *Server) listScreens(w http.ResponseWriter, r *http.Request) {
@@ -164,6 +165,14 @@ func (s *Server) publishFrom(w http.ResponseWriter, r *http.Request, from int) {
 		return
 	}
 	writeJSON(w, 200, map[string]any{"revision": rev.Rev, "etag": rev.ETag})
+}
+
+func (s *Server) unpublish(w http.ResponseWriter, r *http.Request) {
+	if err := s.Store.Unpublish(r.Context(), r.PathValue("id"), "admin"); err != nil {
+		s.screenErr(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) revisions(w http.ResponseWriter, r *http.Request) {

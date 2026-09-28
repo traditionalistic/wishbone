@@ -41,11 +41,12 @@
 
 | Метод и путь | Тело → ответ |
 |---|---|
-| `GET /admin/api/screens` | → `[{"id", "title", "updatedAt", "publishedRev": 4 \| null}]` |
+| `GET /admin/api/screens` | → `[{"id", "title", "updatedAt", "publishedRev": 4 \| null, "unpublished": bool}]` |
 | `POST /admin/api/screens` | `{"id", "title"}` → 201 `{"id", "title", "draft": <исходник>}`; черновик по умолчанию — корень `stack` с одним `text`; 409 если id занят |
-| `GET /admin/api/screens/{id}` | → `{"id", "title", "draft": <исходник>, "publishedRev": n \| null, "updatedAt"}` |
+| `GET /admin/api/screens/{id}` | → `{"id", "title", "draft": <исходник>, "publishedRev": n \| null, "updatedAt", "unpublished": bool}` |
 | `PUT /admin/api/screens/{id}` | `{"title"?, "draft"}` → `{"updatedAt"}` (черновик сохраняется даже с ошибками компиляции) |
 | `POST /admin/api/screens/{id}/publish` | → 200 `{"revision", "etag"}` \| 422 `{"diags": [Diag]}` |
+| `POST /admin/api/screens/{id}/unpublish` | → 204 — снимает экран с публикации: `GET /v1/screens/{id}` → 404 `SCREEN_NOT_FOUND` до следующей публикации/отката |
 | `GET /admin/api/screens/{id}/revisions` | → `[{"revision", "etag", "publishedAt", "runtimeMin"}]` (новые сверху) |
 | `POST /admin/api/screens/{id}/rollback/{rev}` | → `{"revision", "etag"}` — исходник ревизии `rev` публикуется новой ревизией и становится черновиком |
 | `POST /admin/api/compile` | `{"source": <исходник>}` → `{"ok": bool, "diags": [Diag], "document": {…} \| null}` |

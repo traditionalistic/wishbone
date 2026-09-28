@@ -151,6 +151,7 @@ func (s *Server) Handler() http.Handler {
 	admin("GET /admin/api/screens/{id}", s.getDraft)
 	admin("PUT /admin/api/screens/{id}", s.putDraft)
 	admin("POST /admin/api/screens/{id}/publish", s.publish)
+	admin("POST /admin/api/screens/{id}/unpublish", s.unpublish)
 	admin("GET /admin/api/screens/{id}/revisions", s.revisions)
 	admin("POST /admin/api/screens/{id}/rollback/{rev}", s.rollback)
 	admin("POST /admin/api/compile", s.compileSource)

@@ -32,6 +32,7 @@ type Screen struct {
 	Draft        json.RawMessage // nil in Screens()
 	UpdatedAt    time.Time
 	PublishedRev *int
+	Unpublished  bool
 }
 
 type Revision struct {
@@ -144,20 +145,20 @@ func audit(ctx context.Context, tx pgx.Tx, actor, action, entity string, details
 const publishedRev = `(SELECT max(rev) FROM revisions r WHERE r.screen_id = s.id)`
 
 func (s *Store) Screens(ctx context.Context) ([]Screen, error) {
-	rows, err := s.db.Query(ctx, `SELECT id, title, updated_at, `+publishedRev+` FROM screens s ORDER BY id`)
+	rows, err := s.db.Query(ctx, `SELECT id, title, updated_at, `+publishedRev+`, unpublished_at IS NOT NULL FROM screens s ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Screen, error) {
 		var sc Screen
-		return sc, r.Scan(&sc.ID, &sc.Title, &sc.UpdatedAt, &sc.PublishedRev)
+		return sc, r.Scan(&sc.ID, &sc.Title, &sc.UpdatedAt, &sc.PublishedRev, &sc.Unpublished)
 	})
 }
 
 func (s *Store) Screen(ctx context.Context, id string) (*Screen, error) {
 	sc := &Screen{ID: id}
-	err := s.db.QueryRow(ctx, `SELECT title, draft, updated_at, `+publishedRev+` FROM screens s WHERE id = $1`, id).
-		Scan(&sc.Title, &sc.Draft, &sc.UpdatedAt, &sc.PublishedRev)
+	err := s.db.QueryRow(ctx, `SELECT title, draft, updated_at, `+publishedRev+`, unpublished_at IS NOT NULL FROM screens s WHERE id = $1`, id).
+		Scan(&sc.Title, &sc.Draft, &sc.UpdatedAt, &sc.PublishedRev, &sc.Unpublished)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -211,9 +212,12 @@ func scanRev(row pgx.Row) (*Revision, error) {
 	return r, err
 }
 
-// Live is the newest revision; ErrNotFound when the screen has none.
+// Live is the newest revision of a screen that is not unpublished; ErrNotFound when the screen has none, is
+// unknown, or was taken off the air.
 func (s *Store) Live(ctx context.Context, id string) (*Revision, error) {
-	r, err := scanRev(s.db.QueryRow(ctx, `SELECT `+revCols+` FROM revisions WHERE screen_id = $1 ORDER BY rev DESC LIMIT 1`, id))
+	r, err := scanRev(s.db.QueryRow(ctx, `SELECT r.screen_id, r.rev, r.source, r.document, r.etag, r.runtime_min, r.meta, r.published_at
+		FROM revisions r JOIN screens s ON s.id = r.screen_id
+		WHERE r.screen_id = $1 AND s.unpublished_at IS NULL ORDER BY rev DESC LIMIT 1`, id))
 	if errors.Is(err, ErrNoRevision) {
 		return nil, ErrNotFound
 	}
@@ -279,6 +283,9 @@ func (s *Store) Publish(ctx context.Context, id string, from int, resetDraft boo
 				return err
 			}
 		}
+		if _, err := tx.Exec(ctx, `UPDATE screens SET unpublished_at = NULL WHERE id = $1`, id); err != nil {
+			return err
+		}
 		out = r
 		return audit(ctx, tx, actor, action, id, map[string]any{"rev": next, "from": from})
 	})
@@ -286,6 +293,21 @@ func (s *Store) Publish(ctx context.Context, id string, from int, resetDraft boo
 		return nil, err
 	}
 	return out, nil
+}
+
+// Unpublish takes a screen off the air: Live answers ErrNotFound for it until the next Publish. A screen
+// already unpublished keeps its original unpublished_at. ErrNotFound when the screen is unknown.
+func (s *Store) Unpublish(ctx context.Context, id, actor string) error {
+	return pgx.BeginFunc(ctx, s.db, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE screens SET unpublished_at = coalesce(unpublished_at, clock_timestamp()) WHERE id = $1`, id)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		return audit(ctx, tx, actor, "unpublish", id, nil)
+	})
 }
 
 // Reserve claims (key, op) for a write call. It returns the stored response when the call already completed,
