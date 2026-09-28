@@ -115,7 +115,10 @@ final class Navigator {
 import UIKit
 
 /// The system bar is hidden (screens draw their own headers), which also disables UIKit's edge-swipe
-/// back; this re-enables it for the SDK's own navigation controller only (never at its root).
+/// back; this re-enables it while an SDK screen is on screen (never at the stack's root). The pop recognizers'
+/// delegates are borrowed, not taken: in host-stack mode they belong to the HOST's navigation controller, and
+/// their weak delegate would read nil once the screen is gone — the swipe could then begin at the host's root
+/// and freeze its navigation — so the previous delegates go back when the screen disappears.
 struct SwipeBackEnabler: UIViewControllerRepresentable {
     /// The iOS 26 full-width swipe would fight horizontal `drag` nodes; screens with drags keep the edge swipe only.
     let allowsContentPop: Bool
@@ -127,11 +130,47 @@ struct SwipeBackEnabler: UIViewControllerRepresentable {
 
     final class Controller: UIViewController, UIGestureRecognizerDelegate {
         var allowsContentPop = true
+        /// The recognizers this screen is the delegate of, each with the delegate it had before.
+        private var loans: [Loan] = []
+
+        private struct Loan {
+            weak var recognizer: UIGestureRecognizer?
+            weak var previous: (any UIGestureRecognizerDelegate)?
+        }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
-            navigationController?.interactivePopGestureRecognizer?.delegate = self
-            if #available(iOS 26, *) { navigationController?.interactiveContentPopGestureRecognizer?.delegate = self }
+            var recognizers = [navigationController?.interactivePopGestureRecognizer]
+            if #available(iOS 26, *) { recognizers.append(navigationController?.interactiveContentPopGestureRecognizer) }
+            loans = recognizers.compactMap { $0 }.map { r in
+                // Appearance callbacks of two SDK screens may interleave (the next one appears before this one
+                // disappeared): a delegate that is an SDK screen hands on what it borrowed, so the host's own
+                // delegate is what goes back in the end.
+                let previous = if let screen = r.delegate as? Controller { screen.lent(r) } else { r.delegate }
+                r.delegate = self
+                return Loan(recognizer: r, previous: previous)
+            }
+        }
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            // Not when another screen has taken the recognizer over meanwhile.
+            for loan in loans where loan.recognizer?.delegate === self { loan.recognizer?.delegate = loan.previous }
+            loans = []
+        }
+
+        deinit {
+            // Torn down without `viewDidDisappear`: a weak delegate that was this controller reads nil by now.
+            guard Thread.isMainThread else { return }
+            MainActor.assumeIsolated {
+                for loan in loans where loan.recognizer.map({ $0.delegate == nil }) ?? false {
+                    loan.recognizer?.delegate = loan.previous
+                }
+            }
+        }
+
+        private func lent(_ recognizer: UIGestureRecognizer) -> (any UIGestureRecognizerDelegate)? {
+            loans.first { $0.recognizer === recognizer }?.previous
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
