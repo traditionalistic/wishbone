@@ -29,7 +29,7 @@ func (r *Raffle) Handlers() map[string]Handler {
 const (
 	qRaffleOverview    = `query RaffleOverview { dailyBonusRewards { streakDay amount } currentDailyBonus { streakDay claimedToday } getMyProgressRaffle { ticketsCount hidden items { taskType name count priority progress target completed nextAvailableAt ticketsEarned } } getPrizes { mainPrize { raffleId prize { ticketsCount name imageUrl } } prizes { raffleId prize { ticketsCount name imageUrl } } } getRaffleUsersInfo(limit: 1, offset: 0) { total currentUserPosition } getRaffleTaskRules { taskType name ticketsCount description iconUrl iconUrlSmall priority target isPromo } getRaffleTime { start end } getUser { id myRefCode } }`
 	qRafflePromo       = `query RafflePromo { getRaffleTime { start end } getMyProgressRaffle { ticketsCount hidden items { taskType completed } } getRaffleTaskRules { taskType name isPromo } getRaffleUsersInfo(limit: 1, offset: 0) { total currentUserPosition } }`
-	qRaffleLeaderboard = `query RaffleLeaderboard($limit: Int!, $offset: Int!) { getRaffleUsersInfo(limit: $limit, offset: $offset) { total currentUserPosition items { userId ticketsCount } } getMyProgressRaffle { hidden } }`
+	qRaffleLeaderboard = `query RaffleLeaderboard($limit: Int!, $offset: Int!) { getRaffleUsersInfo(limit: $limit, offset: $offset) { total currentUserPosition items { userId ticketsCount } } getMyProgressRaffle { hidden } getUser { id firstname lastname } }`
 	qRaffleUsers       = `query RaffleUsers($ids: [Int!]!) { getUsersForRaffle(userIds: $ids) { id firstname lastname } }`
 	qRaffleTickets     = `query RaffleTickets($limit: Int!, $offset: Int!) { getMyTickets(limit: $limit, offset: $offset) { total items { ticketId createdAt } } }`
 	qRaffleInvites     = `query RaffleInvites { getMyReferralInvites(limit: 100, offset: 0) { total maxTicketsPerInvite items { userId totalTickets } } getUser { id } }`
@@ -123,6 +123,8 @@ func (r *Raffle) leaderboard(ctx context.Context, req Req) (Result, error) {
 			}
 		}
 		GetMyProgressRaffle *struct{ Hidden bool }
+		// getUsersForRaffle leaves out the current user, so the own row's name comes from getUser
+		GetUser *struct{ Firstname, Lastname string }
 	}
 	a := auth(req)
 	if err := r.G.Do(ctx, a, false, "RaffleLeaderboard", qRaffleLeaderboard, map[string]any{"limit": limit, "offset": offset}, &d); err != nil {
@@ -140,6 +142,12 @@ func (r *Raffle) leaderboard(ctx context.Context, req Req) (Result, error) {
 		return fail(err), nil
 	}
 	hidden := d.GetMyProgressRaffle != nil && d.GetMyProgressRaffle.Hidden
+	var myName *string
+	if u := d.GetUser; u != nil {
+		if n := strings.TrimSpace(u.Firstname + " " + u.Lastname); n != "" { // as in names
+			myName = &n
+		}
+	}
 
 	items := make([]any, 0, len(info.Items))
 	for i, it := range info.Items {
@@ -150,6 +158,9 @@ func (r *Raffle) leaderboard(ctx context.Context, req Req) (Result, error) {
 			if n, ok := names[*it.UserID]; ok {
 				name = &n
 			}
+		}
+		if isMe && name == nil {
+			name = myName
 		}
 		items = append(items, map[string]any{
 			"key": strconv.Itoa(pos), "position": pos, "name": displayName(name, isMe, hidden),
@@ -176,7 +187,13 @@ func (r *Raffle) tickets(ctx context.Context, req Req) (Result, error) {
 	}
 	items := make([]any, 0, len(d.GetMyTickets.Items))
 	for _, t := range d.GetMyTickets.Items {
-		items = append(items, map[string]any{"id": t.TicketID, "createdAt": msTime(t.CreatedAt)})
+		// The contract's createdAt is a number: an unparsable one is 0, and the ticket is kept — the screens page by
+		// the item count (offset = loaded, a short page = the end), so a dropped item would stop their paging.
+		at := msTime(t.CreatedAt)
+		if at == nil {
+			at = 0.0
+		}
+		items = append(items, map[string]any{"id": t.TicketID, "createdAt": at})
 	}
 	return OK(map[string]any{"total": d.GetMyTickets.Total, "items": items}), nil
 }

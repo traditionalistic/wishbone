@@ -40,7 +40,10 @@ func mergeData(t *testing.T, bodies ...string) string {
 	return string(out)
 }
 
-const visible = `{"data":{"getMyProgressRaffle":{"hidden":false}}}`
+const (
+	visible = `{"data":{"getMyProgressRaffle":{"hidden":false}}}`
+	me      = `{"data":{"getUser":{"id":1188,"firstname":"Ваня","lastname":"Тестов"}}}`
+)
 
 func raffleEnv(t *testing.T) (*Raffle, *upstream) {
 	t.Helper()
@@ -101,7 +104,7 @@ func TestRaffleLeaderboard(t *testing.T) {
 
 	t.Run("first page", func(t *testing.T) {
 		r, u := raffleEnv(t)
-		u.bodies["RaffleLeaderboard"] = mergeData(t, fixture(t, "overview"), visible)
+		u.bodies["RaffleLeaderboard"] = mergeData(t, fixture(t, "overview"), visible, me)
 		v := roundTrip(t, run(t, r, "raffle.leaderboard", "Bearer u", `{"offset": 0, "limit": 20}`).Value).(map[string]any)
 		items := v["items"].([]any)
 		if len(items) != 20 || v["total"] != 330.0 || v["myPosition"] != 11.0 {
@@ -118,7 +121,8 @@ func TestRaffleLeaderboard(t *testing.T) {
 		if m := item(items, 5); m["name"] != "**********" {
 			t.Fatalf("row 5 (no userId): %v", m)
 		}
-		if m := item(items, 11); m["isMe"] != true || m["name"] != "Я" {
+		// getUsersForRaffle leaves the current user out: the own row's name comes from getUser
+		if m := item(items, 11); m["isMe"] != true || m["name"] != "Я Ваня Тестов" {
 			t.Fatalf("row 11 (me): %v", m)
 		}
 		if vars := u.vars["RaffleLeaderboard"]; vars["limit"] != 20.0 || vars["offset"] != 0.0 {
@@ -126,6 +130,20 @@ func TestRaffleLeaderboard(t *testing.T) {
 		}
 		if ids := u.vars["RaffleUsers"]["ids"].([]any); len(ids) != 16 {
 			t.Fatalf("names asked for %d ids, want 16 unique non-null: %v", len(ids), ids)
+		}
+	})
+
+	t.Run("own name hidden or unknown", func(t *testing.T) {
+		for body, want := range map[string]string{
+			mergeData(t, fixture(t, "overview"), `{"data":{"getMyProgressRaffle":{"hidden":true}}}`, me): "Я **********",
+			mergeData(t, fixture(t, "overview"), visible, `{"data":{"getUser":null}}`):                   "Я",
+		} {
+			r, u := raffleEnv(t)
+			u.bodies["RaffleLeaderboard"] = body
+			v := roundTrip(t, run(t, r, "raffle.leaderboard", "Bearer u", `{"offset": 0, "limit": 20}`).Value).(map[string]any)
+			if m := item(v["items"].([]any), 11); m["name"] != want {
+				t.Fatalf("row 11 (me): %v, want %q", m, want)
+			}
 		}
 	})
 
@@ -200,6 +218,17 @@ func TestRaffleInvites(t *testing.T) {
 	want := `{"items":[{"key":"1181","name":"Жужужу Тютютю","tickets":10},{"key":"999","name":"999","tickets":30}],"maxTicketsPerInvite":30,"total":2}`
 	if string(b) != want {
 		t.Fatalf("invites:\n got %s\nwant %s", b, want)
+	}
+}
+
+// An unparsable createdAt keeps its ticket (the screens page by the item count) with the contract's number type.
+func TestRaffleTicketsKeepBadTimestamps(t *testing.T) {
+	r, u := raffleEnv(t)
+	u.bodies["RaffleTickets"] = `{"data":{"getMyTickets":{"total":2,"items":[
+		{"ticketId":"a","createdAt":"2026-09-10T15:09:41.60322Z"},{"ticketId":"b","createdAt":"10.09.2026"}]}}}`
+	b, _ := json.Marshal(run(t, r, "raffle.tickets", "Bearer u", `{"offset": 0, "limit": 20}`).Value)
+	if want := `{"items":[{"createdAt":1789052981603,"id":"a"},{"createdAt":0,"id":"b"}],"total":2}`; string(b) != want {
+		t.Fatalf("tickets:\n got %s\nwant %s", b, want)
 	}
 }
 

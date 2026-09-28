@@ -96,8 +96,8 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
 |---|---|---|---|
 | `raffle.overview` `{}` | read | `GetRaffleScreenData(limit 20, offset 0)` + `getRaffleTime` (best effort) + `getUsersForRaffle` + `getUser{myRefCode}` | см. ниже |
 | `raffle.promo` `{}` | read | `getRaffleTime` + `getMyProgressRaffle` + `getRaffleTaskRules` + `getRaffleUsersInfo(limit 1)` | `{active: bool, endsAt: number?, place: number?, tasksDone: number, tasksTotal: number}` |
-| `raffle.leaderboard` `{offset, limit}` | read | `GetRaffleLeaderboard` + `getUsersForRaffle` | `{total, myPosition: number?, items: list<{key: string, position, name, tickets, isMe: bool}>}` |
-| `raffle.tickets` `{offset, limit}` | read | `GetMyRaffleTickets` | `{total, items: list<{id: string, createdAt: number}>}` |
+| `raffle.leaderboard` `{offset, limit}` | read | `GetRaffleLeaderboard` + `getUsersForRaffle` + `getUser{firstname lastname}` (имя своей строки: `getUsersForRaffle` текущего пользователя не отдаёт) | `{total, myPosition: number?, items: list<{key: string, position, name, tickets, isMe: bool}>}` |
+| `raffle.tickets` `{offset, limit}` | read | `GetMyRaffleTickets` (нераспознанный `createdAt` → 0, билет остаётся: экраны листают по числу пришедших) | `{total, items: list<{id: string, createdAt: number}>}` |
 | `raffle.invites` `{}` | read | `GetMyReferralInvites(limit 100)` + `getUsersForRaffle` | `{total, maxTicketsPerInvite, items: list<{name, tickets}>}` |
 | `raffle.claimDaily` `{}` | write | `claimDailyReward` | `{streakDay}` |
 | `raffle.toggleHidden` `{}` | write | `toggleMyVisibilityInRaffle` | `{hidden: bool}` |
