@@ -36,8 +36,8 @@ class StoreTest {
         """,
     )
 
-    private fun store(d: Document = doc, params: Map<String, Value> = emptyMap(), previous: Store? = null) =
-        Store(d, params, emptyMap(), theme, emptyMap(), effects, CoroutineScope(Dispatchers.Unconfined), previous = previous)
+    private fun store(d: Document = doc, params: Map<String, Value> = emptyMap(), previous: Store? = null, restored: StoreSnapshot? = null) =
+        Store(d, params, emptyMap(), theme, emptyMap(), effects, CoroutineScope(Dispatchers.Unconfined), previous = previous, restored = restored)
 
     private fun n(v: Double) = Value.Num(v)
 
@@ -101,6 +101,23 @@ class StoreTest {
         // survives a document reload for the same identity
         val reloaded = store(previous = s)
         assertEquals(Value.TRUE, reloaded.root.withInstance("tg", reloaded.extras.getValue("tg").inst!!).instanceState("Toggle.on"))
+    }
+
+    @Test
+    fun snapshotRestoresScreenAndInstanceStateIntoANewStore() {
+        val s = store()
+        s.root.set("s", "a", emptyList(), n(5.0), null)
+        s.root.set("s", "rec", listOf(Value.Str("l"), n(0.0)), Value.Str("x"), null)
+        s.root.withInstance("tg", s.extras.getValue("tg").inst!!).set("i", "Toggle.on", emptyList(), Value.TRUE, null)
+        // what rememberSaveable keeps while a host back stack has the screen off the composition
+        val saved = s.snapshot().encode()
+        val back = store(restored = StoreSnapshot.decode(saved))
+        assertEquals(n(5.0), back.state("a"))
+        assertEquals(s.state("rec"), back.state("rec"))
+        // an instance not rendered again yet (e.g. on another tab) is still saved the next time
+        assertEquals(Value.TRUE, back.snapshot().instances["tg"]?.get("Toggle.on"))
+        assertEquals(Value.TRUE, back.root.withInstance("tg", back.extras.getValue("tg").inst!!).instanceState("Toggle.on"))
+        assertEquals(null, StoreSnapshot.decode("not json"))
     }
 
     @Test

@@ -16,6 +16,7 @@ import app.wishbone.core.Expr
 import app.wishbone.core.Node
 import app.wishbone.core.Stmt
 import app.wishbone.core.Value
+import app.wishbone.core.toJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -99,12 +100,26 @@ internal class InstanceScope(val parent: InstanceScope?, val cells: Map<String, 
     fun find(name: String): MutableState<Value>? = cells[name] ?: parent?.find(name)
 }
 
+/** A screen's DSL state: state values by key, template-instance state by instance key (node id + repeat key path). */
+internal data class StoreSnapshot(val state: Map<String, Value>, val instances: Map<String, Map<String, Value>>) {
+    /** JSON text for saveable state; lambdas have no JSON form and come back as null. */
+    fun encode(): String = Value.rec("state" to Value.Rec(state), "instances" to Value.Rec(instances.mapValues { Value.Rec(it.value) })).toJson().toString()
+
+    companion object {
+        /** Null when [text] isn't a snapshot: the screen starts from its initial state. */
+        fun decode(text: String): StoreSnapshot? = runCatching {
+            val f = (Value.fromJsonString(text) as Value.Rec).fields
+            StoreSnapshot((f.getValue("state") as Value.Rec).fields, (f.getValue("instances") as Value.Rec).fields.mapValues { (it.value as Value.Rec).fields })
+        }.getOrNull()
+    }
+}
+
 /**
  * One per rendered screen: document, params, data, one observable cell per state key, instance
  * scopes, driver cells, timeline registry. Expressions are evaluated on read inside composables, so
  * Compose tracks exactly the cells each node reads. Non-state effects go to [effects].
  */
-class Store(
+class Store internal constructor(
     val doc: Document,
     val params: Map<String, Value>,
     data: Map<String, Value>,
@@ -116,6 +131,8 @@ class Store(
     previous: Store? = null,
     /** Rendered by [WishboneSlot]: the root keeps its own background (a screen paints it behind the system bars). */
     internal val slot: Boolean = false,
+    /** State saved when the screen left the composition (a host back stack), used when there is no [previous] store. */
+    restored: StoreSnapshot? = null,
 ) : EffectSink {
     var theme by mutableStateOf(theme)
 
@@ -146,7 +163,8 @@ class Store(
 
     private val cells = LinkedHashMap<String, MutableState<Value>>()
     internal val instances = HashMap<String, InstanceScope>()
-    private val carried = previous?.instances
+    /** Same-name state keys and instance cells keep these values (a new document, or a restored screen). */
+    private val kept: StoreSnapshot? = previous?.snapshot() ?: restored
     /** Scroll/drag cells survive a rebuild: effects keyed on remembered scroll states keep writing the same cells. */
     private val drivers: HashMap<String, MutableDoubleState> = previous?.drivers ?: HashMap()
 
@@ -160,7 +178,7 @@ class Store(
     init {
         this.env = env
         for ((name, expr) in doc.state) {
-            cells[name] = mutableStateOf(previous?.cells?.get(name)?.value ?: root.evalOrNull(expr) ?: Value.Null)
+            cells[name] = mutableStateOf(kept?.state?.get(name) ?: root.evalOrNull(expr) ?: Value.Null)
         }
     }
 
@@ -183,6 +201,13 @@ class Store(
     }
 
     fun state(name: String): Value = cells[name]?.value ?: Value.Null
+
+    /** Current state and instance values; kept instances not rendered again yet (e.g. on another tab) stay in it. */
+    internal fun snapshot(): StoreSnapshot = StoreSnapshot(
+        cells.mapValues { it.value.value },
+        kept?.instances.orEmpty() + instances.mapValues { (_, scope) -> scope.cells.mapValues { it.value.value } },
+    )
+
     fun computed(name: String): Value = doc.computed[name]?.let { root.eval(it) } ?: Value.Null
     fun param(name: String): Value = params[name] ?: doc.params[name]?.let { root.eval(it) } ?: Value.Null
     fun env(name: String): Value = envCells[name]?.value ?: if (name == "now") Value.Num(Clock.now.longValue.toDouble()) else Value.Null
@@ -214,11 +239,11 @@ class Store(
 
     // ponytail: instances of removed repeat items stay in the map for the store's lifetime (a returning key gets its old state back)
     internal fun instance(key: String, decls: Map<String, Expr>, ctx: RenderContext): InstanceScope = instances.getOrPut(key) {
-        val old = carried?.get(key)
+        val old = kept?.instances?.get(key)
         val cells = LinkedHashMap<String, MutableState<Value>>()
         val scope = InstanceScope(ctx.instance, cells)
         val init = ctx.copy(instance = scope)
-        for ((n, e) in decls) cells[n] = mutableStateOf(old?.cells?.get(n)?.value ?: init.evalOrNull(e) ?: Value.Null)
+        for ((n, e) in decls) cells[n] = mutableStateOf(old?.get(n) ?: init.evalOrNull(e) ?: Value.Null)
         scope
     }
 

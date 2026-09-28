@@ -31,11 +31,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,15 +51,18 @@ import app.wishbone.ui.WishboneScreen
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import java.util.concurrent.atomic.AtomicLong
 
 private const val DEFAULT_URL = "http://10.0.2.2:8080"
 private val SCREENS = listOf("showcase.onboarding", "showcase.promo", "showcase.form", "showcase.catalog", "raffle.main")
 
+private val routeKeys = AtomicLong()
+
 /**
  * `screen:<id>` | `preview:<code>` | `fixture:<name>` | `feed` | `home`. Also accepted as the `route` intent extra (adb).
- * `route` carries a [WishboneRoute] a screen or the feed slot asked to push (host-stack mode).
+ * `route` carries a [WishboneRoute] a screen or the feed slot asked to push (host-stack mode). [key] is unique per push.
  */
-data class Route(val value: String, val route: WishboneRoute? = null) {
+data class Route(val value: String, val route: WishboneRoute? = null, val key: Long = routeKeys.getAndIncrement()) {
     val kind get() = value.substringBefore(':')
     val arg get() = value.substringAfter(':')
 }
@@ -89,12 +92,15 @@ fun Playground(start: String? = null, startBrand: String? = null, startScheme: S
     }
     MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
         Surface {
-            val pop = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
+            // each stack entry is its own composition with its own saveable state, like a NavHost destination:
+            // a covered entry leaves the composition and gets its saveable state back on return
+            val saveable = rememberSaveableStateHolder()
+            val pop = { if (stack.size > 1) saveable.removeState(stack.removeAt(stack.lastIndex).key) }
             val push = { r: WishboneRoute -> stack += Route("route", r) }
             BackHandler(enabled = stack.size > 1) { pop() }
             val wb = wishbone
             val top = stack.last()
-            key(stack.size) { // each stack entry is its own composition, like a NavHost destination
+            saveable.SaveableStateProvider(top.key) {
                 when {
                     wb == null || top.kind == "home" -> Home(
                         wb, baseUrl, { baseUrl = it }, brand, { brand = it }, scheme, { scheme = it }, fixtures(context),

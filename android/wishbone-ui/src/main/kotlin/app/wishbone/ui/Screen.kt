@@ -43,6 +43,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -166,6 +168,9 @@ private fun WishboneRoot(
     navigator.forward = onNavigate?.let { { r: WishboneRoute -> nav?.invoke(r) } }
     val holders = remember(navigator) { HashMap<Long, ScreenHolder>() }
     val saveable = rememberSaveableStateHolder() // scroll/pager positions survive a push on top, like NavigationStack
+    // A host back stack (Compose Navigation, a SaveableStateHolder list) disposes a covered screen and keeps only its
+    // saveable state: the root screen's DSL state goes there and back into the store built on return (iOS keeps the view).
+    val saved = rememberSaveable(saver = SavedRoot.Saver) { SavedRoot(null) }
     val env = rememberEnv(wishbone)
     val dark = env["colorScheme"] == Value.Str("dark")
     DisposableEffect(navigator) { onDispose { holders.values.forEach { it.dispose() } } }
@@ -173,6 +178,7 @@ private fun WishboneRoot(
     fun holder(entry: Entry) = holders.getOrPut(entry.key) {
         ScreenHolder(wishbone, navigator, entry).also { h ->
             h.env = env
+            if (entry.mode == Mode.Root) saved.attach(h)
             val doc = inline?.document
             if (entry.mode != Mode.Root || inline == null) {
                 h.load()
@@ -233,6 +239,25 @@ private fun WishboneRoot(
                 }
             }
         }
+    }
+}
+
+/** The root screen's DSL state as saveable state: restored into the first root holder, saved from the current one. */
+private class SavedRoot(private var pending: StoreSnapshot?) {
+    private var holder: ScreenHolder? = null
+
+    fun attach(h: ScreenHolder) {
+        h.restored = pending
+        pending = null
+        holder = h
+    }
+
+    companion object {
+        // ponytail: the whole DSL state goes into the saved-instance Bundle too (binder limit ~1 MB); cap it if screens keep big lists in state
+        val Saver = Saver<SavedRoot, String>(
+            save = { (it.holder?.snapshot() ?: it.pending)?.encode() },
+            restore = { SavedRoot(StoreSnapshot.decode(it)) },
+        )
     }
 }
 

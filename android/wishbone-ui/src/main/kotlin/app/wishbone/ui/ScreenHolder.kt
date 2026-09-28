@@ -42,6 +42,11 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
 
+    /** DSL state for the first store: the screen came back into the composition from a host back stack. */
+    var restored: StoreSnapshot? = null
+
+    fun snapshot(): StoreSnapshot? = store?.snapshot() ?: restored
+
     fun load() {
         if (store == null) state = LoadState.Loading
         scope.launch {
@@ -69,7 +74,8 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
             wishbone.log("error", "screen ${entry.screen}: bad document: ${e.message}")
             return false
         }
-        state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store, slot))
+        state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store, slot, restored))
+        restored = null
         return true
     }
 
