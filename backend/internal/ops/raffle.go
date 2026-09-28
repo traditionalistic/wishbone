@@ -68,10 +68,6 @@ func (r *Raffle) overview(ctx context.Context, req Req) (Result, error) {
 	if err != nil {
 		return fail(err), nil
 	}
-	// the contract's daily header; buildDaily only assembles the strip and the claimable amount
-	daily := o["daily"].(map[string]any)
-	daily["streakDay"] = d.CurrentDailyBonus.StreakDay
-	daily["claimedToday"] = d.CurrentDailyBonus.ClaimedToday
 	return OK(o), nil
 }
 
