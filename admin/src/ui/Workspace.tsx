@@ -38,6 +38,7 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
   const [source, setSource] = useState<Source | null>(null)
   const [saved, setSaved] = useState('')
   const [publishedRev, setPublishedRev] = useState<number | null>(null)
+  const [unpublished, setUnpublished] = useState(false)
   const [revisions, setRevisions] = useState<Revision[]>([])
   const [selected, setSelected] = useState<Path>([])
   const [tab, setTab] = useState<Tab>('script')
@@ -72,6 +73,7 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
       setSource(src)
       setSaved(JSON.stringify(src))
       setPublishedRev(s.publishedRev)
+      setUnpublished(s.unpublished)
       setSelected([])
       setTlSel({ tl: 0 })
       api.revisions(id).then(
@@ -127,6 +129,7 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
     try {
       const r = await api.publish(screenId)
       setPublishedRev(r.revision)
+      setUnpublished(false)
       flash(`Published r${r.revision}`)
       api.revisions(screenId).then(setRevisions, () => undefined)
       void refreshScreens()
@@ -135,6 +138,21 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
         preview.setDiags(e.diags)
         flash(`Not published: ${e.diags.length} problem(s)`)
       } else flash(`Publish failed: ${message(e)}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const unpublish = async () => {
+    if (!screenId) return
+    setBusy(true)
+    try {
+      await api.unpublish(screenId)
+      setUnpublished(true)
+      flash('Screen unpublished')
+      void refreshScreens()
+    } catch (e) {
+      flash(`Unpublish failed: ${message(e)}`)
     } finally {
       setBusy(false)
     }
@@ -245,6 +263,8 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
           onSave={() => void save()}
           onPublish={() => void publish()}
           publishedRev={publishedRev}
+          unpublished={unpublished}
+          onUnpublish={() => void unpublish()}
           revisions={revisions}
           onRollback={(rev) => void rollback(rev)}
           onLogout={onLogout}

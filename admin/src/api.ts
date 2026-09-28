@@ -6,6 +6,7 @@ export interface ScreenSummary {
   title: string
   updatedAt: string
   publishedRev: number | null
+  unpublished: boolean
 }
 
 export interface ScreenDetail {
@@ -14,6 +15,7 @@ export interface ScreenDetail {
   draft: Source
   publishedRev: number | null
   updatedAt: string
+  unpublished: boolean
 }
 
 export interface Revision {
@@ -88,6 +90,7 @@ export const api = {
   saveDraft: (id: string, draft: Source) => req<{ updatedAt: string }>('PUT', `/screens/${enc(id)}`, { title: draft.title, draft }),
   /** Throws ApiError with `diags` on 422. */
   publish: (id: string) => req<{ revision: number; etag: string }>('POST', `/screens/${enc(id)}/publish`),
+  unpublish: (id: string) => req<void>('POST', `/screens/${enc(id)}/unpublish`),
   revisions: (id: string) => req<Revision[]>('GET', `/screens/${enc(id)}/revisions`),
   rollback: (id: string, rev: number) => req<{ revision: number; etag: string }>('POST', `/screens/${enc(id)}/rollback/${rev}`),
   compile: (source: Source) => req<CompileResult>('POST', '/compile', { source }),
