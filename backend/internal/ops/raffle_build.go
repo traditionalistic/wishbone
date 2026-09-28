@@ -421,7 +421,12 @@ func buildDaily(d *gqlOverview) map[string]any {
 		}
 		days = append(days, map[string]any{"day": float64(r.StreakDay), "amount": float64(r.Amount), "state": state})
 	}
-	return map[string]any{"days": days, "claimAmount": claimAmount}
+	return map[string]any{
+		"streakDay":    float64(streakDay),
+		"claimedToday": claimedToday,
+		"claimAmount":  claimAmount,
+		"days":         days,
+	}
 }
 
 // buildOverview assembles the full raffle screen payload. It fails when a part the client can't render

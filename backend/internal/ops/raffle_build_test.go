@@ -43,6 +43,9 @@ func TestBuildOverview(t *testing.T) {
 	if len(days) != 7 || days[0].(map[string]any)["state"] != "available" || days[1].(map[string]any)["state"] != "waiting" || daily["claimAmount"] != 2.0 {
 		t.Fatalf("daily: %v", daily)
 	}
+	if daily["streakDay"] != 1.0 || daily["claimedToday"] != false {
+		t.Fatalf("daily streak: %v", daily)
+	}
 	if mp := o["mainPrize"].(map[string]any); mp["title"] != "Автомобиль" {
 		t.Fatalf("main prize: %v", mp)
 	}
