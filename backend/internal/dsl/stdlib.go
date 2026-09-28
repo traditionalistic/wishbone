@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Stdlib is contract/stdlib.json with signatures parsed.
@@ -40,6 +41,7 @@ type SigParam struct {
 type Op struct {
 	ID, Kind     string // Kind: "read" | "write"
 	Args, Result *Type
+	Timeout      time.Duration // data-source timeout; 0 = the server default
 }
 
 var specialFuncs = map[string]bool{"with": true}
@@ -111,7 +113,10 @@ func LoadStdlib(data []byte) (*Stdlib, error) {
 
 func LoadOps(data []byte) (map[string]*Op, error) {
 	var raw struct {
-		Operations map[string]struct{ Kind, Args, Result string }
+		Operations map[string]struct {
+			Kind, Args, Result string
+			TimeoutMs          int
+		}
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -126,7 +131,7 @@ func LoadOps(data []byte) (map[string]*Op, error) {
 		if err != nil {
 			return nil, fmt.Errorf("operation %s result: %v", id, err)
 		}
-		ops[id] = &Op{ID: id, Kind: o.Kind, Args: args, Result: res}
+		ops[id] = &Op{ID: id, Kind: o.Kind, Args: args, Result: res, Timeout: time.Duration(o.TimeoutMs) * time.Millisecond}
 	}
 	return ops, nil
 }

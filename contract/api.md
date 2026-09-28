@@ -11,6 +11,8 @@
 - 200 `{"etag": "…", "revision": 4, "document": {…} | null, "data": {"<name>": {"ok": true, "value": …} | {"ok": false, "error": {code, message, retryable}}}}` — `document: null`, когда `If-None-Match` совпал (данные всё равно резолвятся и отдаются). `etag` = `"<rev>-<sha256(document)[:16]>"`.
 - 404 `SCREEN_NOT_FOUND`; 409 `UNSUPPORTED_RUNTIME` (runtimeMin ревизии > X-Wishbone-Runtime); 503 `DATA_REQUIRED_FAILED`.
 
+`operations.json` → `timeoutMs` (необязательно) — таймаут источника данных этой операции; по умолчанию 500 мс; бюджет экрана — max(1200 мс, самый долгий + 200 мс).
+
 ### `POST /v1/data`
 `{"screen": "id", "revision": 4, "params": {…}, "sources": ["me", "offers"]}` → 200 `{"<name>": {ok, value?|error?}}`. Аргументы источников сервер берёт из ревизии (с подстановкой `params`). 409 `REVISION_NOT_FOUND`.
 

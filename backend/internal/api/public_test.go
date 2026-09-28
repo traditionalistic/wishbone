@@ -121,6 +121,71 @@ func TestDataSourceFailures(t *testing.T) {
 	}
 }
 
+// addOps adds extra operations.json entries to a contract dir made by makeContract, so a test can
+// exercise an op the shared contractDir doesn't define (each value is one op's JSON body).
+func addOps(t *testing.T, dir string, extra map[string]string) {
+	t.Helper()
+	path := filepath.Join(dir, "operations.json")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatal(err)
+	}
+	var opsMap map[string]json.RawMessage
+	if err := json.Unmarshal(raw["operations"], &opsMap); err != nil {
+		t.Fatal(err)
+	}
+	for id, def := range extra {
+		opsMap[id] = json.RawMessage(def)
+	}
+	if raw["operations"], err = json.Marshal(opsMap); err != nil {
+		t.Fatal(err)
+	}
+	if b, err = json.Marshal(raw); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestDataSourceTimeoutMs: an op's timeoutMs overrides the default 500 ms source timeout. A handler
+// slower than 500 ms but under its op's timeoutMs succeeds; the same handler under an op without
+// timeoutMs still fails with DATA_SOURCE_FAILED.
+func TestDataSourceTimeoutMs(t *testing.T) {
+	dir, err := makeContract(chipV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addOps(t, dir, map[string]string{
+		"t.slow":        `{"kind": "read", "args": "{}", "result": "bool", "timeoutMs": 900}`,
+		"t.slowDefault": `{"kind": "read", "args": "{}", "result": "bool"}`,
+	})
+	slow := func(context.Context, ops.Req) (ops.Result, error) {
+		time.Sleep(700 * time.Millisecond) // ignores ctx, like the demo handlers in TestDataSourceFailures
+		return ops.OK(true), nil
+	}
+	e := newEnvWith(t, dir, map[string]ops.Handler{"t.slow": slow, "t.slowDefault": slow})
+	const timeoutScreen = `{"id": "t.timeout", "title": "Timeout", "script": "data a = t.slow()\ndata b = t.slowDefault()", "timelines": [],
+	 "root": {"type": "stack", "id": "root", "children": []}}`
+	e.publish(timeoutScreen)
+
+	code, _, b := e.do("GET", "/v1/screens/t.timeout", nil)
+	if code != 200 {
+		t.Fatalf("%d %s", code, b)
+	}
+	m := obj(t, b)
+	if get(m, "data", "a", "ok") != true {
+		t.Fatalf("op timeoutMs: 900 must let a 700 ms handler finish: %v", get(m, "data", "a"))
+	}
+	if get(m, "data", "b", "ok") != false || get(m, "data", "b", "error", "code") != "DATA_SOURCE_FAILED" {
+		t.Fatalf("without timeoutMs the default 500 ms timeout must fail a 700 ms handler: %v", get(m, "data", "b"))
+	}
+}
+
 func TestDataEndpoint(t *testing.T) {
 	e := newEnv(t)
 	rev := e.publish(promoScreen)
