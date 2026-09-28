@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: wishbone
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: wishbone
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wishbone"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  server:
+    build: .
+    environment:
+      DATABASE_URL: postgres://wishbone:${POSTGRES_PASSWORD}@postgres:5432/wishbone?sslmode=disable
+      WISHBONE_ADMIN_PASSWORD: ${WISHBONE_ADMIN_PASSWORD}
+    ports:
+      # loopback only: nginx in front holds TLS; without 127.0.0.1 docker would publish the port past it
+      - "127.0.0.1:8090:8080"
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  pgdata:
