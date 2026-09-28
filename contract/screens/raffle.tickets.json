@@ -1,0 +1,50 @@
+{
+ "id": "raffle.tickets",
+ "title": "Мои билеты",
+ "script": "// My raffle tickets (raffles spec §3.3), pushed from raffle.main with the ticket count and place: a summary card and\n// the ticket ids «#i id». The first page comes with the screen (data page); further pages are appended to `extra` by\n// `more()` when the footer scrolls into view (the scroll is lazy, so `appear` fires only near the bottom).\nparam tickets: number = 0\nparam place: number = 0\ndata page = raffle.tickets({offset: 0, limit: 20})\nstate extra: list<{id: string, createdAt: number}> = []\nstate loading = false\nstate done = false\nstate failed = false\nlet first = page.items.count ?? 0\nlet loaded = first + extra.count\nlet hasMore = page != null && !done && loaded < (page.total ?? 0)\n// the summary falls back to the ticket total when the screen is opened without params\nlet count = tickets > 0 ? tickets : page.total ?? 0\n// Russian plural whatever env.locale is: the raffle strings are ru-only, plural() would follow the device language\nfn ticketsText(n: number): string = formatNumber(n, 0) + \" \" + (n % 10 == 1 && n % 100 != 11 ? \"билет\" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? \"билета\" : \"билетов\")\nhandler more() {\n  if !loading && hasMore {\n    loading = true\n    failed = false\n    let r = await call raffle.tickets({offset: loaded, limit: 20})\n    if r.ok {\n      let items = r.value.items ?? []\n      extra = items.reduce(extra, (acc, t) => acc.append(t))\n      done = items.count < 20\n    } else {\n      failed = true\n    }\n    loading = false\n  }\n}",
+ "root": {"type": "stack", "id": "root", "props": {"width": "fill", "height": "fill", "background": "@color.bg1"}, "children": [
+
+  {"type": "stack", "id": "header", "props": {"axis": "z", "width": "fill", "height": 52, "padding": "={h: @space.sm}"}, "children": [
+   {"type": "text", "id": "headerTitle", "props": {"text": "Мои билеты", "style": "@type.headingSmall", "maxLines": 1}, "a11y": {"role": "header"}},
+   {"type": "stack", "id": "headerRow", "props": {"axis": "h", "align": "center", "width": "fill"}, "children": [
+    {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "size": "small", "style": "plain"}, "on": {"tap": "back()"}},
+    {"type": "spacer", "id": "headerGap"}
+   ]}
+  ]},
+
+  {"type": "scroll", "id": "list", "props": {"lazy": true, "width": "fill", "height": "fill", "spacing": "@space.lg", "padding": "={h: @space.lg, top: @space.sm, bottom: @space.xl}"}, "children": [
+
+   {"type": "stack", "id": "summary", "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.lg", "background": "@color.bg1Elevated", "corner": "@radius.lg"}, "children": [
+    {"type": "text", "id": "summaryTitle", "props": {"text": "Мои билеты", "style": "@type.caption", "color": "@color.el9"}},
+    {"type": "stack", "id": "summaryRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill"}, "children": [
+     {"type": "icon", "id": "summaryIcon", "props": {"name": "@icon.ticket", "size": 20, "color": "@color.accentPrimary"}},
+     {"type": "text", "id": "summaryCount", "props": {"text": "=ticketsText(count)", "style": "@type.headingSmall", "width": "fill", "maxLines": 1}},
+     {"type": "text", "id": "summaryPlace", "props": {"text": "=place > 0 ? str(place) + \" место\" : \"Места пока нет\"", "style": "@type.bodySmall", "color": "@color.el9", "maxLines": 1}}
+    ]}
+   ]},
+
+   {"type": "stack", "id": "error", "when": "page == null", "props": {"align": "center", "width": "fill"}, "children": [
+    {"type": "EmptyState", "id": "errorState", "props": {"icon": "@icon.warning", "title": "Не удалось загрузить билеты", "actionTitle": "Повторить"}, "on": {"action": "refresh(page)"}}
+   ]},
+
+   {"type": "stack", "id": "ids", "when": "page != null && loaded > 0", "props": {"spacing": "@space.sm", "width": "fill", "padding": "={h: @space.sm, top: @space.lg, bottom: @space.sm}", "background": "@color.bg1Elevated", "corner": "@radius.lg"}, "children": [
+    {"type": "text", "id": "idsTitle", "props": {"text": "Id билетов", "style": "@type.headingSmall", "padding": "={h: @space.sm, bottom: @space.xs}"}, "a11y": {"role": "header"}},
+    {"type": "stack", "id": "ticket", "repeat": {"over": "page.items"}, "props": {"axis": "h", "spacing": "@space.sm", "width": "fill", "padding": "={h: @space.md, v: @space.sm}", "background": "@color.bg1", "corner": "@radius.sm"},
+     "a11y": {"label": "\"#\" + str(index + 1) + \" \" + item.id"}, "children": [
+     {"type": "text", "id": "ticketNo", "props": {"text": "=\"#\" + str(index + 1)", "style": "@type.bodySmall", "color": "@color.el9"}},
+     {"type": "text", "id": "ticketId", "props": {"text": "=item.id", "style": "@type.bodySmall", "width": "fill", "maxLines": 1}}
+    ]},
+    {"type": "stack", "id": "more", "repeat": {"over": "extra"}, "transition": {"in": "fade"}, "props": {"axis": "h", "spacing": "@space.sm", "width": "fill", "padding": "={h: @space.md, v: @space.sm}", "background": "@color.bg1", "corner": "@radius.sm"},
+     "a11y": {"label": "\"#\" + str(first + index + 1) + \" \" + item.id"}, "children": [
+     {"type": "text", "id": "moreNo", "props": {"text": "=\"#\" + str(first + index + 1)", "style": "@type.bodySmall", "color": "@color.el9"}},
+     {"type": "text", "id": "moreId", "props": {"text": "=item.id", "style": "@type.bodySmall", "width": "fill", "maxLines": 1}}
+    ]}
+   ]},
+
+   {"type": "stack", "id": "footer", "when": "hasMore", "props": {"axis": "z", "width": "fill", "height": 56}, "on": {"appear": "more()"}, "children": [
+    {"type": "Loader", "id": "footerLoader", "when": "!failed", "props": {"size": 28}},
+    {"type": "Button", "id": "footerRetry", "when": "failed", "props": {"title": "Повторить", "style": "secondary", "size": "compact"}, "on": {"tap": "more()"}}
+   ]}
+  ]}
+ ]}
+}

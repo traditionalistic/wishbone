@@ -1,0 +1,31 @@
+{
+ "id": "raffle.rules",
+ "title": "Как получить билеты",
+ "script": "// Raffle rules sheet (raffles spec §3.3), opened with present() from raffle.main: the promo rules of raffle.overview\n// (icon, name, «+N билетов», description) and «Пригласить друзей» → host(\"share\"). The share text is the `share`\n// param (raffle.main passes it) or else overview.share; without a text there is no button.\nparam share: string = \"\"\ndata o = raffle.overview()\nlet shareText = share != \"\" ? share : (o.share ?? \"\")\n// Russian plural whatever env.locale is: the raffle strings are ru-only, plural() would follow the device language\nfn ticketsText(n: number): string = formatNumber(n, 0) + \" \" + (n % 10 == 1 && n % 100 != 11 ? \"билет\" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? \"билета\" : \"билетов\")",
+ "root": {"type": "stack", "id": "root", "props": {"width": "fill", "height": "fill", "background": "@color.bg1"}, "children": [
+
+  {"type": "text", "id": "title", "props": {"text": "Как получить билеты", "style": "@type.sheetTitle", "padding": "={h: @space.lg, top: @space.xl, bottom: @space.lg}"}, "a11y": {"role": "header"}},
+
+  {"type": "stack", "id": "error", "when": "o == null", "props": {"axis": "z", "width": "fill", "height": "fill"}, "children": [
+   {"type": "EmptyState", "id": "errorState", "props": {"icon": "@icon.warning", "title": "Не удалось загрузить розыгрыш", "actionTitle": "Повторить"}, "on": {"action": "refresh(o)"}}
+  ]},
+
+  {"type": "scroll", "id": "rules", "when": "o != null", "props": {"width": "fill", "height": "fill", "spacing": "@space.lg", "padding": "={h: @space.lg, bottom: @space.lg}"}, "children": [
+   {"type": "stack", "id": "rule", "repeat": {"over": "o.rules"}, "props": {"axis": "h", "align": "start", "spacing": "@space.md", "width": "fill"}, "children": [
+    {"type": "stack", "id": "ruleIcon", "props": {"axis": "z", "width": 48, "height": 48, "corner": "@radius.md", "background": "@color.bg1Elevated"}, "children": [
+     {"type": "image", "id": "ruleImg", "when": "item.icon != null", "props": {"url": "=item.icon ?? \"\"", "fit": "fit", "width": 40, "height": 40, "placeholder": "@color.bg1Elevated"}, "a11y": {"hidden": true}},
+     {"type": "icon", "id": "ruleGlyph", "when": "item.icon == null", "props": {"name": "@icon.ticket", "size": 22, "color": "@color.accentPrimary"}}
+    ]},
+    {"type": "stack", "id": "ruleText", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
+     {"type": "text", "id": "ruleName", "props": {"text": "=item.name", "style": "@type.bodyStrong", "maxLines": 2}},
+     {"type": "text", "id": "ruleTickets", "when": "item.tickets > 0", "props": {"text": "=\"+\" + ticketsText(item.tickets)", "style": "@type.captionStrong", "color": "@color.accentPrimary"}},
+     {"type": "text", "id": "ruleDesc", "when": "item.description != \"\"", "props": {"text": "=item.description", "style": "@type.bodySmall", "color": "@color.el9"}}
+    ]}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "footer", "when": "shareText != \"\"", "props": {"width": "fill", "padding": "={h: @space.lg, top: @space.sm, bottom: @space.lg}"}, "children": [
+   {"type": "Button", "id": "inviteBtn", "props": {"title": "Пригласить друзей", "icon": "@icon.share", "width": "fill"}, "on": {"tap": "host(\"share\", {text: shareText})"}}
+  ]}
+ ]}
+}
