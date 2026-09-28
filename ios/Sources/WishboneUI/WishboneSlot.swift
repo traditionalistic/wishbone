@@ -48,8 +48,8 @@ struct SlotHost: View {
         VStack(spacing: 0) {
             if let store = model.store { root(store) }
         }
-        // `env.screenWidth` = the width the host offers (as on Android); a content-sized root sits top-leading.
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        // `env.screenWidth` = the width the host offers; a content-sized root is centered in it (as on a screen).
+        .frame(maxWidth: .infinity)
         .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry, inline: true))
         .task {
             navigator.forward = onNavigate
