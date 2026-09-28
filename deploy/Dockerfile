@@ -4,4 +4,6 @@ FROM scratch
 COPY bin/wishbone-server /app/wishbone-server
 COPY contract /app/contract
 COPY admin /app/admin
+# nobody: the server only listens and never writes to disk
+USER 65534:65534
 ENTRYPOINT ["/app/wishbone-server", "-addr", ":8080", "-contract", "/app/contract", "-admin", "/app/admin"]

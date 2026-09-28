@@ -315,7 +315,7 @@ Go-модуль `backend/`, бинарь `cmd/server`, net/http (маршрут�
 ### 6.3 API для хоста
 ```swift
 let wishbone = Wishbone(baseURL: url, brand: "korpu", host: MyHost())
-WishboneScreen(wishbone, id: "showcase.promo", params: [:])
+WishboneScreen(wishbone, id: "showcase.promo", params: [:], onExit: { /* back()/dismiss() в корне */ })
 
 protocol WishboneHost {
   func authHeaders() async -> [String: String]

@@ -89,7 +89,7 @@ fun Playground(start: String? = null, startBrand: String? = null, startScheme: S
                 wb == null || route.kind == "home" -> Home(
                     wb, baseUrl, { baseUrl = it }, brand, { brand = it }, scheme, { scheme = it }, fixtures(context),
                 ) { route = it }
-                route.kind == "screen" -> WishboneScreen(wb, route.arg)
+                route.kind == "screen" -> WishboneScreen(wb, route.arg, onExit = { route = Route("home") })
                 route.kind == "preview" -> WishbonePreview(wb, route.arg)
                 route.kind == "fixture" -> WishboneDocument(wb, loadFixture(context, route.arg))
             }

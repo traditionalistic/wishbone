@@ -5,8 +5,11 @@
 #
 # Builds the admin and a static linux/amd64 server binary here, copies them with the contract to /opt/wishbone,
 # runs docker compose (postgres + server on 127.0.0.1:8090) and puts an nginx site with a Let's Encrypt certificate
-# in front. Rerun to update: .env (passwords) and the database survive. Screens are seeded only when missing —
-# change a live screen through the admin.
+# in front. Rerun to update or repair: .env (passwords) and the database survive, the nginx site and the certificate
+# install are redone every time. Screens are seeded only when missing — change a live screen through the admin.
+#
+# Needs here: node/npm, go, ssh with key access. On the VPS: docker compose v2, nginx (Debian sites-available
+# layout), certbot with the nginx plugin, openssl, curl.
 set -euo pipefail
 
 HOST="${1:-root@217.198.9.139}"
@@ -25,30 +28,37 @@ echo "» server binary"
 cp "$ROOT/deploy/Dockerfile" "$ROOT/deploy/docker-compose.yml" "$STAGE/"
 cp -R "$ROOT/contract" "$STAGE/contract"
 cp -R "$ROOT/admin/dist" "$STAGE/admin"
+chmod 755 "$STAGE"
 
 echo "» upload to $HOST:$REMOTE"
 "${SSH[@]}" "mkdir -p $REMOTE && rm -rf $REMOTE/bin $REMOTE/contract $REMOTE/admin"
-# COPYFILE_DISABLE: macOS tar would add AppleDouble ._* files, which the contract loader reads as JSON
-COPYFILE_DISABLE=1 tar -C "$STAGE" -czf - . | "${SSH[@]}" "tar -xzf - -C $REMOTE"
+# COPYFILE_DISABLE / --no-xattrs: macOS tar would add AppleDouble ._* files, which the contract loader reads as JSON;
+# --no-same-owner: files belong to root on the VPS, not to this Mac's uid
+COPYFILE_DISABLE=1 tar --no-xattrs -C "$STAGE" -czf - . | "${SSH[@]}" "tar --no-same-owner -xzf - -C $REMOTE"
 
 echo "» compose, nginx, certificate"
-"${SSH[@]}" "REMOTE=$REMOTE DOMAIN=$DOMAIN bash -s" <<'REMOTE_SCRIPT'
+"${SSH[@]}" "REMOTE=$(printf %q "$REMOTE") DOMAIN=$(printf %q "$DOMAIN") bash -s" <<'REMOTE_SCRIPT'
 set -euo pipefail
 cd "$REMOTE"
+chown root:root . && chmod 755 .
 if [ ! -f .env ]; then
-    umask 077
-    printf 'POSTGRES_PASSWORD=%s\nWISHBONE_ADMIN_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 12)" > .env
+    pg="$(openssl rand -hex 24)"
+    admin="$(openssl rand -hex 12)"
+    [ ${#pg} -eq 48 ] && [ ${#admin} -eq 24 ] || { echo "openssl produced no passwords" >&2; exit 1; }
+    (umask 077 && printf 'POSTGRES_PASSWORD=%s\nWISHBONE_ADMIN_PASSWORD=%s\n' "$pg" "$admin" > .env)
     echo "  new .env with generated passwords"
 fi
 docker compose up -d --build --remove-orphans
 docker image prune -f >/dev/null
 
-site=/etc/nginx/sites-available/wishbone
-if [ ! -f "$site" ]; then
-    cat > "$site" <<NGINX
+# Rewritten on every run (certbot then re-adds its TLS lines), so template or domain changes always land.
+cat > /etc/nginx/sites-available/wishbone <<NGINX
 server {
     listen 80;
     server_name $DOMAIN;
+    # the admin WebSocket authenticates with ?token=<password>: keep request lines out of the shared access log
+    access_log off;
+    client_max_body_size 4m;
     location / {
         proxy_pass http://127.0.0.1:8090;
         proxy_http_version 1.1;
@@ -62,14 +72,13 @@ server {
     }
 }
 NGINX
-    ln -sf "$site" /etc/nginx/sites-enabled/wishbone
-    nginx -t
-    systemctl reload nginx
-fi
-if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --redirect
-fi
-nginx -t 2>/dev/null && systemctl reload nginx
+ln -sf /etc/nginx/sites-available/wishbone /etc/nginx/sites-enabled/wishbone
+nginx -t
+systemctl reload nginx
+# idempotent: keeps a valid certificate and (re)installs it with the http → https redirect
+certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring --redirect
+nginx -t
+systemctl reload nginx
 
 for i in $(seq 1 30); do
     curl -fsS "http://127.0.0.1:8090/v1/theme?brand=korpu" >/dev/null 2>&1 && break

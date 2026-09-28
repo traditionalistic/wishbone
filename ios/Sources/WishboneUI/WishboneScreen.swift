@@ -4,7 +4,8 @@ import WishboneCore
 
 /// A server-driven screen with its own navigation stack (spec §6.3):
 /// `WishboneScreen(wishbone, id: "showcase.promo", params: [:])`. `onExit` runs when the screen asks to leave the
-/// SDK — `back()`/`dismiss()` at the root; without it the SDK calls SwiftUI's `dismiss`.
+/// SDK — `back()`/`dismiss()` at the root; without it the SDK calls SwiftUI's `dismiss`. It is read once, when the
+/// screen appears (pass a closure over a stable router, not one that changes between renders).
 public struct WishboneScreen: View {
     let wishbone: Wishbone
     let root: Route

@@ -26,8 +26,8 @@ class ShowcaseEvalTest {
 
     @Test
     fun everyShowcaseNodeEvaluates() {
-        val files = File("../../ios/Playground/Resources/Fixtures").listFiles { f -> f.name.startsWith("showcase.") }.orEmpty().sorted()
-        assertEquals(4, files.size, "compiled showcases: $files")
+        val files = File("../../ios/Playground/Resources/Fixtures").listFiles { f -> f.name.startsWith("showcase.") || f.name.startsWith("host.") }.orEmpty().sorted()
+        assertEquals(5, files.size, "compiled showcases: $files")
         for (f in files) {
             val errors = mutableListOf<String>()
             val effects = object : EffectSink {

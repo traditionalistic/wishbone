@@ -3,7 +3,7 @@ services:
     image: postgres:17
     environment:
       POSTGRES_USER: wishbone
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?.env has no POSTGRES_PASSWORD}
       POSTGRES_DB: wishbone
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -16,8 +16,9 @@ services:
   server:
     build: .
     environment:
-      DATABASE_URL: postgres://wishbone:${POSTGRES_PASSWORD}@postgres:5432/wishbone?sslmode=disable
-      WISHBONE_ADMIN_PASSWORD: ${WISHBONE_ADMIN_PASSWORD}
+      DATABASE_URL: postgres://wishbone:${POSTGRES_PASSWORD:?}@postgres:5432/wishbone?sslmode=disable
+      # required: an empty one would make the server fall back to its dev default
+      WISHBONE_ADMIN_PASSWORD: ${WISHBONE_ADMIN_PASSWORD:?.env has no WISHBONE_ADMIN_PASSWORD}
     ports:
       # loopback only: nginx in front holds TLS; without 127.0.0.1 docker would publish the port past it
       - "127.0.0.1:8090:8080"

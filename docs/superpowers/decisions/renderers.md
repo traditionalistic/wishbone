@@ -79,3 +79,8 @@ Work is split: **phase a** = store, client, cache, theme, fonts, renderer of eve
 - `shape` `kind: circle` on a non-square box = a centered circle with diameter min(w, h) (not a capsule).
 - `shadow` on a node without `background` follows the content (iOS default); on Android best effort (shape of the node) — accepted divergence.
 - `dragEnd` fires at RELEASE (with the release translation and velocity), while the snap spring animates in parallel — handlers that remove the item make it disappear immediately instead of after the spring settles.
+
+## Host integration (binding, added with the Stratoapp/most adapters)
+- `WishboneScreen(…, onExit)`: DSL `back()`/`dismiss()` at the SDK root call `onExit` on both platforms. Without it iOS falls back to SwiftUI `dismiss` and Android does nothing. iOS reads `onExit` once when the screen appears, Android always calls the latest one. System back at the root is the host's own (the SDK's Android `BackHandler` covers only its inner pushes); a sheet's dismiss request is handled only while a sheet is open.
+- Screen ids are checked against the server's id rule (`[a-z0-9][a-z0-9._-]{0,63}`) before any request or cache access; anything else (e.g. `..` from a deeplink) fails as `SCREEN_NOT_FOUND` locally.
+- Android `Wishbone.colorScheme` is Compose state: a host with its own light/dark setting assigns it (iOS takes the scheme from the SwiftUI environment, e.g. the host's `preferredColorScheme`).

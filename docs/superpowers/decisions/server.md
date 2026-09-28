@@ -20,7 +20,7 @@ Tables: `screens(id text pk, title text, draft jsonb, created_at, updated_at)`, 
 
 ## Demo ops (`internal/ops`) — exactly operations.json types
 In-memory, deterministic, per-user state keyed by `Authorization` header value (or "anon"):
-- `demo.profile` → `{name: "Ivan", tickets: <counter, starts 12>, avatar: <abs url /assets/avatar.png>, level: 7}`
+- `demo.profile` → `{name: "Ivan", tickets: <counter, starts 12>, avatar: <abs url /assets/avatar.png>, level: 7, authorized: <request carried Authorization>}` (`authorized` lets `host.hello` show whether a host adapter forwards its token)
 - `demo.offers` → 6 offers, ids `o1…o6`, Russian titles/subtitles (e.g. "Двойные билеты", "Кешбэк 10%"…), prices, `image`: abs url `/assets/offers/o<N>.jpg`, `until`: now + N hours (ms epoch).
 - `demo.plans` → 3 plans `basic` (199), `pro` (499), `max` (999) with 2–4 Russian perks each.
 - `demo.checkPromo` → `WB10` → {valid: true, discount: 10, message: "Скидка 10% применена"}; `WB25` → 25; anything else → {valid: false, discount: 0, message: "Промокод не найден"}; simulate 300 ms latency.
@@ -31,7 +31,7 @@ In-memory, deterministic, per-user state keyed by `Authorization` header value (
 Sessions in memory: code = 4 chars from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, fields screen/title/source/document/data/devices/admins/updatedAt; expire after 2 h without activity (sweeper). `POST /admin/api/preview/{code}/document` compiles the posted source (not stored), resolves its data sources (params = defaults), stores it on the session and broadcasts `{"type":"document",…}`; diags returned either way. New device → immediate last document. Device `log` messages → admins as `{"type":"log","device",…}`; device list changes → admins `{"type":"devices",…}`. Unknown code → 404 (the admin recreates the session on 404).
 
 ## Admin API
-Bearer password (constant-time compare); WS via `?token=`. Catalog per api.md: templates `[{name, params: [{name, type, default?}], events, slot}]` — `default` = the DSL source text of the default when present (read from the template source file), `tokens.<group>` / `icons` = string arrays, `ops` from operations.json, `brands` from tokens/*.json. `GET /admin/api/templates/{name}` → template source JSON. Static SPA at `/admin/*` from the `-admin` dir with index.html fallback (if the dir is missing, 404 with a hint to run `npm run build` in admin/).
+Bearer password (constant-time compare); WS via `?token=`. Catalog per api.md: templates `[{name, params: [{name, type, default?}], events, slot}]` — `default` = the DSL source text of the default when present (read from the template source file), `tokens.<group>` / `icons` = string arrays, `ops` from operations.json, `brands` from tokens/*.json. `GET /admin/api/templates/{name}` → template source JSON. Static SPA at `/admin/*` from the `-admin` dir with index.html fallback (if the dir is missing, 404 with a hint to run `npm run build` in admin/). `GET /` redirects (302) to `/admin/`, so the bare server address opens the admin.
 
 ## Tests
 httptest against a real Postgres test database (`wishbone_test`, created/dropped in TestMain) with a tiny inline test contract dir or the real `../contract`: screen fetch + ETag/304 + params, UNSUPPORTED_RUNTIME, required data failure 503, call bound/unbound/unknown, idempotency replay/mismatch/in-flight, args validation, publish/rollback/revisions, auth 401, preview: device WS receives the document after POST …/document and gets the last document on join, admin WS gets devices + logs, session 404.

@@ -20,6 +20,9 @@
 ### `GET /v1/theme?brand=korpu`
 `If-None-Match` поддерживается → 304. 200 — содержимое `contract/tokens/<brand>.json` + `"version": "<sha256[:16]>"`; неизвестный бренд → тема `korpu`.
 
+### `GET /`
+302 на `/admin/`: голый адрес сервера открывает админку.
+
 ### `GET /assets/<path>`
 Статика из `contract/assets/`. Шрифты (`contract/fonts/`) вне этого дерева и не раздаются — 404 `NOT_FOUND`.
 

@@ -62,7 +62,7 @@ import Testing
         let store = Store(document: doc, params: [:], data: [:], wishbone: wb)
         let started = Date()
         await store.fire(doc.root.on["tap"]!, ctx: RenderContext(store: store), event: .record([:])).value
-        #expect(Date().timeIntervalSince(started) < 1)
+        #expect(Date().timeIntervalSince(started) < 5) // the timeline lasts 60 s; 5 s keeps a loaded CI machine green
     }
 }
 

@@ -202,7 +202,8 @@ private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<Str
                 }
                 // ponytail: system back / swipe / scrim close the whole sheet; DSL back() pops inside it
                 ModalBottomSheet(
-                    onDismissRequest = { navigator.dismiss() },
+                    // only while a sheet is open: a back press during the hide animation must not fall through to the root exit
+                    onDismissRequest = { if (navigator.sheet.isNotEmpty()) navigator.dismiss() },
                     modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 10.dp), // large detent: below the status bar
                     sheetState = state,
                     containerColor = holders[shownSheet.last().key]?.store?.let { rootColor(it) }
