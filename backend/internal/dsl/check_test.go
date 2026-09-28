@@ -343,7 +343,7 @@ handler go() { next(1) }`
 	if len(diags) > 0 {
 		t.Fatalf("unexpected diags %v", diags)
 	}
-	want := map[string]string{"total": "number", "label": "string", "twice": "number", "offer": "{valid: bool, discount: number, message: string}", "me": "{name: string, tickets: number, avatar: string, level: number}?"}
+	want := map[string]string{"total": "number", "label": "string", "twice": "number", "offer": "{valid: bool, discount: number, message: string}", "me": "{name: string, tickets: number, avatar: string, level: number, authorized: bool}?"}
 	for _, d := range prog.Script.Decls {
 		var got string
 		switch d := d.(type) {
