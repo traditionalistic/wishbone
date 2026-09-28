@@ -370,6 +370,32 @@ func TestRecompile(t *testing.T) {
 	}
 }
 
+// An unpublished screen is off the air: Recompile must neither fail because it can no longer compile nor
+// republish it (Publish would clear unpublished_at and put it back on the air).
+func TestRecompileSkipsUnpublished(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	rev := e.publish(chipScreen)
+	if code, b := e.admin("POST", "/screens/t.chip/unpublish", nil); code != 204 {
+		t.Fatalf("unpublish: %d %s", code, b)
+	}
+	v2, err := makeContract(strings.Replace(chipV2, `param selected: bool = false\n`, "", 1)) // drops a param t.chip's props use
+	if err != nil {
+		t.Fatal(err)
+	}
+	e2 := newEnvWith(t, v2)
+	if err := e2.srv.Recompile(ctx); err != nil {
+		t.Fatalf("an unpublished screen that no longer compiles must not stop Recompile: %v", err)
+	}
+	if code, _, _ := e2.do("GET", "/v1/screens/t.chip", nil); code != 404 {
+		t.Fatalf("Recompile must not republish an unpublished screen: %d", code)
+	}
+	_, b := e2.admin("GET", "/screens/t.chip", nil)
+	if m := obj(t, b); m["publishedRev"] != rev || m["unpublished"] != true {
+		t.Fatalf("still unpublished at its old revision: %s", b)
+	}
+}
+
 func TestNewRequiresErrorCodes(t *testing.T) {
 	dir, err := makeContract(chipV1)
 	if err != nil {
