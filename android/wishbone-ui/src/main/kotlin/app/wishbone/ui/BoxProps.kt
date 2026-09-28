@@ -31,11 +31,23 @@ internal data class BoxProps(
 ) {
     val hasTransform: Boolean get() = opacity != 1.0 || offsetX != 0.0 || offsetY != 0.0 || scale != 1.0 || rotation != 0.0
 
-    /** SwiftUI-greedy primitives (shape, image, scroll, grid width, textField width): `wrap` takes the offered space. */
+    /** `wrap` takes the offered space along the given axes. */
     fun greedy(horizontal: Boolean = true, vertical: Boolean = true) = copy(
         width = if (horizontal && width == Dim.Wrap) Dim.Fill else width,
         height = if (vertical && height == Dim.Wrap) Dim.Fill else height,
     )
+
+    /**
+     * SwiftUI flexibility of `wrap` (parity ruling): shape and image take the offered space; a scroll takes it along its
+     * scroll axis, and across it an axis-h scroll is as tall as its content (ScrollView) while an axis-v one takes the
+     * offered width (iOS frames its content to the full width); grid and textField take the offered width.
+     */
+    fun flexible(type: String, axis: String?) = when (type) {
+        "shape", "image" -> greedy()
+        "scroll" -> if (axis == "h") greedy(vertical = false) else greedy()
+        "grid", "textField" -> greedy(vertical = false)
+        else -> this
+    }
 
     /** Server documents are untrusted: non-finite numbers are dropped, sizes/padding/corner clamp at 0 (Compose throws on negatives). */
     companion object {

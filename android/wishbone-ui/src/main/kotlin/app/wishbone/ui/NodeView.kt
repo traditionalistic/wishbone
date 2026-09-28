@@ -55,13 +55,7 @@ internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Mo
     val evaluated = ctx.evalProps(node) ?: return
     // the screen container already paints the root background (behind the system bars too); a slot's stays inside it
     val p = animateProps(node, if (node === ctx.store.doc.root && !ctx.store.slot) evaluated - "background" else evaluated, ctx)
-    val box = BoxProps.from(p).let {
-        when (node.type) {
-            "shape", "image", "scroll" -> it.greedy()
-            "grid", "textField" -> it.greedy(vertical = false)
-            else -> it
-        }
-    }
+    val box = BoxProps.from(p).flexible(node.type, p.str("axis"))
     // scroll padding pads the scrolled content, not the viewport (parity ruling)
     val m = extra.boxOuter(node, box, p, ctx).interactions(node, ctx, source).dragGesture(node, ctx).boxInner(box, p, ctx, padding = node.type != "scroll")
     when (node.type) {
