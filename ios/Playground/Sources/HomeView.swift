@@ -5,10 +5,10 @@ struct HomeView: View {
     @Bindable var model: PlaygroundModel
     @State private var customID = ""
 
-    private static let showcase = ["showcase.onboarding", "showcase.promo", "showcase.form", "showcase.catalog"]
+    private static let showcase = ["showcase.onboarding", "showcase.promo", "showcase.form", "showcase.catalog", "raffle.main"]
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $model.path) {
             Form {
                 Section("Server") {
                     TextField("Base URL", text: $model.serverURL)
@@ -47,24 +47,30 @@ struct HomeView: View {
                 }
                 Section("Screens") {
                     ForEach(Self.showcase, id: \.self) { id in
-                        Button(id) { model.opened = .screen(id) }
+                        Button(id) { model.push(id) }
                     }
+                    NavigationLink("Feed demo (slot.feed.top)", value: FeedDemo())
                     HStack {
                         TextField("any screen id", text: $customID)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                        Button("Open") { model.opened = .screen(customID) }.disabled(customID.isEmpty)
+                        Button("Open") { model.push(customID) }.disabled(customID.isEmpty)
                     }
                 }
                 Section("Fixtures") {
                     ForEach(PlaygroundModel.fixtures.keys.sorted(), id: \.self) { id in
-                        Button(id) { model.opened = .screen(id) }
+                        Button(id) { model.push(id) }
                     }
                 }
             }
             .navigationTitle("Wishbone \(WishboneUIVersion.runtime)")
             .task { await model.loadSessions() }
             .refreshable { await model.loadSessions() }
+            // Screens go onto the playground's own stack (host-stack mode): DSL `navigate` pushes here too.
+            .navigationDestination(for: WishboneRoute.self) { route in
+                WishboneScreen(model.wishbone, route: route, onExit: { model.pop() }, onNavigate: { model.path.append($0) })
+            }
+            .navigationDestination(for: FeedDemo.self) { _ in FeedDemoView(model: model) }
         }
         .fullScreenCover(item: $model.opened) { opened in
             OpenedView(model: model, opened: opened)
@@ -74,7 +80,7 @@ struct HomeView: View {
     }
 }
 
-/// A screen or a live preview, full screen, with a close button.
+/// A live preview, full screen, with a close button.
 struct OpenedView: View {
     let model: PlaygroundModel
     let opened: Opened
@@ -95,8 +101,6 @@ struct OpenedView: View {
     @ViewBuilder
     private var content: some View {
         switch opened {
-        case let .screen(id):
-            WishboneScreen(model.wishbone, id: id)
         case let .preview(code):
             ZStack(alignment: .bottomLeading) {
                 if let preview {

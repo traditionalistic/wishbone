@@ -28,7 +28,7 @@ class PlaygroundHost(private val context: Context) : WishboneHost {
 
     override suspend fun action(name: String, args: Map<String, Any?>) {
         Log.i(TAG, "host $name $args")
-        Toast.makeText(context, "host: $name $args", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "$name: ${args["message"] ?: args["text"] ?: args}", Toast.LENGTH_SHORT).show()
     }
 
     override fun nativeView(name: String, props: Map<String, Any?>): (@androidx.compose.runtime.Composable () -> Unit) = {
