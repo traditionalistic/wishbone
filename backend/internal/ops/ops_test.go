@@ -3,6 +3,7 @@ package ops
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"os"
 	"strings"
 	"testing"
@@ -84,15 +85,20 @@ func TestValidate(t *testing.T) {
 
 func TestCheckCoversContract(t *testing.T) {
 	d := &Demo{NoLatency: true}
-	if err := Check(d.Handlers(), contractOps(t)); err != nil {
+	all := func() map[string]Handler {
+		h := d.Handlers()
+		maps.Copy(h, (&Raffle{G: &GQL{}}).Handlers())
+		return h
+	}
+	if err := Check(all(), contractOps(t)); err != nil {
 		t.Fatal(err)
 	}
-	h := d.Handlers()
+	h := all()
 	delete(h, "demo.plans")
 	if err := Check(h, contractOps(t)); err == nil || !strings.Contains(err.Error(), "demo.plans") {
 		t.Fatalf("missing handler must be reported: %v", err)
 	}
-	h = d.Handlers()
+	h = all()
 	h["demo.nope"] = h["demo.plans"]
 	if err := Check(h, contractOps(t)); err == nil || !strings.Contains(err.Error(), "demo.nope") {
 		t.Fatalf("extra handler must be reported: %v", err)
@@ -119,6 +125,9 @@ func TestDemoResultsMatchContract(t *testing.T) {
 		"demo.claimOffer": `{"id": "o1"}`,
 	}
 	for id, op := range ops {
+		if !strings.HasPrefix(id, "demo.") {
+			continue // raffle.* is checked by TestRaffleResultsMatchContract
+		}
 		if err := Validate(op.Args, val(t, args[id])); err != nil {
 			t.Fatalf("%s: test args do not match contract: %v", id, err)
 		}

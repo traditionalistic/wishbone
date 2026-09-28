@@ -143,6 +143,7 @@ func newEnvWith(t *testing.T, dir string, extraOps ...map[string]ops.Handler) *e
 	_ = write(admin, "index.html", "<!doctype html>admin")
 	_ = write(admin, "assets/app.js", "console.log(1)")
 	handlers := (&ops.Demo{NoLatency: true}).Handlers()
+	maps.Copy(handlers, (&ops.Raffle{G: &ops.GQL{}}).Handlers())
 	for _, extra := range extraOps {
 		maps.Copy(handlers, extra)
 	}

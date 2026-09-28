@@ -67,6 +67,11 @@
       "retryable": true,
       "client": "client-side only: transport failure surfaced to call results"
     },
+    "UPSTREAM_FAILED": {
+      "http": 502,
+      "retryable": true,
+      "client": "per-source/call {ok:false}; the screen shows its error state"
+    },
     "INTERNAL": {
       "http": 500,
       "retryable": true,

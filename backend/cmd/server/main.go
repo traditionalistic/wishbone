@@ -6,7 +6,9 @@ import (
 	"errors"
 	"flag"
 	"log/slog"
+	"maps"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -45,6 +47,13 @@ func run(ctx context.Context, addr, contractDir, adminDir string, withPreview bo
 		return err
 	}
 	handlers := (&ops.Demo{}).Handlers()
+	gqlURL := os.Getenv("WISHBONE_GRAPHQL_URL")
+	maps.Copy(handlers, (&ops.Raffle{G: &ops.GQL{URL: gqlURL, Login: os.Getenv("WISHBONE_GRAPHQL_LOGIN")}}).Handlers())
+	if u, err := url.Parse(gqlURL); gqlURL == "" || err != nil {
+		slog.Warn("WISHBONE_GRAPHQL_URL is not set or invalid; raffle.* operations answer UPSTREAM_FAILED")
+	} else {
+		slog.Info("raffle upstream", "host", u.Host, "fallbackLogin", os.Getenv("WISHBONE_GRAPHQL_LOGIN") != "")
+	}
 	if err := ops.Check(handlers, c.Ops); err != nil {
 		return err
 	}

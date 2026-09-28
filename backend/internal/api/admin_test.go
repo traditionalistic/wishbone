@@ -177,7 +177,7 @@ func TestCatalog(t *testing.T) {
 	for _, op := range c.Ops {
 		found = found || (op["id"] == "demo.subscribe" && op["kind"] == "write" && op["args"] == "{email: string, name: string, plan: string, promo: string}" && op["result"] == "{id: string, total: number}")
 	}
-	if !found || len(c.Ops) != 6 {
+	if !found || len(c.Ops) != 13 {
 		t.Fatalf("ops %v", c.Ops)
 	}
 

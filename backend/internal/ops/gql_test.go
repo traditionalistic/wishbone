@@ -2,46 +2,11 @@ package ops
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
-
-// upstream answers by operationName with a canned body and records the Authorization it saw.
-type upstream struct {
-	t      *testing.T
-	bodies map[string]string // operationName → response body
-	auth   []string
-	logins int
-}
-
-func (u *upstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		OperationName string         `json:"operationName"`
-		Variables     map[string]any `json:"variables"`
-	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	u.auth = append(u.auth, r.Header.Get("Authorization"))
-	if req.OperationName == "WishboneLogin" {
-		u.logins++
-		exp := time.Now().Add(15 * time.Minute).Unix()
-		payload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"exp":%d,"id":1188}`, exp)))
-		fmt.Fprintf(w, `{"data":{"authenticate":{"accessToken":"h.%s.s"}}}`, payload)
-		return
-	}
-	b, ok := u.bodies[req.OperationName]
-	if !ok {
-		w.WriteHeader(500)
-		return
-	}
-	io.WriteString(w, b)
-}
 
 func TestGQLForwardsAuthorization(t *testing.T) {
 	u := &upstream{t: t, bodies: map[string]string{"Q": `{"data":{"x":1}}`}}
