@@ -1,0 +1,37 @@
+# Task 3 — controller decisions (binding, supplement the brief)
+
+Sources: spec §2 (model), §2.3 (templates), §3.1 (source format), §3.8 (wire), §4 (motion fields); contract/primitives.json, stdlib.json (`language`), operations.json, tokens/*.json, icons.json; contract/api.md (Diag paths); contract/README.md (compiled vector format).
+
+## LoadContract(dir)
+Reads primitives.json, stdlib.json, operations.json, tokens/*.json (every theme must have identical key sets per group — else error; token names come from them), icons.json, templates/*.json (each compiled standalone at load; any diagnostic fails LoadContract with the template name in the message), screens are NOT loaded here.
+
+## Screen compilation (source JSON → wire document)
+- Script via the dsl package; then the tree. Collect all node ids first (duplicates → error "duplicate id"), so drivers (`scroll.<id>` must name a `scroll` node, `drag.<id>` a node with `drag`) and timeline targets can be validated.
+- Node `type`: a primitive from primitives.json, a template (name starts with an uppercase letter, must exist in templates/), or `slot` (only inside templates). Anything else → error.
+- Props: decode per spec §3.1 (`=` expression, `@` token, `\=`/`\@` escape, else JSON literal), type-check against the prop type (primitive props + `common`), required props must be present, unknown props → error naming the prop. `bind` pseudo-prop on textField (stdlib `language.bind`).
+- Events: common events + primitive events (+ `dragEnd` when `drag` is set); unknown event → error. Event bodies are statement lists with `event` typed by the payload type. `self.pressed` is legal only in props/events of a node that has `on.tap` or `on.longPress`.
+- `when` bool; `repeat` `{over: list<T> | list<T>?, as = "item", index = "index", key?}` — `as`/`index` are locals for the node, its subtree and its events.
+- `animate`: keys must be in primitives.json `animatable` or `*`, values of type motion. `transition`: `{in?, out?}` strings "fade + slide(edge) + scale(from) + offset(x, y)" → wire `[{"k":"fade"},{"k":"slide","edge":"bottom"},{"k":"scale","from":0.9},{"k":"offset","x":0,"y":20}]` (edge ∈ top|bottom|start|end; transitions are only legal on nodes with `when`, or on children of a `repeat`… keep it simple: legal on any node; the renderer applies them when the node enters/leaves the tree). `matchId` string expr. `drag` literal `{axis: "x"|"y"|"both", snap?: [numbers], bounds?: [min, max]}`. `a11y` `{label?: string expr, role?: "button"|"header"|"image"|"none", hidden?: bool expr}`.
+- Timelines: tracks target an existing node id, prop ∈ `timelineProps`, keys sorted by t (t ≥ 0), ease names → 4-number arrays from stdlib `easings` (linear → omitted), duplicate (target, prop) → error, repeat ≥ 1 or −1 (default 1), wire `duration` = max key t, `autoplay` default false.
+- Screen `param`s must have defaults (runtime has no other source). Data decls → wire `data` with args JSON (params as `{"$param": name}`).
+- Limits after template expansion: serialized document ≤ 512 KB, depth ≤ 32, nodes ≤ 2000 → error "limit".
+- `runtimeMin`: max `since` over used features — table in code, everything is "1.0.0" today; keep it one small function.
+- `Meta`: runtimeMin, ops referenced by `call` (for OPERATION_NOT_BOUND), data decls (name, op, args JSON, required).
+- Diag paths exactly contract/api.md (source JSON keys: `root/children/2/props/text`, `…/on/tap`, `…/when`, `…/repeat/over`, `…/animate/scale`, `…/transition/in`, `…/matchId`, `…/drag`, `…/a11y/label`, `…/id`, `script`, `timelines/0/tracks/1/keys/2`; node-level errors at the node path). line/col relative to the fragment.
+
+## Template expansion (spec §2.3, server-side, the client never sees templates)
+- Template source = same format as a screen; its script may declare `param` (typed; with or without default — a missing required param at an instance site is an error naming it), `event`, `state` (instance-local), `let`, `fn`, `handler`. Templates may use other templates; direct or indirect self-inclusion → error "recurs".
+- Instance-local state keys are **template-qualified** on the wire: `state on` in template `Toggle` → root `inst.state: {"Toggle.on": init}` and reads/writes `["i", "Toggle.on"]` / `["set", "i", "Toggle.on", …]`. At runtime `instanceState(name)` walks up the enclosing instances until one declares `name` — so a template passing its own state into a nested template's param still resolves correctly (no template contains itself, so qualified names are unique along any chain).
+- Params: the template body is compiled once with params as typed placeholders; at an instance, each placeholder is replaced by the instance's argument expression (compiled in the instance's OUTER environment) or the default. Hygiene: every local introduced inside the template (repeat `as`/`index`, lambda params, handler `let`s and handler params) is renamed with a unique prefix per expansion (e.g. `Toggle#3.item`) so substituted outer expressions can never be captured.
+- `let` in a template → inlined (substituted) at use sites; `fn` in a template → hoisted into the document `fns` as `<Template>.<fn>` (fns are pure, see only their params/other fns); template `handler`s → inlined at their call sites (`run`), with hygiene; recursion → error.
+- `emit <event>` → replaced by the instance's `on.<event>` statements (compiled in the outer environment, hygienic); no handler on the instance → removed.
+- `slot` → replaced by the instance's `children` (compiled in the outer environment).
+- Instance common props (modifiers), common node fields (`when`, `repeat`, `animate`, `transition`, `matchId`, `drag`, `a11y`) are moved onto the expanded template root and override its values; instance events not declared by the template (`appear`, `disappear`, …) attach to the root (spec §2.3, Ruling 12).
+- Ids: expanded root id = instance id; inner ids = `<instanceId>/<innerId>`; template timelines → `<instanceId>/<name>` with prefixed targets; `play/stop` inside the template use the prefixed names. Known V1 limitation (ruling): a template timeline plays for all materialized copies of its instance node (e.g. inside a repeat) — fine for ambient timelines (shimmer, spinner), documented in the report.
+
+## wbc
+- `wbc conformance -contract ../contract` → `contract/conformance/compiled/{expr,format,handlers,events,timelines}.json` exactly per contract/README.md (document built from script/timelines/root; `expr` replaced by its wire AST compiled in that document's environment; full `env`; timeline vectors get the wire timeline). Deterministic output (stable key order, 1-space indent) so re-running produces no diff.
+- `wbc compile [-contract dir] <screen.json>` → wire document on stdout, or diagnostics (`path:line:col: message`) on stderr with exit code 1.
+
+## Tests
+Table tests: expansion (param substitution + hygiene capture case, slot, emit with and without instance handler, qualified instance state incl. nested template receiving parent's state, template in repeat, prefixed ids/timelines, common props merged onto root), unknown prop/token/icon/event/op → diag with exact path, duplicate id, limits, bind sugar, transition parsing, timeline validation. Golden: compile contract/conformance/*.json vectors via wbc into a temp dir and compare with the committed compiled/ files (go test fails if `wbc conformance` output would differ).

@@ -1,0 +1,62 @@
+# Runtime core — controller decisions (binding for iOS WishboneCore and Android :wishbone-core)
+
+Normative sources: spec §3.4–§3.8, §4.2 (docs/superpowers/specs/2026-09-27-wishbone-v1-design.md), contract/stdlib.json (semantics, edge cases, fixed-point algorithm), contract/README.md (vector formats, harness rules, timeline sampling algorithm). Both platforms implement the SAME structure so a reader can diff them.
+
+## Value
+`Value = null | bool | number(Double) | string | list([Value]) | record(ordered map String→Value) | lambda(params, body, captured locals)`.
+- Record key order is not observable (`str()` sorts keys by code point; equality is order-insensitive), so any map type works.
+- Token values are plain records with `$`-keys (`{"$color": "el16", "alpha": 0.5}`, `{"$type": …}`, `{"$motion": …}`, `{"$icon": …}`, `{"$gradient": […], "angle": …}`); `@space.*`/`@radius.*` evaluate to numbers from the theme.
+- `Value(json:)` / `toJSON()`; JSON numbers → Double.
+
+## AST decoding
+- Wire forms exactly spec §3.8 (+ `["emit", name]` never appears on the wire). Decode into typed indirect enums `Expr`, `Stmt`, plus `Node`, `Document`, `Timeline`, `DataDecl`, `Handler`, `Fn`.
+- Robustness rule: an unknown expression/statement tag decodes to `.unknown(tag)` (evaluation throws), an unknown node `t` keeps the node with its type string (renderer skips it). Only malformed JSON / missing required document fields fail decoding of the whole document.
+- Constant folding: `["list", …]`/`["rec", …]` and `["v", [..]]`/`["v", {..}]` are both valid.
+
+## Scope (read/write surface the interpreter needs)
+```
+protocol/interface Scope {
+  state(name) -> Value            // "s"
+  instanceState(name) -> Value    // "i" — names are template-qualified ("Toggle.on"); resolved by walking up enclosing instances until one declares it
+  computed(name) -> Value         // implementations evaluate the computed expr on read
+  data(name) -> Value             // null when absent / failed
+  param(name) -> Value
+  env(name) -> Value
+  token(group, name) -> Value
+  driver(kind, id, axis) -> Double
+  selfPressed() -> Bool
+  set(scope: "s"|"i", name, path: [Value], value, transaction: Value?)   // path elements: string → field, number → index
+}
+```
+Locals (let, handler params, lambda params, repeat vars, `event`) are an immutable linked chain passed to `eval` — not part of Scope. User fns (`["u", …]`) evaluate their body with only their params as locals.
+- Path assignment: copy-on-write deep update; a missing field / out-of-range index / null on the path makes the whole assignment a no-op.
+
+## Interpreter
+- `eval(expr, locals) throws -> Value` — pure; counts one step per node visited (incl. lambda bodies); budget 10 000 per top-level `eval` call and per handler run (throws `budgetExceeded`).
+- Null-safety: `get`/`at` on null or on a wrong-shaped receiver → null. `&&`, `||`, `??` short-circuit.
+- Stdlib: exactly contract/stdlib.json `notes`, `functions`, `language` (code-point strings, half-away rounding reference, fixed-point algorithm incl. |x| >= 1e15 and sign rules, null-propagating methods on optional receivers, immutable values, CLDR plural subset with `#` substitution, formatDate in `env.timeZone`, Unicode-aware regex whole-match).
+- Handler runs are async (Swift `async` on @MainActor; Kotlin `suspend`), executed statement by statement:
+  - `set` → `scope.set(…, transaction: currentTransaction)`; `anim` sets `currentTransaction` (a motion Value) for the statements in its body (restored after, also across awaits inside the body).
+  - `call` → `effects.call(op, args) async -> Value` (the call-result record `{ok, value?, error?, fieldErrors?}`); `await=false` → fire and forget (do not await), `resultName` binds a local.
+  - `do` → `effects.perform(effect, args, await)`; `wait`/`await play` suspend until the sink returns.
+  - `run` → runs the named handler with evaluated args (awaited).
+  - Unknown statement / eval error → the run aborts, `effects.error(message)` is reported; state written before the error stays.
+- Events: `runStatements(stmts, locals)` entry point used for `on.*` (locals carry repeat vars and `event`).
+
+## EffectSink
+```
+call(op, args) async -> Value
+perform(effect, args: [Value], await: Bool) async
+error(message)
+```
+Recorded shapes in tests: `{"effect": name, "args": [...]}`, calls `{"effect": "call", "op", "args"}` (contract/README harness rule 3).
+
+## Timeline sampler
+`sample(timeline, tMs, index) -> [ "target.prop": Double ]` — exactly the algorithm in contract/README.md; `CubicBezier` — solver exactly as contract/README.md (|Δx| < 1e-12: Newton ≤8 from t=x, stop if |x'| < 1e-6, then bisection ≤64). Wire `ease` is a 4-number array or absent (linear). Also `duration(timeline, instanceCount) -> ms` (D·repeat + stagger·(n−1), infinite when repeat = −1) for `await play`.
+
+## Conformance harness
+Reads `<repo>/contract/conformance/compiled/*.json` (generated by the Go compiler — until it exists, the test must skip with a clear message, not fail) and applies contract/README.md harness rules to kinds `expr`, `handler`, `event`, `timeline` (skip `errors.json`). One test case per vector name so failures are named. A `MapScope` test double implements Scope over plain dictionaries + the korpu theme (`contract/tokens/korpu.json`).
+Until then, unit-test with hand-written wire AST (a few per area) — they stay as fast unit tests.
+
+## Not in this task
+Observable store, networking, rendering, theme resolution to platform colors/fonts — those come with the renderer tasks (9/10). Keep the core free of UI frameworks (iOS: Foundation only; Android: pure Kotlin/JVM, kotlinx.serialization-json + coroutines-core allowed).
