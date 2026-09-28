@@ -143,7 +143,7 @@ func roundTrip(t *testing.T, v any) any {
 func TestDemoProfileAndClaim(t *testing.T) {
 	d := &Demo{NoLatency: true}
 	p := roundTrip(t, call(t, d, "demo.profile", "alice", `{}`).Value).(map[string]any)
-	if p["name"] != "Ivan" || p["tickets"] != 12.0 || p["level"] != 7.0 || p["avatar"] != "http://h:1/assets/avatar.png" {
+	if p["name"] != "Ivan" || p["tickets"] != 12.0 || p["level"] != 7.0 || p["avatar"] != "http://h:1/assets/avatar.png" || p["authorized"] != true {
 		t.Fatalf("profile %v", p)
 	}
 	c := roundTrip(t, call(t, d, "demo.claimOffer", "alice", `{"id": "o2"}`).Value).(map[string]any)
@@ -155,6 +155,9 @@ func TestDemoProfileAndClaim(t *testing.T) {
 	}
 	if p := roundTrip(t, call(t, d, "demo.profile", "bob", `{}`).Value).(map[string]any); p["tickets"] != 12.0 {
 		t.Fatalf("state leaked between users: %v", p)
+	}
+	if p := roundTrip(t, call(t, d, "demo.profile", "anon", `{}`).Value).(map[string]any); p["authorized"] != false {
+		t.Fatalf("anonymous profile reports authorized: %v", p)
 	}
 }
 

@@ -60,7 +60,7 @@ func (d *Demo) addTickets(user string, n float64) float64 {
 }
 
 func (d *Demo) profile(_ context.Context, r Req) (Result, error) {
-	return OK(map[string]any{"name": "Ivan", "tickets": d.addTickets(r.User, 0), "avatar": r.Base + "/assets/avatar.png", "level": 7}), nil
+	return OK(map[string]any{"name": "Ivan", "tickets": d.addTickets(r.User, 0), "avatar": r.Base + "/assets/avatar.png", "level": 7, "authorized": r.User != "anon"}), nil
 }
 
 var offers = []struct{ title, subtitle string }{

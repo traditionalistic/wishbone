@@ -1,0 +1,66 @@
+{
+ "id": "host.hello",
+ "title": "Проверка хоста",
+ "script": "// Первый экран Wishbone внутри Stratoapp и most: проверяет адаптер хоста по шагам — авторизацию (demo.profile\n// видит заголовок Authorization), аналитику (track), действие хоста (host \"toast\"), внешнюю ссылку (open),\n// навигацию SDK в стеке хоста (navigate) и выход назад (back). Моушен: входной таймлайн со stagger, неявные\n// анимации прогресса и статусов, press-эффект строк.\ndata me = demo.profile()\nstate done: list<string> = []\nlet checks = [\n  {id: \"track\", title: \"Аналитика\", text: \"Событие wishbone_hello уходит в трекер приложения\", icon: @icon.star},\n  {id: \"host\", title: \"Действие хоста\", text: \"Приложение показывает тост с текстом с сервера\", icon: @icon.sparkles},\n  {id: \"open\", title: \"Ссылка\", text: \"Приложение открывает https-ссылку\", icon: @icon.share},\n  {id: \"navigate\", title: \"Навигация\", text: \"Следующий экран Wishbone открывается в стеке приложения\", icon: @icon.arrowRight}\n]\nlet platformName = env.platform == \"ios\" ? \"iOS\" : env.platform == \"android\" ? \"Android\" : env.platform\nlet passed = done.count\nlet authorized = me.authorized ?? false\nhandler run(id: string) {\n  haptic(\"selection\")\n  if id == \"track\" {\n    track(\"wishbone_hello\", {platform: env.platform, brand: env.brand})\n  }\n  if id == \"host\" {\n    host(\"toast\", {message: \"Привет из Wishbone\"})\n  }\n  if id == \"open\" {\n    open(\"https://github.com\")\n  }\n  if id == \"navigate\" {\n    navigate(\"showcase.onboarding\")\n  }\n  if !done.contains(id) {\n    animate(@motion.bouncy) { done = done.append(id) }\n  }\n  if done.count == checks.count {\n    haptic(\"success\")\n  }\n}",
+ "timelines": [
+  {"name": "intro", "autoplay": true, "tracks": [
+   {"target": "hero", "prop": "opacity", "keys": [{"t": 0, "v": 0}, {"t": 300, "v": 1, "ease": "easeOut"}]},
+   {"target": "hero", "prop": "scale", "keys": [{"t": 0, "v": 0.92}, {"t": 600, "v": 1, "ease": "spring"}]},
+   {"target": "profile", "prop": "opacity", "keys": [{"t": 150, "v": 0}, {"t": 450, "v": 1, "ease": "easeOut"}]},
+   {"target": "profile", "prop": "offsetY", "keys": [{"t": 150, "v": 16}, {"t": 650, "v": 0, "ease": "spring"}]},
+   {"target": "check", "prop": "opacity", "stagger": 80, "keys": [{"t": 280, "v": 0}, {"t": 580, "v": 1, "ease": "easeOut"}]},
+   {"target": "check", "prop": "offsetY", "stagger": 80, "keys": [{"t": 280, "v": 24}, {"t": 780, "v": 0, "ease": "spring"}]},
+   {"target": "footer", "prop": "opacity", "keys": [{"t": 600, "v": 0}, {"t": 900, "v": 1, "ease": "easeOut"}]}
+  ]}
+ ],
+ "root": {"type": "scroll", "id": "page", "props": {"spacing": "@space.lg", "width": "fill", "height": "fill", "padding": "={h: @space.lg, top: @space.sm, bottom: @space.xl}", "background": "@color.bg1"}, "children": [
+
+  {"type": "stack", "id": "hero", "props": {"axis": "z", "width": "fill", "height": 220, "corner": "@radius.card", "clip": true, "background": "=gradient([@color.accentPrimary, @color.accentSecondary], 135)"}, "children": [
+   {"type": "lottie", "id": "pulse", "props": {"url": "/assets/lottie/pulse.json", "width": 260, "height": 260, "opacity": 0.35}, "a11y": {"hidden": true}},
+   {"type": "stack", "id": "heroText", "props": {"align": "center", "spacing": "@space.sm", "padding": "@space.lg"}, "children": [
+    {"type": "icon", "id": "heroIcon", "props": {"name": "@icon.sparkles", "size": 36, "color": "@color.onAccent"}},
+    {"type": "text", "id": "heroTitle", "props": {"text": "Wishbone на связи", "style": "@type.largeTitle", "color": "@color.onAccent", "textAlign": "center"}, "a11y": {"role": "header"}},
+    {"type": "text", "id": "heroSub", "props": {"text": "=\"${platformName} · бренд ${env.brand}\"", "style": "@type.bodyMedium", "color": "=alpha(@color.onAccent, 0.8)", "textAlign": "center"}}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "profile", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill", "padding": "@space.lg", "background": "@color.bg1Elevated", "corner": "@radius.lg"}, "children": [
+   {"type": "Avatar", "id": "avatar", "when": "me != null", "props": {"name": "=me.name ?? \"\"", "url": "=me.avatar ?? \"\"", "size": 48}},
+   {"type": "Skeleton", "id": "avatarSkeleton", "when": "me == null", "props": {"width": 48, "height": 48, "corner": "@radius.pill"}},
+   {"type": "stack", "id": "profileText", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
+    {"type": "text", "id": "profileName", "props": {"text": "=me.name ?? \"Загружаем профиль…\"", "style": "@type.bodyStrong"}},
+    {"type": "text", "id": "profileNote", "props": {"text": "=me == null ? \"\" : authorized ? \"Токен приложения дошёл до сервера\" : \"Запрос пришёл без заголовка Authorization\"", "style": "@type.bodySmall", "color": "@color.el9"}}
+   ]},
+   {"type": "Badge", "id": "authBadge", "when": "me != null", "transition": {"in": "scale(0.6) + fade"}, "props": {"title": "=authorized ? \"Вход\" : \"Гость\"", "style": "=authorized ? \"success\" : \"warning\"", "size": "sm"}}
+  ]},
+
+  {"type": "stack", "id": "checksHeader", "props": {"axis": "h", "align": "center", "width": "fill", "padding": "={top: @space.sm}"}, "children": [
+   {"type": "text", "id": "checksTitle", "props": {"text": "Проверка хоста", "style": "@type.title"}, "a11y": {"role": "header"}},
+   {"type": "spacer", "id": "checksGap"},
+   {"type": "text", "id": "checksCount", "props": {"text": "=\"${passed} из ${checks.count}\"", "style": "@type.captionStrong", "color": "=passed == checks.count ? @color.success : @color.el9"}, "animate": {"color": "@motion.smooth"}}
+  ]},
+  {"type": "ProgressBar", "id": "progress", "props": {"value": "=passed / checks.count", "width": "=env.screenWidth - 32"}},
+
+  {"type": "stack", "id": "checks", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
+   {"type": "stack", "id": "check", "repeat": {"over": "checks", "as": "c", "key": "c.id"},
+    "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill", "padding": "@space.md", "background": "@color.bg1Elevated", "corner": "@radius.lg", "scale": "=self.pressed ? 0.97 : 1"},
+    "animate": {"scale": "@motion.press"},
+    "on": {"tap": "run(c.id)"}, "a11y": {"role": "button", "label": "c.title"}, "children": [
+     {"type": "stack", "id": "checkIconBox", "props": {"axis": "z", "width": 40, "height": 40, "corner": "@radius.pill", "background": "=done.contains(c.id) ? alpha(@color.success, 0.15) : alpha(@color.accentPrimary, 0.12)"}, "animate": {"background": "@motion.smooth"}, "children": [
+      {"type": "icon", "id": "checkIcon", "props": {"name": "=c.icon", "size": 20, "color": "=done.contains(c.id) ? @color.success : @color.accentPrimary"}, "animate": {"color": "@motion.smooth"}}
+     ]},
+     {"type": "stack", "id": "checkText", "props": {"spacing": 2, "width": "fill"}, "children": [
+      {"type": "text", "id": "checkTitle", "props": {"text": "=c.title", "style": "@type.bodyStrong"}},
+      {"type": "text", "id": "checkNote", "props": {"text": "=c.text", "style": "@type.bodySmall", "color": "@color.el9"}}
+     ]},
+     {"type": "icon", "id": "checkDone", "when": "done.contains(c.id)", "transition": {"in": "scale(0.6) + fade"}, "props": {"name": "@icon.check", "size": 20, "color": "@color.success"}},
+     {"type": "icon", "id": "checkGo", "when": "!done.contains(c.id)", "props": {"name": "@icon.chevronRight", "size": 16, "color": "@color.el9"}}
+    ]}
+  ]},
+
+  {"type": "stack", "id": "footer", "props": {"align": "center", "spacing": "@space.md", "width": "fill", "padding": "={top: @space.md}"}, "children": [
+   {"type": "text", "id": "footerNote", "props": {"text": "=passed == checks.count ? \"Всё работает — можно встраивать экраны\" : \"Нажмите на каждую строку\"", "style": "@type.bodySmall", "color": "@color.el9", "textAlign": "center"}},
+   {"type": "Button", "id": "close", "props": {"title": "Готово", "style": "=passed == checks.count ? \"primary\" : \"secondary\"", "width": "fill"}, "on": {"tap": "back()"}}
+  ]}
+ ]}
+}

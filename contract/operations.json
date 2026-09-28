@@ -5,7 +5,7 @@
     "demo.profile": {
       "kind": "read",
       "args": "{}",
-      "result": "{name: string, tickets: number, avatar: string, level: number}"
+      "result": "{name: string, tickets: number, avatar: string, level: number, authorized: bool}"
     },
     "demo.offers": {
       "kind": "read",
