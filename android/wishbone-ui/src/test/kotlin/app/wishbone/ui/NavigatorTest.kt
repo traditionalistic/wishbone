@@ -61,4 +61,18 @@ class NavigatorTest {
         n.dismiss() // root stays
         assertEquals(listOf("root"), n.ids())
     }
+
+    @Test
+    fun backAndDismissAtRootExit() {
+        val n = nav()
+        var exits = 0
+        n.exit = { exits++ }
+        n.navigate("a", emptyMap(), null)
+        n.back()
+        assertEquals(0, exits)
+        assertFalse(n.back())
+        n.dismiss()
+        assertEquals(2, exits)
+        assertEquals(listOf("root"), n.ids())
+    }
 }

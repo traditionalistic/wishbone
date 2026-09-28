@@ -15,6 +15,9 @@ class Navigator(rootScreen: String, rootParams: Map<String, Value>) {
     private var nextKey = 0L
     val entries = mutableStateListOf(Entry(rootScreen, rootParams, Mode.Root, nextKey++))
 
+    /** Leaves the SDK: `back`/`dismiss` at the root (the host's `onExit`, like iOS). */
+    var exit: () -> Unit = {}
+
     private val sheetStart: Int get() = entries.indexOfFirst { it.mode == Mode.Present }.let { if (it < 0) entries.size else it }
     val base: List<Entry> get() = entries.subList(0, sheetStart).toList()
     val sheet: List<Entry> get() = entries.subList(sheetStart, entries.size).toList()
@@ -28,9 +31,12 @@ class Navigator(rootScreen: String, rootParams: Map<String, Value>) {
         entries += Entry(screen, params, if (sheetStart < entries.size) Mode.Push else Mode.Present, nextKey++)
     }
 
-    /** Pops the top entry (closing the sheet when it held one entry); false at the root. */
+    /** Pops the top entry (closing the sheet when it held one entry); at the root calls [exit] and returns false. */
     fun back(): Boolean {
-        if (entries.size <= 1) return false
+        if (entries.size <= 1) {
+            exit()
+            return false
+        }
         entries.removeAt(entries.lastIndex)
         return true
     }

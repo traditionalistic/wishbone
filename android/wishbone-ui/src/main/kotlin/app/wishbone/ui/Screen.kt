@@ -42,6 +42,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -69,10 +70,13 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.TimeZone
 
-/** Renders server screen [id] with its own navigation stack (spec §6.3). */
+/**
+ * Renders server screen [id] with its own navigation stack (spec §6.3). [onExit] runs when the screen asks to leave
+ * the SDK — `back()`/`dismiss()` at the root; system back at the root is the host's own.
+ */
 @Composable
-fun WishboneScreen(wishbone: Wishbone, id: String, params: Map<String, Value> = emptyMap(), modifier: Modifier = Modifier) {
-    WishboneRoot(wishbone, id, params, null, modifier)
+fun WishboneScreen(wishbone: Wishbone, id: String, params: Map<String, Value> = emptyMap(), modifier: Modifier = Modifier, onExit: () -> Unit = {}) {
+    WishboneRoot(wishbone, id, params, null, modifier, onExit)
 }
 
 /** Renders a compiled document in place (fixtures, preview); a new [document] keeps the values of surviving state keys. */
@@ -121,8 +125,10 @@ internal class InlineDocument {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
-private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<String, Value>, inline: InlineDocument?, modifier: Modifier) {
+private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<String, Value>, inline: InlineDocument?, modifier: Modifier, onExit: () -> Unit = {}) {
     val navigator = remember(wishbone, rootId, rootParams) { Navigator(rootId, rootParams) }
+    val exit by rememberUpdatedState(onExit)
+    navigator.exit = { exit() }
     val holders = remember(navigator) { HashMap<Long, ScreenHolder>() }
     val saveable = rememberSaveableStateHolder() // scroll/pager positions survive a push on top, like NavigationStack
     val dark = when (wishbone.colorScheme) {

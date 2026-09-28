@@ -3,19 +3,22 @@ import SwiftUI
 import WishboneCore
 
 /// A server-driven screen with its own navigation stack (spec §6.3):
-/// `WishboneScreen(wishbone, id: "showcase.promo", params: [:])`.
+/// `WishboneScreen(wishbone, id: "showcase.promo", params: [:])`. `onExit` runs when the screen asks to leave the
+/// SDK — `back()`/`dismiss()` at the root; without it the SDK calls SwiftUI's `dismiss`.
 public struct WishboneScreen: View {
     let wishbone: Wishbone
     let root: Route
+    let onExit: (() -> Void)?
 
-    public init(_ wishbone: Wishbone, id: String, params: [String: Value] = [:]) {
+    public init(_ wishbone: Wishbone, id: String, params: [String: Value] = [:], onExit: (() -> Void)? = nil) {
         self.wishbone = wishbone
         root = Route(screen: id, params: params)
+        self.onExit = onExit
     }
 
     public var body: some View {
         // A different id/params is a different screen: fresh stack, model and store.
-        StackHost(wishbone: wishbone, root: root, presenter: nil)
+        StackHost(wishbone: wishbone, root: root, presenter: nil, onExit: onExit)
             .id("\(root.screen)|\(API.jsonString(.record(root.params)))")
     }
 }
@@ -39,12 +42,14 @@ public struct WishbonePreviewScreen: View {
 struct StackHost: View {
     let wishbone: Wishbone
     let root: Route
+    let onExit: (() -> Void)?
     @State private var navigator: Navigator
     @Environment(\.dismiss) private var dismiss
 
-    init(wishbone: Wishbone, root: Route, presenter: Navigator?) {
+    init(wishbone: Wishbone, root: Route, presenter: Navigator?, onExit: (() -> Void)? = nil) {
         self.wishbone = wishbone
         self.root = root
+        self.onExit = onExit
         _navigator = State(initialValue: Navigator(presenter: presenter))
     }
 
@@ -59,7 +64,7 @@ struct StackHost: View {
                 .presentationDragIndicator(.visible)
         }
         .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
-        .onAppear { navigator.exit = { dismiss() } }
+        .onAppear { navigator.exit = onExit ?? { dismiss() } }
     }
 }
 
