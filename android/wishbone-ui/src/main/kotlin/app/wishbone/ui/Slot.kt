@@ -10,6 +10,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -23,11 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.unit.dp
 import app.wishbone.core.Value
 
 /**
@@ -36,7 +40,8 @@ import app.wishbone.core.Value
  * cache, or when the root's `when` is false. `navigate` and `present` go to [onNavigate] (`present` with transition
  * "present"); `back`/`dismiss` do nothing. Loads when it enters the composition; a new [id]/[params] reloads.
  * Content that comes or goes after the first frame animates on `@motion.smooth` (fade + height from the top edge, so
- * the host's rows below slide; reduce motion: fade only); a cached slot is there in its first frame.
+ * the host's rows below slide; reduce motion: fade only); a cached slot is there in its first frame. At most
+ * [SLOT_MAX_HEIGHT] dp tall: content below is clipped.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -83,7 +88,8 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
     CompositionLocalProvider(LocalWishbone provides wishbone) {
         // measured even while empty, so the first content already reads its width
         Box(modifier.fillMaxWidth().onSizeChanged { width = it.width }.semantics { testTagsAsResourceId = true }, contentAlignment = Alignment.Center) {
-            val wired = store ?: last
+            // Once a leaving slot has finished its exit, its last store is let go: a looping timeline stops asking for frames.
+            val wired = store ?: last.takeUnless { presence.isIdle && !presence.currentState }
             if (wired != null) {
                 StoreContent(wired, env, wishbone.theme, Modifier) {
                     // The size animates with the content, so the host's rows below slide; reduce motion: fade only.
@@ -91,12 +97,25 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
                         presence,
                         enter = fadeIn(spec.animationSpec()) + if (reduce) EnterTransition.None else expandVertically(spec.animationSpec(), expandFrom = Alignment.Top),
                         exit = fadeOut(spec.animationSpec()) + if (reduce) ExitTransition.None else shrinkVertically(spec.animationSpec(), shrinkTowards = Alignment.Top),
-                    ) { shown?.let { NodeView(it.doc.root, it.root) } }
+                    ) {
+                        shown?.let {
+                            // measured at its full height, shown up to the cap from the top
+                            Box(Modifier.heightIn(max = SLOT_MAX_HEIGHT.dp).clipToBounds().wrapContentHeight(Alignment.Top, unbounded = true)) {
+                                NodeView(it.doc.root, it.root)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+/**
+ * A slot is a row of the host's feed, often a lazy one, where a row taller than the screen can livelock SwiftUI's
+ * `LazyVStack` (decisions/renderers.md): a slot is at most this tall (dp), content below is clipped (iOS: the same).
+ */
+internal const val SLOT_MAX_HEIGHT = 480
 
 /** The slot has content: a store whose root's `when` is absent or true. */
 internal fun slotVisible(store: Store?): Boolean = store != null && store.root.shows(store.doc.root)

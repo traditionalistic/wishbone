@@ -39,6 +39,14 @@ import Testing
         #expect(slotVisible(model.store))
     }
 
+    /// A slot is a row of the host's feed: at most 480 tall (a taller lazy row can livelock `LazyVStack`), content below clipped.
+    @Test func aSlotIsAtMost480Tall() {
+        #expect(Reveal.height(content: 120, fraction: 1) == 120) // content-sized below the cap
+        #expect(Reveal.height(content: 900, fraction: 1) == 480)
+        #expect(Reveal.height(content: 900, fraction: 0.5) == 240) // the reveal animates the capped height
+        #expect(Reveal.height(content: 120, fraction: -0.1) == 0) // a spring overshooting below 0
+    }
+
     @Test func removeDeletesTheEntry() {
         let cache = DiskCache(dir: tempDir())
         let key = DiskCache.screenKey(scope: "s", id: "slot.x", params: [:])

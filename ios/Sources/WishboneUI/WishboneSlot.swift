@@ -8,7 +8,7 @@ import WishboneCore
 /// `back`/`dismiss` do nothing. Loads on appearance (cache at once, then network); the host forces a
 /// reload by changing the view's identity. Content that comes or goes after the first frame animates on
 /// `@motion.smooth` (fade + height from the top edge, so the host's rows below slide; reduce motion: fade only);
-/// a cached slot is there in its first frame.
+/// a cached slot is there in its first frame. At most `slotMaxHeight` tall: content below is clipped.
 public struct WishboneSlot: View {
     let wishbone: Wishbone
     let route: Route
@@ -121,9 +121,14 @@ func slotVisible(_ store: Store?) -> Bool {
     return RenderContext(store: store).shows(store.document.root)
 }
 
-/// Reports `fraction` of its content's height with the content pinned to the top (the caller clips): the slot's
-/// height animates like Compose's `expandVertically(expandFrom = Top)` / `shrinkVertically(shrinkTowards = Top)`.
-private struct Reveal: Layout {
+/// A slot is a row of the host's feed, often a lazy one, where a row taller than the screen can livelock SwiftUI's
+/// `LazyVStack` (decisions/renderers.md): a slot is at most this tall, content below is clipped (Android: the same).
+let slotMaxHeight: CGFloat = 480
+
+/// Reports `fraction` of its content's height, capped at `slotMaxHeight`, with the content pinned to the top (the
+/// caller clips): the slot's height animates like Compose's `expandVertically(expandFrom = Top)` /
+/// `shrinkVertically(shrinkTowards = Top)`.
+struct Reveal: Layout {
     var fraction: Double
 
     var animatableData: Double {
@@ -132,11 +137,17 @@ private struct Reveal: Layout {
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let size = subviews.first?.sizeThatFits(proposal) ?? .zero
-        return CGSize(width: size.width, height: size.height * fraction)
+        let size = subviews.first?.sizeThatFits(Self.content(proposal)) ?? .zero
+        return CGSize(width: size.width, height: Self.height(content: size.height, fraction: fraction))
     }
 
+    /// A spring may overshoot below 0: never a negative height.
+    static func height(content: CGFloat, fraction: Double) -> CGFloat { min(content, slotMaxHeight) * max(0, fraction) }
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        subviews.first?.place(at: bounds.origin, proposal: proposal)
+        subviews.first?.place(at: bounds.origin, proposal: Self.content(proposal))
     }
+
+    /// The content is as tall as it wants (as in a lazy feed row, and as on Android); the cap clips it.
+    private static func content(_ proposal: ProposedViewSize) -> ProposedViewSize { ProposedViewSize(width: proposal.width, height: nil) }
 }
