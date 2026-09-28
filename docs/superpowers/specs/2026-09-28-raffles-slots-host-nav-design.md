@@ -58,7 +58,7 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
 
 ### 2.3 Семантика
 
-- Инлайн, без стека; ширина — предложенная хостом, высота — по контенту корня. `env.safeTop/safeBottom` = 0.
+- Инлайн, без стека; ширина — предложенная хостом, высота — по контенту корня. `env.safeTop/safeBottom` = 0, `env.screenWidth` = ширина слота, `env.screenHeight` = 0 (высота слота зависит от контента — обратной связи нет).
 - **Пустой слот** (ничего не рисуется, высота 0; ни спиннера, ни фоллбека):
   - загрузка без кэша;
   - `SCREEN_NOT_FOUND` (не опубликован или снят) — дополнительно **стирает кэш слота**, иначе снятый баннер жил бы в кэше;
@@ -72,8 +72,8 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
 - Миграция `002`: `screens.unpublished_at timestamptz NULL`.
 - `POST /admin/api/screens/{id}/unpublish` → 204; `publish` и `rollback` сбрасывают флаг; запись в `audit`.
 - `GET /v1/screens/{id}` для снятого экрана → 404 `SCREEN_NOT_FOUND`. `/v1/data` и `/v1/call` по номеру ревизии работают как раньше (открытые экраны доживают).
-- `GET /admin/api/screens`: у снятого `publishedRev: null`.
-- Админка: кнопка «Снять с публикации» рядом с «Опубликовать».
+- `GET /admin/api/screens` и `GET /admin/api/screens/{id}`: поле `unpublished: bool` (`publishedRev` — по-прежнему последняя ревизия: сид при рестарте не должен переопубликовать снятый экран).
+- Админка: кнопка «Снять с публикации» рядом с «Опубликовать», у снятого экрана — пометка «снят».
 
 ## 3. Raffles на реальном бэкенде
 
@@ -84,6 +84,7 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
 - `WISHBONE_GRAPHQL_FALLBACK_TOKEN` (необязательный): для **read**-операций запросов без `Authorization` (превью в админке, плейграунд) подставляется `Bearer <token>` тестового stage-аккаунта. Write без токена → `UNAUTHENTICATED`.
 - Ошибки: `extensions.code == "UNAUTHENTICATED"` → `UNAUTHENTICATED`; прочие GraphQL-ошибки, таймаут (10 с), не-200 → `UPSTREAM_FAILED` (новый код в `errors.json`, retryable; приходит как доменная ошибка `{ok: false}` источника или `call`). Токен и тела ответов не логируются.
 - Образ сервера `FROM scratch` получает CA-бандл (иначе TLS до stage не пройдёт): `push.sh` кладёт системный бандл в контекст сборки, `Dockerfile` копирует его в `/etc/ssl/certs/ca-certificates.crt`.
+- Таймаут: у операции в `operations.json` необязательное `timeoutMs` (по умолчанию 500 — прежний таймаут источника); у `raffle.*` — 3000. Бюджет резолва данных экрана = max(1200 мс, наибольший `timeoutMs` источников экрана + 200 мс). Тот же таймаут действует на `call`.
 - Один апстрим: токены dev/georgiaStage/featureStand на stage не валидны → экраны показывают ошибку, слот пуст. Потолок; при необходимости — allowlist «контур → URL» по заголовку хоста.
 
 ### 3.2 Операции (`contract/operations.json`, `backend/internal/ops/raffle.go`)
@@ -110,7 +111,7 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
   prizes: list<{rank: number, title: string, tickets: number, image: string?}>,
   tasks: list<{id: string, name: string, description: string, icon: string?, tickets: number,
                cooldownUntil: number?, progress: list<{label: string, value: string, ticket: bool}>}>,
-  rules: list<{name: string, description: string, icon: string?, tickets: number}>,
+  rules: list<{name: string, description: string, icon: string?, tickets: number}>,   // promo-правила (isPromo) — шит «Как получить билеты»
   tasksDone: number, tasksTotal: number,
   share: string? }
 ```
@@ -142,7 +143,7 @@ Android: `@Composable fun WishboneSlot(wishbone, id, params = emptyMap(), onNavi
 
 - Синк SDK: `Scripts/sync-wishbone.sh`.
 - **Лента:** новый `FeedRenderItem` со слотом `slot.feed.top` — только когда Wishbone доступен (debug/TF), после нативного raffle-промо, в скоупе главной ленты. Вьюха слота поставляется хуком из App-таргета (лента не импортирует WishboneUI), как `FeedRafflePromoHooks`. Пустой слот — нулевая высота строки.
-- **Открытие экранов:** `onNavigate` слота и диплинк `bdui/<id>` открывают Wishbone-экран push-оверлеем (`ManualSlidingOverlay`, как нативный розыгрыш) вместо текущего шита; внутри — стек SDK (у оверлеев Stratoapp нет NavigationStack хоста); `onExit` закрывает оверлей.
+- **Открытие экранов:** `onNavigate` слота идёт через существующий роутинг ссылок первого лица (`bdui/<id>` → `presentedWishboneScreen`; параметры маршрута пока не переносятся — потолок); диплинк `bdui/<id>` открывают Wishbone-экран push-оверлеем (`ManualSlidingOverlay`, как нативный розыгрыш) вместо текущего шита; внутри — стек SDK (у оверлеев Stratoapp нет NavigationStack хоста); `onExit` закрывает оверлей.
 - **`WishboneAppHost.action("share")`** → системный share sheet.
 
 ## 5. Проверка
