@@ -47,6 +47,10 @@ struct SlotHost: View {
         self.route = route
         self.onNavigate = onNavigate
         let navigator = Navigator()
+        // Wired before the first frame: a cached root's `appear` may navigate at once.
+        navigator.forward = onNavigate
+        navigator.forwardsPresent = true
+        navigator.exit = {} // `back`/`dismiss` at the root: no-op
         _navigator = State(initialValue: navigator)
         _model = State(initialValue: ScreenModel(wishbone: wishbone, route: route, navigator: navigator, slot: true))
     }
@@ -69,12 +73,7 @@ struct SlotHost: View {
             if model.store == nil { model.showCached() }
             present(slotVisible(model.store) ? model.store : nil, animated: false)
         }
-        .task {
-            navigator.forward = onNavigate
-            navigator.forwardsPresent = true
-            navigator.exit = {} // `back`/`dismiss` at the root: no-op
-            await model.load()
-        }
+        .task { await model.load() }
         .onDisappear { wishbone.clock.release() }
     }
 

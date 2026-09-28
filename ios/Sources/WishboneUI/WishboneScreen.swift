@@ -10,7 +10,7 @@ import WishboneCore
 /// destination stack, whatever the host uses). `present`/`dismiss` are unaffected: a sheet always keeps
 /// its own stack inside the SDK, in both modes. `onExit` runs when the screen asks to leave the SDK —
 /// `back()`/`dismiss()` at the root; without it the SDK calls SwiftUI's `dismiss`. Both `onExit` and
-/// `onNavigate` are read once, when the screen appears (pass closures over a stable router, not ones that
+/// `onNavigate` are read once, when the screen is created (pass closures over a stable router, not ones that
 /// change between renders).
 public struct WishboneScreen: View {
     let wishbone: Wishbone
@@ -80,7 +80,11 @@ struct StackHost: View {
         self.root = root
         self.onExit = onExit
         self.onNavigate = onNavigate
-        _navigator = State(initialValue: Navigator(presenter: presenter))
+        let navigator = Navigator(presenter: presenter)
+        // Wired before the first frame: a cached root's `appear` may navigate or leave at once.
+        navigator.forward = onNavigate
+        navigator.exit = onExit
+        _navigator = State(initialValue: navigator)
     }
 
     /// Host-stack mode: just the route, no stack of its own. Plain mode: the SDK's own `NavigationStack`.
@@ -104,8 +108,8 @@ struct StackHost: View {
             }
             .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry))
             .onAppear {
-                navigator.exit = onExit ?? { dismiss() }
-                navigator.forward = onNavigate
+                // SwiftUI's `dismiss` is read from the environment, which only an installed view has.
+                if navigator.exit == nil { navigator.exit = { dismiss() } }
             }
     }
 }
