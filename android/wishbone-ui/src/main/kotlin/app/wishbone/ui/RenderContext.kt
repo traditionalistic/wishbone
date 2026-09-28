@@ -94,7 +94,14 @@ internal class RenderContext(
 
     /** Runs an `on.*` body with `event` bound; starts synchronously so state writes land before the next frame. */
     fun fire(stmts: List<Stmt>, payload: Value = Value.rec()) {
-        store.scope.launch(start = CoroutineStart.UNDISPATCHED) { interpreter.runStatements(stmts, locals.bind("event", payload)) }
+        store.scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            store.runningHandlers++
+            try {
+                interpreter.runStatements(stmts, locals.bind("event", payload))
+            } finally {
+                store.runningHandlers--
+            }
+        }
     }
 
     fun identifier(node: Node) = "wb.${store.doc.screen}.${node.id}$keyPath"

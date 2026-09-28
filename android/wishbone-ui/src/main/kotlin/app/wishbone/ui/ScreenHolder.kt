@@ -45,7 +45,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     /** DSL state for the first store: the screen came back into the composition from a host back stack. */
     var restored: StoreSnapshot? = null
 
-    fun snapshot(): StoreSnapshot? = store?.snapshot() ?: restored
+    fun snapshot(): StoreSnapshot? = store?.savedSnapshot() ?: restored
 
     fun load() {
         if (store == null) state = LoadState.Loading

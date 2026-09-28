@@ -100,16 +100,27 @@ internal class InstanceScope(val parent: InstanceScope?, val cells: Map<String, 
     fun find(name: String): MutableState<Value>? = cells[name] ?: parent?.find(name)
 }
 
-/** A screen's DSL state: state values by key, template-instance state by instance key (node id + repeat key path). */
-internal data class StoreSnapshot(val state: Map<String, Value>, val instances: Map<String, Map<String, Value>>) {
+/**
+ * A screen's DSL state: state values by key, template-instance state by instance key (node id + repeat key path).
+ * [screen] is the screen it belongs to: a store of another screen never takes it.
+ */
+internal data class StoreSnapshot(val screen: String, val state: Map<String, Value>, val instances: Map<String, Map<String, Value>>) {
     /** JSON text for saveable state; lambdas have no JSON form and come back as null. */
-    fun encode(): String = Value.rec("state" to Value.Rec(state), "instances" to Value.Rec(instances.mapValues { Value.Rec(it.value) })).toJson().toString()
+    fun encode(): String = Value.rec(
+        "screen" to Value.Str(screen),
+        "state" to Value.Rec(state),
+        "instances" to Value.Rec(instances.mapValues { Value.Rec(it.value) }),
+    ).toJson().toString()
 
     companion object {
         /** Null when [text] isn't a snapshot: the screen starts from its initial state. */
         fun decode(text: String): StoreSnapshot? = runCatching {
             val f = (Value.fromJsonString(text) as Value.Rec).fields
-            StoreSnapshot((f.getValue("state") as Value.Rec).fields, (f.getValue("instances") as Value.Rec).fields.mapValues { (it.value as Value.Rec).fields })
+            StoreSnapshot(
+                (f.getValue("screen") as Value.Str).value,
+                (f.getValue("state") as Value.Rec).fields,
+                (f.getValue("instances") as Value.Rec).fields.mapValues { (it.value as Value.Rec).fields },
+            )
         }.getOrNull()
     }
 }
@@ -164,7 +175,7 @@ class Store internal constructor(
     private val cells = LinkedHashMap<String, MutableState<Value>>()
     internal val instances = HashMap<String, InstanceScope>()
     /** Same-name state keys and instance cells keep these values (a new document, or a restored screen). */
-    private val kept: StoreSnapshot? = previous?.snapshot() ?: restored
+    private val kept: StoreSnapshot? = previous?.snapshot() ?: restored?.takeIf { it.screen == doc.screen }
     /** Scroll/drag cells survive a rebuild: effects keyed on remembered scroll states keep writing the same cells. */
     private val drivers: HashMap<String, MutableDoubleState> = previous?.drivers ?: HashMap()
 
@@ -204,9 +215,19 @@ class Store internal constructor(
 
     /** Current state and instance values; kept instances not rendered again yet (e.g. on another tab) stay in it. */
     internal fun snapshot(): StoreSnapshot = StoreSnapshot(
+        doc.screen,
         cells.mapValues { it.value.value },
         kept?.instances.orEmpty() + instances.mapValues { (_, scope) -> scope.cells.mapValues { it.value.value } },
     )
+
+    /** Handler runs in flight ([RenderContext.fire]); counted on the main thread. */
+    internal var runningHandlers = 0
+
+    /**
+     * What may outlive the screen: nothing while a handler runs — its flags (`loading = true`) would come back
+     * without the cancelled run that resets them, so the screen starts fresh instead.
+     */
+    internal fun savedSnapshot(): StoreSnapshot? = if (runningHandlers > 0) null else snapshot()
 
     fun computed(name: String): Value = doc.computed[name]?.let { root.eval(it) } ?: Value.Null
     fun param(name: String): Value = params[name] ?: doc.params[name]?.let { root.eval(it) } ?: Value.Null

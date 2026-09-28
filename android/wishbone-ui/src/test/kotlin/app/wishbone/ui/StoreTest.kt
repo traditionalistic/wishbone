@@ -5,6 +5,7 @@ import app.wishbone.core.EffectSink
 import app.wishbone.core.Value
 import app.wishbone.core.bind
 import androidx.compose.runtime.snapshots.Snapshot
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -118,6 +119,39 @@ class StoreTest {
         assertEquals(Value.TRUE, back.snapshot().instances["tg"]?.get("Toggle.on"))
         assertEquals(Value.TRUE, back.root.withInstance("tg", back.extras.getValue("tg").inst!!).instanceState("Toggle.on"))
         assertEquals(null, StoreSnapshot.decode("not json"))
+    }
+
+    @Test
+    fun aSnapshotOfAnotherScreenIsNotRestored() {
+        val s = store()
+        s.root.set("s", "a", emptyList(), n(5.0), null)
+        val saved = StoreSnapshot.decode(s.snapshot().encode())
+        assertEquals("t", saved?.screen)
+        // a reused host key after process death: another screen with a same-name key starts from its own initial state
+        val other = Document.parse("""{"screen":"other","state":[["a",["v",1]]],"root":{"t":"stack","id":"root"}}""")
+        assertEquals(n(1.0), store(other, restored = saved).state("a"))
+    }
+
+    @Test
+    fun nothingIsSavedWhileAHandlerRuns() {
+        val gate = CompletableDeferred<Value>()
+        val sink = object : EffectSink {
+            override suspend fun call(op: String, args: Value, awaited: Boolean): Value = gate.await()
+            override suspend fun perform(effect: String, args: List<Value>, await: Boolean) {}
+            override fun error(message: String) { errors += message }
+        }
+        val d = Document.parse(
+            """{"screen":"t","state":[["loading",["v",false]]],
+               "handlers":{"load":{"params":[],"body":[["set","s","loading",[],["v",true]],["call","x.load",["v",{}],"r",true],["set","s","loading",[],["v",false]]]}},
+               "root":{"t":"stack","id":"root","on":{"appear":[["run","load",[]]]}}}""",
+        )
+        val s = Store(d, emptyMap(), emptyMap(), theme, emptyMap(), sink, CoroutineScope(Dispatchers.Unconfined))
+        s.root.fire(d.root.on.getValue("appear"))
+        assertEquals(Value.TRUE, s.state("loading"))
+        // `loading = true` must not come back without the (cancelled) run that resets it
+        assertEquals(null, s.savedSnapshot())
+        gate.complete(Value.Null)
+        assertEquals(Value.FALSE, s.savedSnapshot()?.state?.get("loading"))
     }
 
     @Test

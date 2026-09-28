@@ -51,18 +51,16 @@ import app.wishbone.ui.WishboneScreen
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import java.util.concurrent.atomic.AtomicLong
+import java.util.UUID
 
 private const val DEFAULT_URL = "http://10.0.2.2:8080"
 private val SCREENS = listOf("showcase.onboarding", "showcase.promo", "showcase.form", "showcase.catalog", "raffle.main")
-
-private val routeKeys = AtomicLong()
 
 /**
  * `screen:<id>` | `preview:<code>` | `fixture:<name>` | `feed` | `home`. Also accepted as the `route` intent extra (adb).
  * `route` carries a [WishboneRoute] a screen or the feed slot asked to push (host-stack mode). [key] is unique per push.
  */
-data class Route(val value: String, val route: WishboneRoute? = null, val key: Long = routeKeys.getAndIncrement()) {
+data class Route(val value: String, val route: WishboneRoute? = null, val key: String = UUID.randomUUID().toString()) {
     val kind get() = value.substringBefore(':')
     val arg get() = value.substringAfter(':')
 }

@@ -253,9 +253,11 @@ private class SavedRoot(private var pending: StoreSnapshot?) {
     }
 
     companion object {
-        // ponytail: the whole DSL state goes into the saved-instance Bundle too (binder limit ~1 MB); cap it if screens keep big lists in state
+        // the saved-instance Bundle is capped by the binder (~1 MB, TransactionTooLargeException): bigger state starts fresh
+        private const val MAX_CHARS = 64_000
+
         val Saver = Saver<SavedRoot, String>(
-            save = { (it.holder?.snapshot() ?: it.pending)?.encode() },
+            save = { (it.holder?.snapshot() ?: it.pending)?.encode()?.takeIf { s -> s.length <= MAX_CHARS } },
             restore = { SavedRoot(StoreSnapshot.decode(it)) },
         )
     }
