@@ -12,5 +12,5 @@ the only tree exposed at `GET /assets/<path>` (by construction, not by a route-l
 
 `GiorgioSansLCG-HeavyItalic.otf` is a commercial font: "(C)2012 Christian Schwartz with Vincent Chan, under
 exclusive license to Schwartzco Inc./Commercial Type. All rights reserved." (license URL in the file:
-<http://commercialtype.com/license>). It is not covered by `OFL.txt`. **The owner must confirm that the Korpu font
-license allows redistributing it inside the SDKs and apps** before either SDK ships outside the team.
+<http://commercialtype.com/license>). It is not covered by `OFL.txt`. The owner confirmed on 2026-09-28 that the
+Korpu license allows redistributing it inside the SDKs and apps.
