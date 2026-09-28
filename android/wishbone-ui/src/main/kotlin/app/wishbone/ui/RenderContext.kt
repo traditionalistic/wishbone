@@ -106,12 +106,15 @@ internal class RenderContext(
 
     fun identifier(node: Node) = "wb.${store.doc.screen}.${node.id}$keyPath"
 
+    /** `when` absent or true (a slot decides on its root the same way). */
+    fun shows(node: Node) = node.whenExpr?.let { evalOrNull(it) == Value.TRUE } != false
+
     /** Expands `repeat` (identity = key value, else index) and drops `when`-false nodes. */
     fun materialize(nodes: List<Node>): List<Item> {
         val out = ArrayList<Item>()
         val seen = HashSet<String>()
         fun add(node: Node, c: RenderContext) {
-            val shown = node.whenExpr == null || c.evalOrNull(node.whenExpr!!) == Value.TRUE
+            val shown = c.shows(node)
             if (!shown && store.extras[node.id]?.animatedPresence != true) return
             var key = node.id + c.keyPath
             // ponytail: duplicate repeat keys get an index suffix instead of an error

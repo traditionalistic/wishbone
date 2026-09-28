@@ -1,12 +1,22 @@
 package app.wishbone.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -25,6 +35,8 @@ import app.wishbone.core.Value
  * its content, and nothing at all (zero height) while loading, unpublished (the cache is dropped), failed without a
  * cache, or when the root's `when` is false. `navigate` and `present` go to [onNavigate] (`present` with transition
  * "present"); `back`/`dismiss` do nothing. Loads when it enters the composition; a new [id]/[params] reloads.
+ * Content that comes or goes after the first frame animates on `@motion.smooth` (fade + height from the top edge, so
+ * the host's rows below slide; reduce motion: fade only); a cached slot is there in its first frame.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -37,8 +49,6 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
             exit = {}
         }
     }
-    val holder = remember(navigator) { ScreenHolder(wishbone, navigator, navigator.entries.first(), slot = true).also { it.load() } }
-    DisposableEffect(holder) { onDispose { holder.dispose() } }
     var width by remember { mutableIntStateOf(0) }
     // spec §2.3: the slot's own width, no height (it follows the content), no safe area
     val env = rememberEnv(wishbone) + mapOf(
@@ -47,18 +57,46 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
         "safeTop" to Value.Num(0.0),
         "safeBottom" to Value.Num(0.0),
     )
+    val holder = remember(navigator) {
+        ScreenHolder(wishbone, navigator, navigator.entries.first(), slot = true).also { h ->
+            h.env = env
+            // The cache goes on screen in the first frame (as on iOS), so a cached slot doesn't animate in; the loader then
+            // only revalidates it. ponytail: a main-thread read of one small file per slot entering the composition.
+            wishbone.cache.readScreen(id, params, wishbone.cacheScope)?.let { h.apply(it.document, it.data, it.revision) }
+            h.load()
+        }
+    }
+    DisposableEffect(holder) { onDispose { holder.dispose() } }
     holder.env = env
     holder.view = LocalView.current
     val store = holder.store
+    val visible = slotVisible(store)
+    // Shown in the first frame: no enter animation; later comings and goings animate.
+    val presence = remember(holder) { MutableTransitionState(visible) }
+    presence.targetState = visible
+    // A leaving slot keeps its last content: its root's `when` may be false already, or the load failed.
+    var last by remember(holder) { mutableStateOf<Store?>(null) }
+    SideEffect { if (visible) last = store }
+    val shown = if (visible) store else last
+    val spec = wishbone.theme.motions["smooth"] ?: MotionSpec.SMOOTH_FALLBACK
+    val reduce = env["reduceMotion"] == Value.TRUE
     CompositionLocalProvider(LocalWishbone provides wishbone) {
         // measured even while empty, so the first content already reads its width
         Box(modifier.fillMaxWidth().onSizeChanged { width = it.width }.semantics { testTagsAsResourceId = true }, contentAlignment = Alignment.Center) {
-            if (store != null) {
-                StoreContent(store, env, wishbone.theme, Modifier) {
-                    val root = store.doc.root
-                    if (root.whenExpr?.let { store.root.evalOrNull(it) == Value.TRUE } != false) NodeView(root, store.root)
+            val wired = store ?: last
+            if (wired != null) {
+                StoreContent(wired, env, wishbone.theme, Modifier) {
+                    // The size animates with the content, so the host's rows below slide; reduce motion: fade only.
+                    AnimatedVisibility(
+                        presence,
+                        enter = fadeIn(spec.animationSpec()) + if (reduce) EnterTransition.None else expandVertically(spec.animationSpec(), expandFrom = Alignment.Top),
+                        exit = fadeOut(spec.animationSpec()) + if (reduce) ExitTransition.None else shrinkVertically(spec.animationSpec(), shrinkTowards = Alignment.Top),
+                    ) { shown?.let { NodeView(it.doc.root, it.root) } }
                 }
             }
         }
     }
 }
+
+/** The slot has content: a store whose root's `when` is absent or true. */
+internal fun slotVisible(store: Store?): Boolean = store != null && store.root.shows(store.doc.root)

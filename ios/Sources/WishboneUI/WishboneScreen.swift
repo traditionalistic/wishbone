@@ -210,19 +210,7 @@ final class ScreenModel {
 
     func load() async {
         if case .failed = phase { phase = .loading }
-        if let local = wishbone.localScreens[route.screen] {
-            do { try apply(throwing: API.parseScreen(local)) } catch { fail(error) }
-            return
-        }
-        // the server's id rule: anything else (e.g. `..` from a deeplink) would resolve to another path
-        guard API.isScreenID(route.screen) else {
-            return fail(WishboneError.server(status: 404, code: "SCREEN_NOT_FOUND", message: "invalid screen id \"\(route.screen)\"", retryable: false))
-        }
-        let key = DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
-        if cached == nil, let data = wishbone.cache.read(key), let r = try? API.parseScreen(data), r.document != nil,
-           (try? apply(throwing: r)) != nil {
-            cached = r
-        }
+        guard let key = showCached() else { return }
         do {
             let req = API.screen(await wishbone.requestInfo(), id: route.screen, params: route.params, etag: cached?.etag)
             let (body, _) = try await API.send(req)
@@ -245,6 +233,27 @@ final class ScreenModel {
             }
             if cached == nil { fail(error) }
         }
+    }
+
+    /// The synchronous part of `load()`: a local screen (nothing to fetch then: nil), else the disk cache unless it is
+    /// shown already → the cache key. A slot runs it on appearance, so a cached slot is there in its first frame.
+    @discardableResult
+    func showCached() -> String? {
+        if let local = wishbone.localScreens[route.screen] {
+            do { try apply(throwing: API.parseScreen(local)) } catch { fail(error) }
+            return nil
+        }
+        // the server's id rule: anything else (e.g. `..` from a deeplink) would resolve to another path
+        guard API.isScreenID(route.screen) else {
+            fail(WishboneError.server(status: 404, code: "SCREEN_NOT_FOUND", message: "invalid screen id \"\(route.screen)\"", retryable: false))
+            return nil
+        }
+        let key = DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
+        if cached == nil, let data = wishbone.cache.read(key), let r = try? API.parseScreen(data), r.document != nil,
+           (try? apply(throwing: r)) != nil {
+            cached = r
+        }
+        return key
     }
 
     /// A slot's `SCREEN_NOT_FOUND` (unpublished or removed) drops its cache and shows nothing, even over

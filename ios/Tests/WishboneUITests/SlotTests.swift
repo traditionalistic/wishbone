@@ -17,6 +17,28 @@ import Testing
         #expect(!ScreenModel.dropsCache(after: CancellationError(), slot: true))
     }
 
+    @Test func aSlotShowsWhenItsRootsWhenHolds() throws {
+        let wb = testWishbone()
+        let doc = try Document(json: #"{"format": 1, "screen": "slot.x", "state": [["on", ["v", true]]], "root": {"t": "stack", "id": "root", "when": ["s", "on"]}}"#)
+        let store = Store(document: doc, params: [:], data: [:], wishbone: wb)
+        #expect(!slotVisible(nil)) // nothing loaded (yet), unpublished or failed
+        #expect(slotVisible(store))
+        RenderContext(store: store).set(scope: "s", name: "on", path: [], value: .bool(false), transaction: nil)
+        #expect(!slotVisible(store)) // e.g. the raffle is over
+        let plain = try Document(json: #"{"format": 1, "screen": "slot.x", "root": {"t": "stack", "id": "root"}}"#)
+        #expect(slotVisible(Store(document: plain, params: [:], data: [:], wishbone: wb)))
+    }
+
+    /// A cached slot is there in its first frame (no enter animation): the cache is read before any await.
+    @Test func aCachedSlotIsShownSynchronously() {
+        let wb = testWishbone()
+        let key = DiskCache.screenKey(scope: wb.cacheScope, id: "slot.x", params: [:])
+        wb.cache.write(key, Data(#"{"etag": "e", "revision": 1, "data": {}, "document": {"format": 1, "screen": "slot.x", "root": {"t": "stack", "id": "root"}}}"#.utf8))
+        let model = ScreenModel(wishbone: wb, route: Route(screen: "slot.x", params: [:]), navigator: Navigator(), slot: true)
+        #expect(model.showCached() == key)
+        #expect(slotVisible(model.store))
+    }
+
     @Test func removeDeletesTheEntry() {
         let cache = DiskCache(dir: tempDir())
         let key = DiskCache.screenKey(scope: "s", id: "slot.x", params: [:])

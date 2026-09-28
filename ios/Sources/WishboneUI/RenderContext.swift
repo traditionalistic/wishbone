@@ -52,6 +52,11 @@ struct RenderContext: Scope {
         return 0
     }
     func selfPressed() -> Bool { pressed }
+    /// `when` absent or true (a slot decides on its root the same way).
+    func shows(_ node: Node) -> Bool {
+        guard let when = node.when else { return true }
+        return eval(when) == .bool(true)
+    }
 
     func set(scope: String, name: String, path: [Value], value: Value, transaction: Value?) {
         guard let cell = scope == "i" ? instance?.cell(name) : store.state[name] else {

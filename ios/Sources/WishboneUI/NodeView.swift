@@ -56,7 +56,7 @@ struct NodeBody: View {
 
     var body: some View {
         let ctx = scoped()
-        let visible = visible(ctx)
+        let visible = ctx.shows(node)
         Group {
             if visible, let props = evaluate(ctx) {
                 rendered(props: props, ctx: ctx)
@@ -121,11 +121,6 @@ struct NodeBody: View {
         // the instance's drag cells exist before its own props (e.g. `scale: 1 + abs(drag.knob.x) / 600`) read them
         if node.drag != nil { for axis in ["x", "y"] { _ = ctx.store.driver("drag:\(node.id)\(ctx.idSuffix):\(axis)") } }
         return c
-    }
-
-    private func visible(_ ctx: RenderContext) -> Bool {
-        guard let when = node.when else { return true }
-        return ctx.eval(when) == .bool(true)
     }
 
     private func evaluate(_ ctx: RenderContext) -> Props? {
