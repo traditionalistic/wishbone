@@ -1,5 +1,6 @@
 package app.wishbone.ui
 
+import app.wishbone.core.Value
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -74,5 +75,41 @@ class NavigatorTest {
         n.dismiss()
         assertEquals(2, exits)
         assertEquals(listOf("root"), n.ids())
+    }
+
+    @Test
+    fun hostStackReceivesPushesAndBackExits() {
+        val n = nav()
+        val pushed = mutableListOf<WishboneRoute>()
+        var exited = false
+        n.forward = { pushed += it }
+        n.exit = { exited = true }
+        n.navigate("raffle.tickets", mapOf("n" to Value.Num(1.0)), "fade")
+        assertEquals(listOf("root"), n.ids())
+        assertEquals(listOf(WishboneRoute("raffle.tickets", mapOf("n" to Value.Num(1.0)), "fade")), pushed)
+        assertFalse(n.back())
+        assertTrue(exited)
+    }
+
+    @Test
+    fun hostStackKeepsSheetsInTheSdk() {
+        val n = nav()
+        var pushed = 0
+        n.forward = { pushed++ }
+        n.present("raffle.rules", emptyMap())
+        n.navigate("inner", emptyMap(), null) // inside the sheet: stays in the SDK
+        assertEquals(listOf("root", "raffle.rules", "inner"), n.ids())
+        assertEquals(0, pushed)
+    }
+
+    @Test
+    fun slotForwardsPresent() {
+        val n = nav()
+        val pushed = mutableListOf<WishboneRoute>()
+        n.forward = { pushed += it }
+        n.forwardsPresent = true
+        n.present("raffle.rules", emptyMap())
+        assertEquals(listOf("root"), n.ids())
+        assertEquals("present", pushed.single().transition)
     }
 }

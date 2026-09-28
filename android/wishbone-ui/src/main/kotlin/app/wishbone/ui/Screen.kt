@@ -71,12 +71,37 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.util.TimeZone
 
 /**
- * Renders server screen [id] with its own navigation stack (spec §6.3). [onExit] runs when the screen asks to leave
- * the SDK — `back()`/`dismiss()` at the root; system back at the root is the host's own.
+ * Renders server screen [id] with its own navigation stack (spec §6.3), unless [onNavigate] is given.
+ * [onExit] runs when the screen asks to leave the SDK — `back()`/`dismiss()` at the root; system back
+ * at the root is the host's own.
+ *
+ * [onNavigate] switches on host-stack mode (spec §1.2): top-level `navigate` calls it with a
+ * [WishboneRoute] instead of pushing the SDK's own stack, and the host is expected to push
+ * `WishboneScreen(wishbone, route = …)` onto its own back stack; `back()` at the root still calls
+ * [onExit] so the host can pop. A sheet opened by `present` keeps its own stack regardless.
  */
 @Composable
-fun WishboneScreen(wishbone: Wishbone, id: String, params: Map<String, Value> = emptyMap(), modifier: Modifier = Modifier, onExit: () -> Unit = {}) {
-    WishboneRoot(wishbone, id, params, null, modifier, onExit)
+fun WishboneScreen(
+    wishbone: Wishbone,
+    id: String,
+    params: Map<String, Value> = emptyMap(),
+    modifier: Modifier = Modifier,
+    onExit: () -> Unit = {},
+    onNavigate: ((WishboneRoute) -> Unit)? = null,
+) {
+    WishboneRoot(wishbone, id, params, null, modifier, onExit, onNavigate)
+}
+
+/** Renders [route] (as pushed by [onNavigate]) — same as the `id`/`params` overload. */
+@Composable
+fun WishboneScreen(
+    wishbone: Wishbone,
+    route: WishboneRoute,
+    modifier: Modifier = Modifier,
+    onExit: () -> Unit = {},
+    onNavigate: ((WishboneRoute) -> Unit)? = null,
+) {
+    WishboneRoot(wishbone, route.screen, route.params, null, modifier, onExit, onNavigate)
 }
 
 /** Renders a compiled document in place (fixtures, preview); a new [document] keeps the values of surviving state keys. */
@@ -125,10 +150,20 @@ internal class InlineDocument {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
-private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<String, Value>, inline: InlineDocument?, modifier: Modifier, onExit: () -> Unit = {}) {
+private fun WishboneRoot(
+    wishbone: Wishbone,
+    rootId: String,
+    rootParams: Map<String, Value>,
+    inline: InlineDocument?,
+    modifier: Modifier,
+    onExit: () -> Unit = {},
+    onNavigate: ((WishboneRoute) -> Unit)? = null,
+) {
     val navigator = remember(wishbone, rootId, rootParams) { Navigator(rootId, rootParams) }
     val exit by rememberUpdatedState(onExit)
     navigator.exit = { exit() }
+    val nav by rememberUpdatedState(onNavigate)
+    navigator.forward = onNavigate?.let { { r: WishboneRoute -> nav?.invoke(r) } }
     val holders = remember(navigator) { HashMap<Long, ScreenHolder>() }
     val saveable = rememberSaveableStateHolder() // scroll/pager positions survive a push on top, like NavigationStack
     val dark = when (wishbone.colorScheme) {
