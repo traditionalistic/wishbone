@@ -12,9 +12,9 @@
 
   {"type": "scroll", "id": "rules", "when": "o != null", "props": {"width": "fill", "height": "fill", "spacing": "@space.lg", "padding": "={h: @space.lg, bottom: @space.lg}"}, "children": [
    {"type": "stack", "id": "rule", "repeat": {"over": "o.rules"}, "props": {"axis": "h", "align": "start", "spacing": "@space.md", "width": "fill"}, "children": [
-    {"type": "stack", "id": "ruleIcon", "props": {"axis": "z", "width": 48, "height": 48, "corner": "@radius.md", "background": "@color.bg1Elevated"}, "children": [
-     {"type": "image", "id": "ruleImg", "when": "item.icon != null", "props": {"url": "=item.icon ?? \"\"", "fit": "fit", "width": 40, "height": 40, "placeholder": "@color.bg1Elevated"}, "a11y": {"hidden": true}},
-     {"type": "icon", "id": "ruleGlyph", "when": "item.icon == null", "props": {"name": "@icon.ticket", "size": 22, "color": "@color.accentPrimary"}}
+    {"type": "stack", "id": "ruleIcon", "props": {"axis": "z", "width": 48, "height": 48, "corner": "@radius.md", "background": "@color.accentPrimary"}, "children": [
+     {"type": "image", "id": "ruleImg", "when": "item.icon != null", "props": {"url": "=item.icon ?? \"\"", "fit": "fit", "width": 40, "height": 40, "placeholder": "=alpha(@color.accentPrimary, 0)"}, "a11y": {"hidden": true}},
+     {"type": "icon", "id": "ruleGlyph", "when": "item.icon == null", "props": {"name": "@icon.ticket", "size": 22, "color": "@color.onAccent"}}
     ]},
     {"type": "stack", "id": "ruleText", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
      {"type": "text", "id": "ruleName", "props": {"text": "=item.name", "style": "@type.bodyStrong", "maxLines": 2}},
