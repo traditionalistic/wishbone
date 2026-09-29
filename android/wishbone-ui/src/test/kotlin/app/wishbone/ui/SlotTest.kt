@@ -7,11 +7,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 
-/** Slots (spec 2026-09-28 §2): content shows when there is a store and its root's `when` holds. */
+/** Slots (spec 2026-09-28 §2): content shows when there is a store and its root's `when` holds; screens decide their root alike. */
 class SlotTest {
     private val theme = Theme.parse(File("../../contract/tokens/korpu.json").readText())
     private val effects = object : EffectSink {
@@ -39,6 +41,20 @@ class SlotTest {
         assertTrue(slotVisible(s))
         s.root.withInstance("promo", s.extras.getValue("promo").inst!!).set("i", "Promo.visible", emptyList(), Value.FALSE, null)
         assertFalse(slotVisible(s))
+    }
+
+    /**
+     * A screen's root `when` (as on iOS, where NodeBody reads it): false → nothing renders, its background included.
+     * Read in the root's own scope, so a template root's `when` over its own state holds.
+     */
+    @Test
+    fun aScreenRootsWhenDecidesWhetherItRenders() {
+        val s = store("""{"format":1,"screen":"s","revision":1,"state":[["on",["v",true]]],"root":{"t":"stack","id":"root","when":["s","on"]}}""")
+        assertNotNull(shownRoot(s))
+        s.root.set("s", "on", emptyList(), Value.FALSE, null)
+        assertNull(shownRoot(s))
+        val t = store("""{"format":1,"screen":"s","revision":1,"root":{"t":"stack","id":"promo","inst":{"state":{"Promo.visible":["v",true]}},"when":["i","Promo.visible"]}}""")
+        assertEquals(Value.TRUE, shownRoot(t)?.instanceState("Promo.visible"))
     }
 
     /** The same on a screen: a child template instance's `when` reads its own state (as on iOS). */

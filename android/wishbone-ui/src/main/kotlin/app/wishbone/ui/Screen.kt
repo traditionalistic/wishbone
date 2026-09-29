@@ -266,9 +266,16 @@ private class SavedRoot(private var pending: StoreSnapshot?) {
 
 private fun JsonObject.revision() = (this["revision"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
 
+/**
+ * The root's own scope ([RenderContext.scoped]), or null when its `when` is false: then nothing of it renders, its
+ * background included (as on iOS, where NodeBody reads the root's `when`). Screens and slots decide alike.
+ */
+internal fun shownRoot(store: Store): RenderContext? = store.root.scoped(store.doc.root).takeIf { it.shows(store.doc.root) }
+
 /** The root node's solid background, so a sheet's handle area matches its content. */
-private fun rootColor(store: Store): Color? =
-    (store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }?.let { store.theme.paint(it, store.dark) } as? Paint.Solid)?.color
+private fun rootColor(store: Store): Color? = shownRoot(store)?.let { root ->
+    (store.doc.root.props["background"]?.let { root.evalOrNull(it) }?.let { store.theme.paint(it, store.dark) } as? Paint.Solid)?.color
+}
 
 /** iOS-like push (new from the right, old shifts left by a third), fade, and their reverses on pop. */
 private fun navTransition(from: Entry, to: Entry): ContentTransform {
@@ -296,14 +303,15 @@ private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: 
         LoadState.Failed -> Fallback { holder.load() }
         is LoadState.Ready -> {
             val store = s.store
-            val rootBg = store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }
+            val root = shownRoot(store)
+            val rootBg = root?.let { r -> store.doc.root.props["background"]?.let { r.evalOrNull(it) } }
             val bg = theme.brush(rootBg, store.dark)
             val ignore = (store.doc.root.props["ignoreSafeArea"]?.let { store.root.evalOrNull(it) } as? Value.Str)?.value
             StoreContent(store, env, theme, Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)) {
                 Box(
                     Modifier.fillMaxSize().then(if (safeArea) Modifier.windowInsetsPadding(safeInsets(ignore)) else Modifier),
                     contentAlignment = Alignment.Center,
-                ) { NodeView(store.doc.root, store.root) }
+                ) { if (root != null) NodeView(store.doc.root, store.root) }
             }
         }
     }
