@@ -36,7 +36,7 @@ internal data class LayerTransform(
 internal class TimelineRegistry(private val timelines: Map<String, Timeline>, now: Long, previous: TimelineRegistry? = null) {
     private val active = mutableStateMapOf<String, Long>()
 
-    /** Bumped on play/stop so the frame loop restarts. */
+    /** Bumped on play/stop and when a target first goes live, so the frame loop restarts. */
     var version by mutableIntStateOf(0)
         private set
 
@@ -50,8 +50,11 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
     /** Live materialized instances per target node id: instance key (id + key path) → repeat index. */
     private val live = HashMap<String, HashMap<String, Int>>()
 
+    /** A target's first live instance restarts the frame loop: an infinite timeline on it may have been idle. */
     fun register(id: String, instance: String, index: Int) {
-        live.getOrPut(id) { HashMap() }[instance] = index
+        val instances = live.getOrPut(id) { HashMap() }
+        if (instances.isEmpty()) version++
+        instances[instance] = index
     }
 
     fun unregister(id: String, instance: String) {
@@ -102,18 +105,23 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
         return TimelineSampler.duration(t, t.tracks.maxOfOrNull { count(it.target) } ?: 1)
     }
 
-    /** Whether any active timeline still changes values at [now] (the frame loop runs only then; never under reduceMotion). */
-    fun running(now: Long, reduceMotion: Boolean = false): Boolean =
-        !reduceMotion && active.any { (name, start) -> (now - start) / 1e6 < duration(name) }
+    /**
+     * Whether any active timeline still changes values at [now] (the frame loop runs only then; never under reduceMotion).
+     * An infinite one counts only while one of its targets is composed: off screen (another tab, a lazy row scrolled
+     * away) it would redraw nothing, every frame.
+     */
+    fun running(now: Long, reduceMotion: Boolean = false): Boolean = !reduceMotion && active.any { (name, start) ->
+        val t = timelines.getValue(name)
+        if (t.repeat == -1) t.tracks.any { live[it.target]?.isNotEmpty() == true } else (now - start) / 1e6 < duration(name)
+    }
 
-    // ponytail: core TimelineSampler.sample still builds a one-entry map per call; expose its per-track sampler if profiles show it
     fun transform(id: String, index: Int, now: Long, reduceMotion: Boolean): LayerTransform {
         val tracks = byTarget[id] ?: return LayerTransform.IDENTITY
         var tr = LayerTransform.IDENTITY
         for (t in tracks) {
             val start = active[t.name] ?: continue
             val ms = if (reduceMotion) finalMs(t.timeline, t.name) else (now - start) / 1e6
-            for (v in TimelineSampler.sample(t.timeline, ms, index).values) tr = tr.with(t.prop, v)
+            tr = tr.with(t.prop, TimelineSampler.sampleTrack(t.timeline, t.timeline.tracks[0], ms, index))
         }
         return tr
     }
