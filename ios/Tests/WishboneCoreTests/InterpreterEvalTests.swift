@@ -131,6 +131,37 @@ import Testing
         #expect(throws: InterpreterError.self) { try interpreter.eval(expr, scope: MapScope()) }
     }
 
+    /// `map` over N items with a lambda reading a computed: the outer run costs 3 + 2N steps
+    /// (map, list, lambda literal; per item the call + the body), while each computed read is
+    /// a nested eval on its own fresh budget — so the outer throws exactly past N = 4998 no
+    /// matter how many steps the nested evals take. The scope reads computeds through the same
+    /// interpreter, as the real store does.
+    @Test func nestedEvalsInsideALambdaNeitherConsumeNorRefillTheOuterBudget() throws {
+        let fifty = Expr.list(Array(repeating: .literal(.number(1)), count: 50))
+        let scope = MapScope(interpreter: interpreter, computed: ["k": fifty])
+        func mapOver(_ n: Int) -> Expr {
+            .stdlib(name: "map", args: [
+                .literal(.list(Array(repeating: .number(0), count: n))),
+                .lambda(params: ["x"], body: .computed("k")),
+            ])
+        }
+        let row = Value.list(Array(repeating: .number(1), count: 50))
+        #expect(try interpreter.eval(mapOver(200), scope: scope) == .list(Array(repeating: row, count: 200)))
+        #expect(try interpreter.eval(mapOver(4998), scope: scope) == .list(Array(repeating: row, count: 4998)))
+        #expect(throws: InterpreterError.self) { try interpreter.eval(mapOver(4999), scope: scope) }
+    }
+
+    /// A nested eval late in an almost spent outer run still gets a whole 10 000 steps — no more.
+    @Test func nestedEvalGetsAFreshFullBudget() throws {
+        func literals(_ n: Int) -> Expr { .list(Array(repeating: .literal(.number(1)), count: n)) }
+        let scope = MapScope(interpreter: interpreter, computed: ["fits": literals(9_999), "over": literals(10_000)])
+        let outer = { (name: String) in Expr.list(Array(repeating: .literal(.number(1)), count: 9_990) + [.computed(name)]) }
+        guard case let .list(fits) = try interpreter.eval(outer("fits"), scope: scope) else { Issue.record("not a list"); return }
+        #expect(fits.last == .list(Array(repeating: .number(1), count: 9_999)))
+        guard case let .list(over) = try interpreter.eval(outer("over"), scope: scope) else { Issue.record("not a list"); return }
+        #expect(over.last == .null) // the nested eval ran out of its own budget; MapScope yields null
+    }
+
     @Test func stepBudgetIsNotExceededJustUnderTheLimit() throws {
         let expr = Expr.list(Array(repeating: .literal(.number(1)), count: 9_990))
         #expect(try interpreter.eval(expr, scope: MapScope()) == .list(Array(repeating: .number(1), count: 9_990)))

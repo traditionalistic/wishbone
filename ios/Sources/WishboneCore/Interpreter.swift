@@ -22,7 +22,7 @@ public enum InterpreterError: Error, Sendable, CustomStringConvertible {
 /// within that run (lambda bodies, stdlib HOF callbacks, nested `run` handler calls), never
 /// across separate top-level calls.
 final class StepBudget {
-    private var remaining: Int
+    var remaining: Int
     init(_ limit: Int) { remaining = limit }
     func tick() throws {
         remaining -= 1
@@ -57,6 +57,8 @@ private final class HandlerContext {
 public final class Interpreter: Sendable {
     let fns: [String: Fn]
     let handlers: [String: Handler]
+    /// Reused by every `eval` (refilled per call) instead of a fresh allocation per call.
+    private let evalBudget = StepBudget(10_000)
 
     public init(fns: [String: Fn] = [:], handlers: [String: Handler] = [:]) {
         self.fns = fns
@@ -69,12 +71,18 @@ public final class Interpreter: Sendable {
 
     // MARK: - eval
 
-    /// Pure expression evaluation. Fresh 10 000-step budget per call.
-    public func eval(_ expr: Expr, scope: any Scope, locals: Locals? = nil) throws -> Value {
-        try evalStep(expr, scope: scope, locals: locals, budget: StepBudget(10_000))
+    /// Pure expression evaluation. Fresh 10 000-step budget per call — also for an `eval`
+    /// nested inside another (a `computed` read): it runs on a full budget, and the outer
+    /// call's remaining steps are restored afterwards, untouched. Generic, not `any Scope`:
+    /// a struct scope (`RenderContext`) would otherwise be boxed on every call.
+    public func eval<S: Scope>(_ expr: Expr, scope: S, locals: Locals? = nil) throws -> Value {
+        let outer = evalBudget.remaining
+        evalBudget.remaining = 10_000
+        defer { evalBudget.remaining = outer }
+        return try evalStep(expr, scope: scope, locals: locals, budget: evalBudget)
     }
 
-    private func evalStep(_ expr: Expr, scope: any Scope, locals: Locals?, budget: StepBudget) throws -> Value {
+    private func evalStep<S: Scope>(_ expr: Expr, scope: S, locals: Locals?, budget: StepBudget) throws -> Value {
         try budget.tick()
         switch expr {
         case let .literal(v):
@@ -173,7 +181,7 @@ public final class Interpreter: Sendable {
         }
     }
 
-    private func evalBinary(_ op: String, _ aExpr: Expr, _ bExpr: Expr, scope: any Scope, locals: Locals?, budget: StepBudget) throws -> Value {
+    private func evalBinary<S: Scope>(_ op: String, _ aExpr: Expr, _ bExpr: Expr, scope: S, locals: Locals?, budget: StepBudget) throws -> Value {
         switch op {
         case "&&":
             guard case let .bool(ab) = try evalStep(aExpr, scope: scope, locals: locals, budget: budget) else {
@@ -254,13 +262,13 @@ public final class Interpreter: Sendable {
 
     // MARK: - stdlib dispatch
 
-    private func callLambda(_ lambda: Lambda, args: [Value], scope: any Scope, budget: StepBudget) throws -> Value {
+    private func callLambda<S: Scope>(_ lambda: Lambda, args: [Value], scope: S, budget: StepBudget) throws -> Value {
         try budget.tick()
         let locals = bind(lambda.params, args, parent: lambda.captured)
         return try evalStep(lambda.body, scope: scope, locals: locals, budget: budget)
     }
 
-    private func callStdlib(_ name: String, _ argExprs: [Expr], scope: any Scope, locals: Locals?, budget: StepBudget) throws -> Value {
+    private func callStdlib<S: Scope>(_ name: String, _ argExprs: [Expr], scope: S, locals: Locals?, budget: StepBudget) throws -> Value {
         let args = try argExprs.map { try evalStep($0, scope: scope, locals: locals, budget: budget) }
 
         if Stdlib.nullPropagatingReceiver.contains(name), let first = args.first, first == .null {
