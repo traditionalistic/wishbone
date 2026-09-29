@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Synchronization
 import Testing
@@ -162,6 +163,41 @@ final class TestClock: Sendable {
         #expect(next.store == nil)
         await next.load()
         #expect(server.requests == 3)
+    }
+
+    /// Ruling R2: screen keys include params, so the cache keeps only the newest 64 entries; theme entries (the theme
+    /// and its etag, rewritten only on a 200) are never evicted.
+    @Test func theDiskCacheKeepsTheNewest64ScreensAndEveryTheme() throws {
+        let cache = DiskCache(dir: tempDir())
+        let theme = DiskCache.themeKey(scope: "s"), etag = theme + "|etag"
+        cache.themes.write(theme, Data("{}".utf8))
+        cache.themes.write(etag, Data("e".utf8))
+        let keys = (0..<65).map { DiskCache.screenKey(scope: "s", id: "raffle.tickets", params: ["place": .number(Double($0))]) }
+        for key in keys { cache.write(key, Data("{}".utf8)) }
+        let files = try FileManager.default.contentsOfDirectory(at: cache.dir, includingPropertiesForKeys: nil).filter { $0.pathExtension == "json" }
+        #expect(files.count == 64)
+        #expect(cache.read(keys[0]) == nil) // the oldest went
+        #expect(keys.dropFirst().allSatisfy { cache.read($0) != nil })
+        #expect(cache.themes.read(theme) != nil && cache.themes.read(etag) != nil)
+    }
+
+    /// File names stay what they were (lowercase hex SHA-256 of the key), so an update keeps the cache it finds.
+    @Test func cacheFileNamesAreTheKeysSHA256() throws {
+        let cache = DiskCache(dir: tempDir())
+        let key = DiskCache.screenKey(scope: "s", id: "slot.x", params: [:])
+        cache.write(key, Data("{}".utf8))
+        let name = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined() + ".json"
+        #expect(FileManager.default.fileExists(atPath: cache.dir.appendingPathComponent(name).path))
+    }
+
+    /// A theme kept among the screens by an older version is still found, and moves out of the cap's reach.
+    @Test func anOldThemeEntryMovesToTheThemes() {
+        let cache = DiskCache(dir: tempDir())
+        let key = DiskCache.themeKey(scope: "s")
+        cache.write(key, Data("{}".utf8))
+        #expect(cache.readTheme(key) == Data("{}".utf8))
+        #expect(cache.read(key) == nil && cache.themes.read(key) == Data("{}".utf8))
+        #expect(cache.readTheme("missing") == nil)
     }
 
     @Test func removeDeletesTheEntry() {

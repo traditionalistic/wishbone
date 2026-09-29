@@ -105,7 +105,7 @@ public final class Wishbone {
     var cacheScope: String { Self.cacheScope(baseURL, host, brand) }
 
     private static func cachedTheme(_ cache: DiskCache, _ scope: String) -> Theme? {
-        cache.read(DiskCache.themeKey(scope: scope)).flatMap { try? Theme(json: $0) }
+        cache.readTheme(DiskCache.themeKey(scope: scope)).flatMap { try? Theme(json: $0) }
     }
 
     private func loadTheme() {
@@ -118,14 +118,14 @@ public final class Wishbone {
         themeTask = Task { [weak self] in
             guard let self else { return }
             let key = DiskCache.themeKey(scope: scope)
-            let etag = cached == nil ? nil : cache.read(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
+            let etag = cached == nil ? nil : cache.readTheme(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
             let req = API.theme(await requestInfo(), etag: etag)
             do {
                 let (body, http) = try await API.send(req)
                 guard let body, !Task.isCancelled else { return }
                 theme = try Theme(json: body)
-                cache.write(key, body)
-                if let tag = http.value(forHTTPHeaderField: "ETag") { cache.write(key + "|etag", Data(tag.utf8)) }
+                cache.themes.write(key, body)
+                if let tag = http.value(forHTTPHeaderField: "ETag") { cache.themes.write(key + "|etag", Data(tag.utf8)) }
             } catch {
                 log("warn", "theme \(brand): \(error)")
             }
