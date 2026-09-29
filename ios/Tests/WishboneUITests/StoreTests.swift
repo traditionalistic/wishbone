@@ -107,6 +107,38 @@ import Testing
         #expect(ctx.env("colorScheme") == .string("dark"))
     }
 
+    /// An unchanged repeat item keeps its `Locals`, so its row's inputs compare equal and SwiftUI skips it (a page append
+    /// doesn't re-render every row); a changed value, a moved item and a removed key don't.
+    @Test func repeatItemsKeepTheLocalsOfUnchangedItems() throws {
+        let doc = try document(#"""
+        {"format": 1, "screen": "s", "state": [["rows", ["v", [{"id": "a", "n": 1}, {"id": "b", "n": 2}, {"id": "c", "n": 3}]]]],
+         "root": {"t": "stack", "id": "root", "c": [
+            {"t": "text", "id": "row", "rep": {"over": ["s", "rows"], "as": "item", "index": "i", "key": ["get", ["l", "item"], "id"]}}]}}
+        """#)
+        let store = Store(document: doc, params: [:], data: [:], wishbone: testWishbone())
+        let ctx = RenderContext(store: store), node = doc.root.children[0]
+        func locals() -> [String: Locals] {
+            Dictionary(uniqueKeysWithValues: RepeatItem.items(node.rep!, id: node.id, ctx: ctx).map { ($0.id, $0.ctx.locals!) })
+        }
+        let first = locals()
+        let again = locals()
+        #expect(["a", "b", "c"].allSatisfy { first[$0] === again[$0] })
+
+        ctx.set(scope: "s", name: "rows", path: [.number(1), .string("n")], value: .number(20), transaction: nil) // leaderboard refresh
+        let refreshed = locals()
+        #expect(refreshed["a"] === first["a"] && refreshed["c"] === first["c"])
+        #expect(refreshed["b"] !== first["b"] && refreshed["b"]?.value == .record(["id": .string("b"), "n": .number(20)]))
+
+        let rows: Value = .list([.record(["id": .string("c"), "n": .number(3)]), .record(["id": .string("a"), "n": .number(1)])])
+        ctx.set(scope: "s", name: "rows", path: [], value: rows, transaction: nil) // reorder + shrink
+        let moved = locals()
+        #expect(moved.keys.sorted() == ["a", "c"])
+        #expect(moved["a"] !== refreshed["a"] && moved["a"]?.parent?.value == .number(1)) // new index
+        #expect(moved["c"] !== refreshed["c"] && moved["c"]?.parent?.value == .number(0))
+        #expect(store.repeatLocals["row"]?.keys.sorted() == ["a", "c"]) // "b" dropped
+        #expect(locals()["c"] === moved["c"])
+    }
+
     @Test func handlerRunsWriteStateAndPerformEffects() async throws {
         let doc = try document(#"""
         {"format": 1, "screen": "s", "state": [["n", ["v", 0]]],

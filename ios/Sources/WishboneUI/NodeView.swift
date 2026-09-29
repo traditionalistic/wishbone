@@ -9,7 +9,7 @@ struct NodeView: View {
 
     var body: some View {
         if let rep = node.rep {
-            let items = RepeatItem.items(rep, ctx: ctx)
+            let items = RepeatItem.items(rep, id: node.id, ctx: ctx)
             let fallback = NodeBody.transitionFallback(node, ctx: ctx)
             let keys = fallback == nil ? [] : items.map(\.id)
             ForEach(items) { item in
@@ -26,19 +26,31 @@ struct RepeatItem: Identifiable {
     let id: String
     let ctx: RenderContext
 
+    /// `id` — the repeat node's. An item whose value and index are unchanged under the same parent locals keeps its
+    /// previous `Locals` (by key, `Store.repeatLocals`): its row's inputs then compare equal and SwiftUI skips it.
     @MainActor
-    static func items(_ rep: RepeatBinding, ctx: RenderContext) -> [RepeatItem] {
+    static func items(_ rep: RepeatBinding, id: String, ctx: RenderContext) -> [RepeatItem] {
         guard case let .list(values)? = ctx.eval(rep.over) else { return [] }
+        let repeatID = id + ctx.idSuffix
+        let previous = ctx.store.repeatLocals[repeatID] ?? [:]
+        var kept: [String: Locals] = Dictionary(minimumCapacity: values.count)
         var seen = Set<String>()
-        return values.enumerated().map { i, v in
+        let items = values.enumerated().map { i, v in
             var c = ctx
-            c.locals = Locals(name: rep.asName, value: v, parent: Locals(name: rep.indexName, value: .number(Double(i)), parent: ctx.locals))
+            let index: Value = .number(Double(i))
+            c.locals = Locals(name: rep.asName, value: v, parent: Locals(name: rep.indexName, value: index, parent: ctx.locals))
             var key = rep.key.flatMap { c.eval($0) }.map(keyString) ?? String(i)
             if !seen.insert(key).inserted { key += "#\(i)" }
+            if let old = previous[key], old.value == v, let oldIndex = old.parent, oldIndex.value == index, oldIndex.parent === ctx.locals {
+                c.locals = old
+            }
+            kept[key] = c.locals
             c.idSuffix += "." + key
             c.repeatIndex = i
             return RepeatItem(id: key, ctx: c)
         }
+        ctx.store.repeatLocals[repeatID] = kept // keys no longer present drop out
+        return items
     }
 
     static func keyString(_ v: Value) -> String {

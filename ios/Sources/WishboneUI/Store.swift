@@ -56,6 +56,8 @@ final class Store {
     private var instances: [String: InstanceScope] = [:]
     /// The previous document's instances: values of names that still exist carry over on reload.
     private let previousInstances: [String: InstanceScope]
+    /// Locals of materialized repeat items by repeat (node id + repeat path), then item key.
+    var repeatLocals: [String: [String: Locals]] = [:]
     /// `scroll.<id>.x|y` and `drag.<id+repeat path>.x|y` cells, created on first read or write.
     private var drivers: [String: Cell] = [:]
     /// Changes whenever a drag cell is created.
