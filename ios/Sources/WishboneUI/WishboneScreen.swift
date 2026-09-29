@@ -159,6 +159,8 @@ struct RouteView: View {
         }
         .onAppear {
             wishbone.clock.retain()
+            // A warm cache is on screen in the first frame (`load()` then only revalidates).
+            if route.preview == nil, model.store == nil { model.showCached() }
             if !shown { withAnimation(.easeOut(duration: 0.3)) { shown = true } }
         }
         .onDisappear { wishbone.clock.release() }
@@ -229,19 +231,12 @@ final class ScreenModel {
 
     var store: Store? { if case let .ready(s) = phase { s } else { nil } }
 
-    /// Parsing, decoding, encoding and disk I/O run off the main actor; only the store and `phase` are made on it.
+    /// The network answer is parsed, decoded, encoded and written off the main actor; only the store and `phase` are
+    /// made on it.
     func load() async {
         if case .failed = phase { phase = .loading }
-        let key: String
-        if slot {
-            guard let k = showCached() else { return } // shown on appearance already, unless the memo was dropped since
-            key = k
-            if wishbone.slotMemo.isFresh(key) { return } // R1: the network answered less than 30 s ago
-        } else {
-            guard let k = cacheKey() else { return }
-            key = k
-            if cached == nil, let entry = await Self.read(wishbone.cache, key), cached == nil { show(entry) }
-        }
+        guard let key = showCached() else { return } // shown on appearance already, unless dropped since
+        if slot, wishbone.slotMemo.isFresh(key) { return } // R1: the network answered less than 30 s ago
         do {
             let req = API.screen(await wishbone.requestInfo(), id: route.screen, params: route.params, etag: cached?.response.etag)
             let (response, document) = try await Self.fetch(req, send: wishbone.send)
@@ -258,9 +253,10 @@ final class ScreenModel {
                 throw WishboneError.decode("no document")
             }
             if slot { wishbone.slotMemo.put(key, fresh) }
-            // the same etag and data: the disk already has this answer
             if previous?.response.etag != fresh.response.etag || previous?.response.data != fresh.response.data {
                 await Self.write(wishbone.cache, key, fresh.response)
+            } else {
+                await Self.keep(wishbone.cache, key, fresh.response) // the disk has this answer: only mark it used
             }
         } catch {
             wishbone.log("warn", "screen \(route.screen): \(error)")
@@ -290,9 +286,9 @@ final class ScreenModel {
         return DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
     }
 
-    /// A slot's synchronous part of `load()`, run on appearance so a warm slot is there in its first frame: a local
-    /// screen, else unless something is shown already the memo's answer (R1), else the disk cache (ponytail: a
-    /// main-actor read and decode of one small file, only when the memo has nothing) → the cache key.
+    /// The synchronous part of `load()`, run on appearance so a warm slot or screen is there in its first frame: a
+    /// local screen, else unless something is shown already a slot's memo answer (R1), else the disk cache (ponytail:
+    /// a main-actor read and decode of one file, ~1 ms for raffle.main, once per model) → the cache key.
     @discardableResult
     func showCached() -> String? {
         guard let key = cacheKey() else { return nil }
@@ -341,10 +337,6 @@ final class ScreenModel {
         return LoadedScreen(response: r, document: doc)
     }
 
-    @concurrent nonisolated static func read(_ cache: DiskCache, _ key: String) async -> LoadedScreen? {
-        decode(cache.read(key))
-    }
-
     /// The network answer, with its document decoded (nil: the etag matched).
     @concurrent nonisolated static func fetch(_ req: URLRequest, send: @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse))
         async throws -> (ScreenResponse, Document?) {
@@ -355,6 +347,11 @@ final class ScreenModel {
 
     @concurrent nonisolated static func write(_ cache: DiskCache, _ key: String, _ r: ScreenResponse) async {
         if let bytes = try? API.encodeScreen(r) { cache.write(key, bytes) }
+    }
+
+    /// Touches the entry (the cap keeps the most recently revalidated), or writes it when it went meanwhile.
+    @concurrent nonisolated static func keep(_ cache: DiskCache, _ key: String, _ r: ScreenResponse) async {
+        if !cache.touch(key), let bytes = try? API.encodeScreen(r) { cache.write(key, bytes) }
     }
 
     @concurrent nonisolated static func remove(_ cache: DiskCache, _ key: String) async {

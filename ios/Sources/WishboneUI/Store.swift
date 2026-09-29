@@ -57,6 +57,7 @@ final class Store {
     /// The previous document's instances: values of names that still exist carry over on reload.
     private let previousInstances: [String: InstanceScope]
     /// Locals of materialized repeat items by repeat (node id + repeat path), then item key.
+    /// ponytail: a nested repeat's map under an outer item that went stays for the screen's lifetime.
     var repeatLocals: [String: [String: Locals]] = [:]
     /// `scroll.<id>.x|y` and `drag.<id+repeat path>.x|y` cells, created on first read or write.
     private var drivers: [String: Cell] = [:]

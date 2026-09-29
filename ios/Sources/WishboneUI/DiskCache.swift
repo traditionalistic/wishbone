@@ -28,6 +28,11 @@ struct DiskCache: Sendable {
         prune(to: maxEntries, keeping: file)
     }
 
+    /// Marks the entry as just used (the cap evicts by modification time); false when there is none.
+    func touch(_ key: String) -> Bool {
+        (try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: url(key).path)) != nil
+    }
+
     /// Deletes the entry; a missing one is fine.
     func remove(_ key: String) {
         try? FileManager.default.removeItem(at: url(key))
@@ -56,7 +61,7 @@ struct DiskCache: Sendable {
         }
     }
 
-    private func url(_ key: String) -> URL {
+    func url(_ key: String) -> URL {
         var name: [UInt8] = []
         name.reserveCapacity(64)
         for byte in SHA256.hash(data: Data(key.utf8)) {

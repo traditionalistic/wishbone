@@ -71,6 +71,16 @@ final class TestClock: Sendable {
         #expect(slotVisible(model.store))
     }
 
+    /// A pushed screen with a warm cache has its content in its first frame too (read on appearance, not after a hop).
+    @Test func aCachedScreenIsShownSynchronously() {
+        let wb = testWishbone()
+        let key = DiskCache.screenKey(scope: wb.cacheScope, id: "screen.x", params: [:])
+        wb.cache.write(key, Data(#"{"etag": "e", "revision": 1, "data": {}, "document": {"format": 1, "screen": "screen.x", "root": {"t": "stack", "id": "root"}}}"#.utf8))
+        let model = ScreenModel(wishbone: wb, route: Route(screen: "screen.x", params: [:]), navigator: Navigator())
+        #expect(model.showCached() == key)
+        #expect(model.store?.document.screen == "screen.x")
+    }
+
     /// A slot is a row of the host's feed: at most 480 tall (a taller lazy row can livelock `LazyVStack`), content below clipped.
     @Test func aSlotIsAtMost480Tall() {
         #expect(Reveal.height(content: 120, fraction: 1) == 120) // content-sized below the cap
@@ -81,7 +91,7 @@ final class TestClock: Sendable {
 
     /// Ruling R1: a slot that appears again renders its last network answer from memory at once and asks the server
     /// again only once that answer is 30 s old; params are part of the key.
-    @Test func aSlotRevalidatesOnlyOnceItsLastNetworkAnswerIs30sOld() async {
+    @Test func aSlotRevalidatesOnlyOnceItsLastNetworkAnswerIs30sOld() async throws {
         let clock = TestClock(), server = FakeServer()
         let wb = Wishbone(baseURL: URL(string: "http://localhost:1")!, brand: "korpu", host: DefaultHost(), cache: DiskCache(dir: tempDir()),
                           now: clock.now, send: server.send)
@@ -106,13 +116,19 @@ final class TestClock: Sendable {
         #expect(server.requests == 1)
 
         wb.cache.write(key, onDisk!)
-        let written = wb.cache.read(key)
+        let file = wb.cache.url(key), old = Date(timeIntervalSince1970: 1_000_000)
+        try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: file.path)
+        let written = try Data(contentsOf: file)
         clock.advance(.milliseconds(1)) // 30 s
         let stale = slot()
         stale.showCached()
         await stale.load()
         #expect(server.requests == 2 && slotVisible(stale.store))
-        #expect(wb.cache.read(key) == written) // same etag and data: no disk write
+        // Same etag and data: the bytes aren't rewritten, but the entry is touched — the cap evicts the least recently
+        // revalidated entries, not the most used.
+        #expect(try Data(contentsOf: file) == written)
+        let touched = try FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate] as? Date
+        #expect(touched.map { $0 > old.addingTimeInterval(60) } == true)
 
         await slot().load()
         #expect(server.requests == 2) // the revalidation counts as the last network answer
