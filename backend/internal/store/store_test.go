@@ -306,3 +306,56 @@ func TestPruneIdempotency(t *testing.T) {
 		t.Fatalf("after prune: %v %v", keys, rows.Err())
 	}
 }
+
+func TestMeta(t *testing.T) {
+	s := fresh(t)
+	if _, err := s.CreateScreen(ctx, "s.meta", "M", json.RawMessage(`{"n":1}`), "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Publish(ctx, "s.meta", 0, false, "admin", build); err != nil {
+		t.Fatal(err)
+	}
+	want, _ := s.Revision(ctx, "s.meta", 1)
+	got, err := s.Meta(ctx, "s.meta", 1)
+	if err != nil || string(got) != string(want.Meta) {
+		t.Fatalf("meta = %s (%v), want %s", got, err, want.Meta)
+	}
+	if _, err := s.Meta(ctx, "s.meta", 9); !errors.Is(err, ErrNoRevision) {
+		t.Fatalf("unknown rev: %v", err)
+	}
+	if _, err := s.Meta(ctx, "s.none", 1); !errors.Is(err, ErrNoRevision) {
+		t.Fatalf("unknown screen: %v", err)
+	}
+}
+
+func TestLiveSkipsDocumentOnETagMatch(t *testing.T) {
+	s := fresh(t)
+	if _, err := s.CreateScreen(ctx, "s.etag", "E", json.RawMessage(`{"n":1}`), "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Publish(ctx, "s.etag", 0, false, "admin", build); err != nil { // etag "1-x"
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name string
+		have []string
+		doc  bool
+	}{
+		{"none", nil, true},
+		{"stale", []string{"0-old"}, true},
+		{"match", []string{"1-x"}, false},
+		{"several", []string{"0-old", "1-x", "2-y"}, false},
+		{"several without match", []string{"0-old", "2-y"}, true},
+	} {
+		live, err := s.Live(ctx, "s.etag", c.have...)
+		if err != nil || live.Rev != 1 || live.ETag != "1-x" || string(live.Meta) != `{"ops": ["demo.claimOffer"]}` {
+			t.Fatalf("%s: %+v %v", c.name, live, err)
+		}
+		if c.doc && string(live.Document) != `{"rev":1,"src":{"n":1}}` || !c.doc && live.Document != nil {
+			t.Fatalf("%s: document = %s, present = %v", c.name, live.Document, c.doc)
+		}
+		if live.Source != nil {
+			t.Fatalf("%s: Live must not load the source", c.name)
+		}
+	}
+}

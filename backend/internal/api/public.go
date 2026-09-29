@@ -22,7 +22,7 @@ func (s *Server) getScreen(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	rev, err := s.Store.Live(r.Context(), r.PathValue("id"))
+	rev, err := s.Store.Live(r.Context(), r.PathValue("id"), etagList(r.Header.Get("If-None-Match"))...)
 	if errors.Is(err, store.ErrNotFound) {
 		s.fail(w, "SCREEN_NOT_FOUND", "Экран не найден")
 		return
@@ -45,16 +45,12 @@ func (s *Server) getScreen(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "DATA_REQUIRED_FAILED", "Не удалось загрузить данные")
 		return
 	}
-	doc := rev.Document
-	if etagMatch(r.Header.Get("If-None-Match"), rev.ETag) {
-		doc = nil
-	}
 	writeJSON(w, 200, struct {
 		ETag     string                `json:"etag"`
 		Revision int                   `json:"revision"`
 		Document json.RawMessage       `json:"document"`
 		Data     map[string]ops.Result `json:"data"`
-	}{rev.ETag, rev.Rev, doc, data})
+	}{rev.ETag, rev.Rev, rev.Document, data})
 }
 
 func (s *Server) revisionErr(w http.ResponseWriter, r *http.Request, err error) {

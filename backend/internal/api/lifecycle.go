@@ -83,7 +83,7 @@ func (s *Server) Recompile(ctx context.Context) error {
 		if sc.PublishedRev == nil || sc.Unpublished {
 			continue
 		}
-		rev, err := s.Store.Live(ctx, sc.ID)
+		rev, err := s.Store.Revision(ctx, sc.ID, *sc.PublishedRev)
 		if err != nil {
 			return err
 		}
