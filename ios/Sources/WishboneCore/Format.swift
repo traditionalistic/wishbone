@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// `str()`, `formatNumber`/`formatDuration`/`formatDate`/`plural`, and the shared
 /// fixed-point/number-to-string algorithms from contract/stdlib.json `notes`.
@@ -20,11 +21,11 @@ enum Format {
         let absX = abs(x)
         if absX >= 1e15 {
             let r = roundHalfAwayFromZero(absX)
-            return String(format: "%.0f", r) + String(repeating: "0", count: d)
+            return integerDigits(r) + String(repeating: "0", count: d)
         }
         let scaled = absX * pow(10.0, Double(d))
         let r = roundHalfAwayFromZero(scaled)
-        var digits = String(format: "%.0f", r)
+        var digits = integerDigits(r)
         while digits.count < d + 1 { digits = "0" + digits }
         return digits
     }
@@ -40,6 +41,12 @@ enum Format {
         return (sign, String(digits[..<splitIndex]), String(digits[splitIndex...]))
     }
 
+    /// Exact decimal form of a whole, finite `r` (never -0, which `%.0f` prints as "-0") —
+    /// what `%.0f` prints. `Int64` holds it exactly below 9e18, ~100× cheaper than `String(format:)`.
+    private static func integerDigits(_ r: Double) -> String {
+        Swift.abs(r) < 9e18 ? String(Int64(r)) : String(format: "%.0f", r)
+    }
+
     // MARK: Number -> string (str, interpolation, join)
 
     static func numberToString(_ x: Double) -> String {
@@ -48,11 +55,10 @@ enum Format {
         if x == 0 { return "0" } // also covers -0
         let absX = abs(x)
         if absX < 1e15, x == x.rounded(.towardZero) {
-            return String(format: "%.0f", x)
+            return integerDigits(x)
         }
         if absX >= 1e15 {
-            let r = roundHalfAwayFromZero(x)
-            return String(format: "%.0f", r)
+            return integerDigits(roundHalfAwayFromZero(x))
         }
         let (sign, intPart, fracPart) = fixedPointComponents(x, 6)
         var frac = fracPart
@@ -156,19 +162,38 @@ enum Format {
 
     // MARK: formatDate
 
+    private struct DateFormatterKey: Hashable {
+        let format: String
+        let timeZone: String
+    }
+
+    /// Building a `DateFormatter` costs ~25 µs; one per (format, zone), reused. Formatting runs
+    /// under the lock (a `DateFormatter` isn't `Sendable`), so it's safe from any thread.
+    /// ponytail: cleared wholesale past 32 entries — the key space is 3 formats × the host's
+    /// zone(s), so it never fills in practice.
+    private static let dateFormatters = Mutex<[DateFormatterKey: DateFormatter]>([:])
+
     static func formatDate(_ ms: Double, _ style: String, timeZone: String) -> String {
         guard ms.isFinite else { return "" }
-        let date = Date(timeIntervalSince1970: ms / 1000)
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "en_US_POSIX")
-        df.timeZone = TimeZone(identifier: timeZone) ?? TimeZone(identifier: "UTC")
+        let format: String
         switch style {
-        case "date": df.dateFormat = "dd.MM.yyyy"
-        case "time": df.dateFormat = "HH:mm"
-        case "dateTime": df.dateFormat = "dd.MM.yyyy HH:mm"
+        case "date": format = "dd.MM.yyyy"
+        case "time": format = "HH:mm"
+        case "dateTime": format = "dd.MM.yyyy HH:mm"
         default: return ""
         }
-        return df.string(from: date)
+        let date = Date(timeIntervalSince1970: ms / 1000)
+        let key = DateFormatterKey(format: format, timeZone: timeZone)
+        return dateFormatters.withLock { cache in
+            if let df = cache[key] { return df.string(from: date) }
+            if cache.count >= 32 { cache.removeAll() }
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "en_US_POSIX")
+            df.timeZone = TimeZone(identifier: timeZone) ?? TimeZone(identifier: "UTC")
+            df.dateFormat = format
+            cache[key] = df
+            return df.string(from: date)
+        }
     }
 
     // MARK: plural

@@ -96,27 +96,27 @@ final class Timelines {
         byTarget[id]?.contains { running.contains($0) } ?? false
     }
 
-    /// Composed values of every started timeline targeting `id`, for instance `index` at `date`.
+    /// Composed values of every started timeline targeting `id`, for instance `index` at `date`: only this target's
+    /// tracks are sampled (per frame).
     func sample(_ id: String, index: Int, at date: Date) -> TimelineSample {
         var s = TimelineSample()
-        for name in byTarget[id] ?? [] {
+        guard let names = byTarget[id] else { return s }
+        let reduce = reduceMotion()
+        for name in names {
             guard let start = started[name], let t = timelines[name] else { continue }
-            let values: [String: Double] = if reduceMotion() {
-                Self.final(t, index: index)
-            } else {
-                TimelineSampler.sample(t, at: date.timeIntervalSince(start) * 1000, index: index)
-            }
+            // Reduce motion: the final state, the end of the last cycle (an infinite timeline ends one cycle).
+            let timeline = reduce ? Self.once(t) : t
+            let ms = reduce ? 1e15 : date.timeIntervalSince(start) * 1000
             for track in t.tracks where track.target == id {
-                if let v = values["\(track.target).\(track.prop)"] { s.compose(track.prop, v) }
+                s.compose(track.prop, TimelineSampler.sampleTrack(timeline, track: track, ms: ms, index: index))
             }
         }
         return s
     }
 
-    /// Final state (reduce motion): the end of the last cycle; an infinite timeline ends one cycle.
-    static func final(_ t: Timeline, index: Int) -> [String: Double] {
-        let once = Timeline(name: t.name, duration: t.duration, repeatCount: t.repeatCount == -1 ? 1 : t.repeatCount,
-                            autoreverse: t.autoreverse, autoplay: t.autoplay, tracks: t.tracks)
-        return TimelineSampler.sample(once, at: 1e15, index: index)
+    /// `t` with an infinite repeat cut to one cycle.
+    static func once(_ t: Timeline) -> Timeline {
+        guard t.repeatCount == -1 else { return t }
+        return Timeline(name: t.name, duration: t.duration, repeatCount: 1, autoreverse: t.autoreverse, autoplay: t.autoplay, tracks: t.tracks)
     }
 }

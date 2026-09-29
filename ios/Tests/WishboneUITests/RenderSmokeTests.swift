@@ -34,6 +34,20 @@ import Testing
         #expect(errors.isEmpty, "\(errors)")
     }
 
+    /// A `drag` node's cells are made on its first drag, never while a body runs (an observable write in a view
+    /// update); before that its props read 0.
+    @Test func renderingADragNodeMakesNoDragCells() throws {
+        let doc = try Document(json: #"""
+        {"format": 1, "screen": "s", "root": {"t": "stack", "id": "root", "c": [
+          {"t": "shape", "id": "knob", "drag": {"axis": "x"}, "p": {"width": ["v", 40], "height": ["v", 40],
+           "scale": ["op", "+", ["v", 1], ["dr", "drag", "knob", "x"]]}}]}}
+        """#)
+        let store = Store(document: doc, params: [:], data: [:], wishbone: testWishbone())
+        #expect(ImageRenderer(content: NodeView(node: doc.root, ctx: RenderContext(store: store))).cgImage != nil)
+        #expect(store.existingDriver("drag:knob:x") == nil && store.existingDriver("drag:knob:y") == nil)
+        #expect(RenderContext(store: store).driver("drag", "knob", "x") == 0)
+    }
+
     @Test(arguments: fixtures)
     func fixtureRendersWithoutErrors(_ url: URL) throws {
         let wb = testWishbone()

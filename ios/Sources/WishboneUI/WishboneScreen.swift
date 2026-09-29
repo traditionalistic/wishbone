@@ -71,7 +71,8 @@ struct StackHost: View {
     /// Host-stack mode (spec §1.2): non-nil only at the top of a screen's own stack, never passed down to
     /// a presented sheet (`.sheet` below omits it) — a sheet always keeps its own stack inside the SDK.
     let onNavigate: ((WishboneRoute) -> Void)?
-    @State private var navigator: Navigator
+    /// Made once per stack (not on every re-render of the host).
+    @StateObject private var once: Once<Navigator>
     @Environment(\.dismiss) private var dismiss
 
     init(wishbone: Wishbone, root: Route, presenter: Navigator?, onExit: (() -> Void)? = nil,
@@ -80,19 +81,25 @@ struct StackHost: View {
         self.root = root
         self.onExit = onExit
         self.onNavigate = onNavigate
+        _once = StateObject(wrappedValue: Once(Self.navigator(presenter: presenter, onExit: onExit, onNavigate: onNavigate)))
+    }
+
+    private static func navigator(presenter: Navigator?, onExit: (() -> Void)?, onNavigate: ((WishboneRoute) -> Void)?) -> Navigator {
         let navigator = Navigator(presenter: presenter)
         // Wired before the first frame: a cached root's `appear` may navigate or leave at once.
         navigator.forward = onNavigate
         navigator.exit = onExit
-        _navigator = State(initialValue: navigator)
+        return navigator
     }
+
+    private var navigator: Navigator { once.value }
 
     /// Host-stack mode: just the route, no stack of its own. Plain mode: the SDK's own `NavigationStack`.
     @ViewBuilder private var content: some View {
         if onNavigate != nil {
             RouteView(wishbone: wishbone, route: root, navigator: navigator)
         } else {
-            NavigationStack(path: $navigator.path) {
+            NavigationStack(path: Bindable(navigator).path) {
                 RouteView(wishbone: wishbone, route: root, navigator: navigator)
                     .navigationDestination(for: Route.self) { RouteView(wishbone: wishbone, route: $0, navigator: navigator) }
             }
@@ -101,7 +108,7 @@ struct StackHost: View {
 
     var body: some View {
         content
-            .sheet(item: $navigator.sheet) { route in
+            .sheet(item: Bindable(navigator).sheet) { route in
                 StackHost(wishbone: wishbone, root: route, presenter: navigator)
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
@@ -118,15 +125,18 @@ struct StackHost: View {
 struct RouteView: View {
     let wishbone: Wishbone
     let route: Route
-    @State private var model: ScreenModel
+    /// Made once per screen (not on every re-render of its stack).
+    @StateObject private var once: Once<ScreenModel>
     @State private var shown: Bool
 
     init(wishbone: Wishbone, route: Route, navigator: Navigator) {
         self.wishbone = wishbone
         self.route = route
-        _model = State(initialValue: ScreenModel(wishbone: wishbone, route: route, navigator: navigator))
+        _once = StateObject(wrappedValue: Once(ScreenModel(wishbone: wishbone, route: route, navigator: navigator)))
         _shown = State(initialValue: !route.fade)
     }
+
+    private var model: ScreenModel { once.value }
 
     var body: some View {
         Group {
@@ -149,6 +159,8 @@ struct RouteView: View {
         }
         .onAppear {
             wishbone.clock.retain()
+            // A warm cache is on screen in the first frame (`load()` then only revalidates).
+            if route.preview == nil, model.store == nil { model.showCached() }
             if !shown { withAnimation(.easeOut(duration: 0.3)) { shown = true } }
         }
         .onDisappear { wishbone.clock.release() }
@@ -181,6 +193,12 @@ struct ScreenContent: View {
     }
 }
 
+/// A screen answer with its document decoded: what a store renders, what the disk cache keeps, the next etag.
+struct LoadedScreen: Sendable {
+    var response: ScreenResponse
+    let document: Document
+}
+
 /// Screen loading with stale-while-revalidate: the cached answer renders at once, the fresh one
 /// replaces it (keeping state values), `document: null` (etag matched) only refreshes data.
 @MainActor @Observable
@@ -195,9 +213,10 @@ final class ScreenModel {
     @ObservationIgnored let wishbone: Wishbone
     @ObservationIgnored let route: Route
     @ObservationIgnored let navigator: Navigator
-    /// `WishboneSlot`: an unpublished screen drops its cache (see `dropsCache`).
+    /// `WishboneSlot`: an unpublished screen drops its cache (see `dropsCache`); its answers go to the slot memo.
     @ObservationIgnored let slot: Bool
-    @ObservationIgnored private var cached: ScreenResponse?
+    /// The answer on screen (cache, memo or network): the etag and data of the next revalidation.
+    @ObservationIgnored private var cached: LoadedScreen?
     /// Handler runs of this screen's stores; cancelled when the screen goes away.
     @ObservationIgnored let tasks = TaskBag()
 
@@ -212,37 +231,49 @@ final class ScreenModel {
 
     var store: Store? { if case let .ready(s) = phase { s } else { nil } }
 
+    /// The network answer is parsed, decoded, encoded and written off the main actor; only the store and `phase` are
+    /// made on it.
     func load() async {
         if case .failed = phase { phase = .loading }
-        guard let key = showCached() else { return }
+        guard let key = showCached() else { return } // shown on appearance already, unless dropped since
+        if slot, wishbone.slotMemo.isFresh(key) { return } // R1: the network answered less than 30 s ago
         do {
-            let req = API.screen(await wishbone.requestInfo(), id: route.screen, params: route.params, etag: cached?.etag)
-            let (body, _) = try await API.send(req)
-            var fresh = try API.parseScreen(body ?? Data())
-            if fresh.document == nil, var c = cached {
-                (c.etag, c.data, c.rawData) = (fresh.etag, fresh.data, fresh.rawData)
-                store?.update(data: c.data)
+            let req = API.screen(await wishbone.requestInfo(), id: route.screen, params: route.params, etag: cached?.response.etag)
+            let (response, document) = try await Self.fetch(req, send: wishbone.send)
+            let previous = cached, fresh: LoadedScreen
+            if let document {
+                fresh = LoadedScreen(response: response, document: document)
+                show(fresh)
+            } else if var c = previous {
+                (c.response.etag, c.response.data, c.response.rawData) = (response.etag, response.data, response.rawData)
+                store?.update(data: c.response.data)
                 fresh = c
+                cached = c
             } else {
-                try apply(throwing: fresh)
+                throw WishboneError.decode("no document")
             }
-            cached = fresh
-            wishbone.cache.write(key, try API.encodeScreen(fresh))
+            if slot { wishbone.slotMemo.put(key, fresh) }
+            if previous?.response.etag != fresh.response.etag || previous?.response.data != fresh.response.data {
+                await Self.write(wishbone.cache, key, fresh.response)
+            } else {
+                await Self.keep(wishbone.cache, key, fresh.response) // the disk has this answer: only mark it used
+            }
         } catch {
             wishbone.log("warn", "screen \(route.screen): \(error)")
             if Self.dropsCache(after: error, slot: slot) {
-                wishbone.cache.remove(key)
+                wishbone.slotMemo.remove(key)
                 cached = nil
-                return fail(error)
+                fail(error)
+                await Self.remove(wishbone.cache, key)
+                return
             }
             if cached == nil { fail(error) }
         }
     }
 
-    /// The synchronous part of `load()`: a local screen (nothing to fetch then: nil), else the disk cache unless it is
-    /// shown already → the cache key. A slot runs it on appearance, so a cached slot is there in its first frame.
-    @discardableResult
-    func showCached() -> String? {
+    /// The disk cache key of a network screen; nil for a local screen (shown at once, nothing to fetch) or an
+    /// invalid id (failed).
+    private func cacheKey() -> String? {
         if let local = wishbone.localScreens[route.screen] {
             do { try apply(throwing: API.parseScreen(local)) } catch { fail(error) }
             return nil
@@ -252,10 +283,17 @@ final class ScreenModel {
             fail(WishboneError.server(status: 404, code: "SCREEN_NOT_FOUND", message: "invalid screen id \"\(route.screen)\"", retryable: false))
             return nil
         }
-        let key = DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
-        if cached == nil, let data = wishbone.cache.read(key), let r = try? API.parseScreen(data), r.document != nil,
-           (try? apply(throwing: r)) != nil {
-            cached = r
+        return DiskCache.screenKey(scope: wishbone.cacheScope, id: route.screen, params: route.params)
+    }
+
+    /// The synchronous part of `load()`, run on appearance so a warm slot or screen is there in its first frame: a
+    /// local screen, else unless something is shown already a slot's memo answer (R1), else the disk cache (ponytail:
+    /// a main-actor read and decode of one file, ~1 ms for raffle.main, once per model) → the cache key.
+    @discardableResult
+    func showCached() -> String? {
+        guard let key = cacheKey() else { return nil }
+        if cached == nil, let entry = (slot ? wishbone.slotMemo[key] : nil) ?? Self.decode(wishbone.cache.read(key)) {
+            show(entry)
         }
         return key
     }
@@ -268,23 +306,56 @@ final class ScreenModel {
         return code == "SCREEN_NOT_FOUND"
     }
 
-    /// Renders an answer (preview document, cache, network); state of the previous store survives.
+    /// Renders an answer (preview document, local screen); state of the previous store survives.
     func apply(_ r: ScreenResponse) {
         do { try apply(throwing: r) } catch { fail(error) }
     }
 
     private func apply(throwing r: ScreenResponse) throws {
         guard let json = r.document else { throw WishboneError.decode("no document") }
-        let doc = try Document(json: json)
-        // In-flight handlers of the replaced store may finish (their effects still run); runs are only
-        // cancelled when the screen itself goes away (deinit).
-        phase = .ready(Store(document: doc, params: route.params, data: r.data, wishbone: wishbone, navigator: navigator,
-                             previous: store, tasks: tasks))
+        show(LoadedScreen(response: r, document: try Document(json: json)), caching: false)
+    }
+
+    /// In-flight handlers of the replaced store may finish (their effects still run); runs are only cancelled when the
+    /// screen itself goes away (deinit). `caching` — the answer is the next revalidation's base.
+    private func show(_ screen: LoadedScreen, caching: Bool = true) {
+        if caching { cached = screen }
+        phase = .ready(Store(document: screen.document, params: route.params, data: screen.response.data, wishbone: wishbone,
+                             navigator: navigator, previous: store, tasks: tasks))
     }
 
     private func fail(_ error: Error) {
         wishbone.log("error", "screen \(route.screen): \(error)")
         phase = .failed(String(describing: error))
+    }
+
+    // MARK: off the main actor
+
+    /// A cache entry → its answer with the document decoded (nil: none, unreadable, or a document that doesn't decode).
+    nonisolated static func decode(_ bytes: Data?) -> LoadedScreen? {
+        guard let bytes, let r = try? API.parseScreen(bytes), let json = r.document, let doc = try? Document(json: json) else { return nil }
+        return LoadedScreen(response: r, document: doc)
+    }
+
+    /// The network answer, with its document decoded (nil: the etag matched).
+    @concurrent nonisolated static func fetch(_ req: URLRequest, send: @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse))
+        async throws -> (ScreenResponse, Document?) {
+        let (body, _) = try await send(req)
+        let r = try API.parseScreen(body ?? Data())
+        return (r, try r.document.map { try Document(json: $0) })
+    }
+
+    @concurrent nonisolated static func write(_ cache: DiskCache, _ key: String, _ r: ScreenResponse) async {
+        if let bytes = try? API.encodeScreen(r) { cache.write(key, bytes) }
+    }
+
+    /// Touches the entry (the cap keeps the most recently revalidated), or writes it when it went meanwhile.
+    @concurrent nonisolated static func keep(_ cache: DiskCache, _ key: String, _ r: ScreenResponse) async {
+        if !cache.touch(key), let bytes = try? API.encodeScreen(r) { cache.write(key, bytes) }
+    }
+
+    @concurrent nonisolated static func remove(_ cache: DiskCache, _ key: String) async {
+        cache.remove(key)
     }
 }
 

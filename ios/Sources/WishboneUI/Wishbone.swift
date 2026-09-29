@@ -40,7 +40,9 @@ public final class Wishbone {
     public var brand: String {
         didSet { if brand != oldValue { loadTheme() } }
     }
-    public private(set) var theme: Theme
+    public private(set) var theme: Theme {
+        didSet { tokens = [:] }
+    }
     @ObservationIgnored public let host: any WishboneHost
     /// Compiled screen answers served without the network (playground fixtures), by screen id.
     @ObservationIgnored public var localScreens: [String: Data] = [:]
@@ -52,18 +54,33 @@ public final class Wishbone {
     let env = EnvState()
     let clock = Clock()
     @ObservationIgnored let cache: DiskCache
+    /// Slots' last network answers (ruling R1).
+    @ObservationIgnored let slotMemo: SlotMemo
+    /// Sends screen requests (tests pass a fake server).
+    @ObservationIgnored let send: @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse)
     @ObservationIgnored private var themeTask: Task<Void, Never>?
+    /// Token values of the current theme by group and name.
+    @ObservationIgnored private var tokens: [TokenKey: Value] = [:]
+
+    struct TokenKey: Hashable {
+        let group: String, name: String
+    }
 
     public convenience init(baseURL: URL, brand: String = "korpu", host: (any WishboneHost)? = nil) {
         self.init(baseURL: baseURL, brand: brand, host: host ?? DefaultHost(), cache: .standard)
         loadTheme()
     }
 
-    init(baseURL: URL, brand: String, host: any WishboneHost, cache: DiskCache) {
+    /// `now` — the slot memo's monotonic clock; `send` — the screen requests' transport (tests pass their own).
+    init(baseURL: URL, brand: String, host: any WishboneHost, cache: DiskCache,
+         now: @escaping @Sendable () -> ContinuousClock.Instant = { .now },
+         send: @escaping @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse) = { try await API.send($0) }) {
         self.baseURL = baseURL
         self.brand = brand
         self.host = host
         self.cache = cache
+        slotMemo = SlotMemo(now: now)
+        self.send = send
         theme = Self.cachedTheme(cache, Self.cacheScope(baseURL, host, brand)) ?? .bundledKorpu
         _ = Fonts.register
     }
@@ -86,6 +103,21 @@ public final class Wishbone {
         previewLog?(level, message)
     }
 
+    /// A token's value: a number for `@space`/`@radius`, else the `{"$group": name}` record renderers resolve (a colour
+    /// with the scheme). Memoised until the theme changes; its readers depend on the theme even when served from memo.
+    func token(_ group: String, _ name: String) -> Value {
+        access(keyPath: \.theme)
+        let key = TokenKey(group: group, name: name)
+        if let value = tokens[key] { return value }
+        let value: Value = switch group {
+        case "space": .number(theme.space[name] ?? 0)
+        case "radius": .number(theme.radius[name] ?? 0)
+        default: .record(["$\(group)": .string(name)])
+        }
+        tokens[key] = value
+        return value
+    }
+
     // MARK: theme (cached per brand, revalidated with ETag)
 
     /// Cache partition of screen and theme answers: server, host scope, brand.
@@ -96,7 +128,7 @@ public final class Wishbone {
     var cacheScope: String { Self.cacheScope(baseURL, host, brand) }
 
     private static func cachedTheme(_ cache: DiskCache, _ scope: String) -> Theme? {
-        cache.read(DiskCache.themeKey(scope: scope)).flatMap { try? Theme(json: $0) }
+        cache.readTheme(DiskCache.themeKey(scope: scope)).flatMap { try? Theme(json: $0) }
     }
 
     private func loadTheme() {
@@ -109,14 +141,14 @@ public final class Wishbone {
         themeTask = Task { [weak self] in
             guard let self else { return }
             let key = DiskCache.themeKey(scope: scope)
-            let etag = cached == nil ? nil : cache.read(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
+            let etag = cached == nil ? nil : cache.readTheme(key + "|etag").map { String(decoding: $0, as: UTF8.self) }
             let req = API.theme(await requestInfo(), etag: etag)
             do {
                 let (body, http) = try await API.send(req)
                 guard let body, !Task.isCancelled else { return }
                 theme = try Theme(json: body)
-                cache.write(key, body)
-                if let tag = http.value(forHTTPHeaderField: "ETag") { cache.write(key + "|etag", Data(tag.utf8)) }
+                cache.themes.write(key, body)
+                if let tag = http.value(forHTTPHeaderField: "ETag") { cache.themes.write(key + "|etag", Data(tag.utf8)) }
             } catch {
                 log("warn", "theme \(brand): \(error)")
             }

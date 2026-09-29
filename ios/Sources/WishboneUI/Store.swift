@@ -56,6 +56,9 @@ final class Store {
     private var instances: [String: InstanceScope] = [:]
     /// The previous document's instances: values of names that still exist carry over on reload.
     private let previousInstances: [String: InstanceScope]
+    /// Locals of materialized repeat items by repeat (node id + repeat path), then item key.
+    /// ponytail: a nested repeat's map under an outer item that went stays for the screen's lifetime.
+    var repeatLocals: [String: [String: Locals]] = [:]
     /// `scroll.<id>.x|y` and `drag.<id+repeat path>.x|y` cells, created on first read or write.
     private var drivers: [String: Cell] = [:]
     /// Changes whenever a drag cell is created.
@@ -89,12 +92,18 @@ final class Store {
         for (name, initial) in document.state {
             state[name] = Cell(previous?.state[name]?.value ?? root.eval(initial) ?? .null)
         }
+        computedMemo = [:] // an initializer may have read a computed before the cells it reads existed
     }
 
     func update(data results: [String: Value]) {
         for (name, result) in results {
             let value = ScreenResponse.dataValue(result)
-            if let cell = data[name] { cell.value = value } else { data[name] = Cell(value) }
+            if let cell = data[name] {
+                cell.value = value
+            } else {
+                data[name] = Cell(value)
+                computedMemo = [:] // a computed read this source as null, without a cell to depend on
+            }
         }
     }
 
@@ -128,17 +137,46 @@ final class Store {
         return scope
     }
 
+    /// Computed values, each evaluated once per change of anything it read (Observation tracks the reads: state, data,
+    /// env, drivers, tokens, other computed); that change drops the entry and bumps its `signal`, which every reader
+    /// served from here depends on.
+    private var computedMemo: [String: (value: Value, signal: Cell)] = [:]
+
     func computed(_ name: String) -> Value {
+        if let memo = computedMemo[name] {
+            _ = memo.signal.value
+            return memo.value
+        }
         guard let expr = document.computed[name] else { return .null }
-        return RenderContext(store: self).eval(expr) ?? .null
+        let signal = Cell(.bool(false))
+        let value = withObservationTracking {
+            RenderContext(store: self).eval(expr) ?? .null
+        } onChange: { [weak self] in
+            // Observed state is only ever written on the main actor, and this runs synchronously in that write.
+            MainActor.assumeIsolated {
+                if let self, self.computedMemo[name]?.signal === signal { self.computedMemo[name] = nil }
+                signal.value = .bool(true)
+            }
+        }
+        computedMemo[name] = (value, signal)
+        _ = signal.value
+        return value
     }
 
-    func token(_ group: String, _ name: String) -> Value {
-        switch group {
-        case "space": .number(wishbone.theme.space[name] ?? 0)
-        case "radius": .number(wishbone.theme.radius[name] ?? 0)
-        default: .record(["$\(group)": .string(name)])
+    func token(_ group: String, _ name: String) -> Value { wishbone.token(group, name) }
+
+    /// `wb.<screen>.<node id>` by node id (UI test identifiers; a repeat path is appended per item).
+    private var a11yPrefixes: [String: String] = [:]
+
+    func a11yID(_ nodeID: String, idSuffix: String) -> String {
+        let prefix: String
+        if let known = a11yPrefixes[nodeID] {
+            prefix = known
+        } else {
+            prefix = "wb.\(document.screen).\(nodeID)"
+            a11yPrefixes[nodeID] = prefix
         }
+        return idSuffix.isEmpty ? prefix : prefix + idSuffix
     }
 
     func log(_ message: String, level: String = "error") {

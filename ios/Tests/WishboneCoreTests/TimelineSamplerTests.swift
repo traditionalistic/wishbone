@@ -146,6 +146,31 @@ import Testing
         #expect(TimelineSampler.sample(tl, at: 75, index: 0)["a.opacity"] == 7.5)
     }
 
+    /// The per-track entry point (what the renderer calls per frame) returns exactly what
+    /// `sample` puts under that track's key — finite/autoreverse, infinite and zero-length.
+    @Test func sampleTrackEqualsTheSampleEntry() {
+        let keys = [TimelineKey(t: 0, v: 0, ease: nil), TimelineKey(t: 400, v: 1, ease: easeInOut)]
+        let timelines = [
+            timeline(duration: 400, repeatCount: 3, autoreverse: true, [
+                track("a", "opacity", stagger: 60, keys),
+                track("a", "offsetY", stagger: 60, [TimelineKey(t: 0, v: 40, ease: nil), TimelineKey(t: 200, v: 0, ease: springEase)]),
+                track("b", "scale", [TimelineKey(t: 100, v: 0.5, ease: nil), TimelineKey(t: 300, v: 1, ease: easeOut)]),
+            ]),
+            timeline(duration: 400, repeatCount: -1, [track("a", "rotation", stagger: 25, keys)]),
+            timeline(duration: 0, [track("a", "opacity", keys)]),
+        ]
+        for tl in timelines {
+            for ms in stride(from: -100.0, through: 2000, by: 37) {
+                for index in 0..<3 {
+                    let all = TimelineSampler.sample(tl, at: ms, index: index)
+                    for tr in tl.tracks {
+                        #expect(TimelineSampler.sampleTrack(tl, track: tr, ms: ms, index: index) == all["\(tr.target).\(tr.prop)"])
+                    }
+                }
+            }
+        }
+    }
+
     @Test func durationAccountsForRepeatAndStagger() {
         let tl = timeline(duration: 200, repeatCount: 2, [track("item", "opacity", stagger: 100, [
             TimelineKey(t: 0, v: 0, ease: nil), TimelineKey(t: 200, v: 1, ease: nil),

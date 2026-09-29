@@ -27,6 +27,23 @@ import AppKit
         #expect(ImageLoader.cached(URL(string: "https://example.com/other-\(UUID().uuidString).png")!) == nil)
     }
 
+    /// Cells showing the same picture share one download.
+    @Test func concurrentLoadsOfOneURLFetchOnce() async throws {
+        let url = URL(string: "https://example.com/\(UUID().uuidString).png")!
+        let fetches = Changes(), png = png
+        let fetch: @Sendable (URL) async throws -> Data = { _ in
+            fetches.bump()
+            try await Task.sleep(for: .milliseconds(100))
+            return png
+        }
+        let images = try await withThrowingTaskGroup(of: PlatformImage?.self) { group in
+            for _ in 0..<5 { group.addTask { try await ImageLoader.load(url, fetch: fetch) } }
+            return try await group.reduce(into: []) { $0.append($1) }
+        }
+        #expect(fetches.value == 1 && images.count == 5 && images.allSatisfy { $0 != nil && $0 === images[0] })
+        #expect(ImageLoader.cached(url) === images[0])
+    }
+
     /// The memory cache is bounded by bytes: an entry costs its decoded bitmap.
     @Test func costIsTheDecodedBitmapSize() throws {
         let ctx = try #require(CGContext(data: nil, width: 100, height: 50, bitsPerComponent: 8, bytesPerRow: 0,

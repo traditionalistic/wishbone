@@ -9,9 +9,13 @@ struct EventModifier: ViewModifier {
     let onPress: (Bool) -> Void
 
     func body(content: Content) -> some View {
-        events(content)
-            .onAppear { fire("appear") }
-            .onDisappear { fire("disappear") }
+        if node.on["appear"] != nil || node.on["disappear"] != nil {
+            events(content)
+                .onAppear { fire("appear") }
+                .onDisappear { fire("disappear") }
+        } else {
+            events(content)
+        }
     }
 
     @ViewBuilder
@@ -74,16 +78,19 @@ struct DragModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let key = "drag:\(node.id)\(ctx.idSuffix)"
-        let x = ctx.store.driver(key + ":x"), y = ctx.store.driver(key + ":y")
+        // The instance's cells, made by its first drag (never while a body runs): gesture callbacks only.
+        let store = ctx.store
+        func x() -> Cell { store.driver(key + ":x") }
+        func y() -> Cell { store.driver(key + ":y") }
         func current() -> CGSize {
-            func n(_ c: Cell) -> Double { if case let .number(v) = c.value { v } else { 0 } }
-            return CGSize(width: n(x), height: n(y))
+            func n(_ axis: String) -> Double { if case let .number(v)? = store.existingDriver(key + axis)?.value { v } else { 0 } }
+            return CGSize(width: n(":x"), height: n(":y"))
         }
         func settle(_ t: CGSize) {
-            let theme = ctx.store.wishbone.theme
+            let theme = store.wishbone.theme
             withAnimation(theme.animation(.record(["$motion": .string("interactive")])) ?? .spring) {
-                x.value = .number(spec.movesX ? spec.rest(t.width) : 0)
-                y.value = .number(spec.movesY ? spec.rest(t.height) : 0)
+                x().value = .number(spec.movesX ? spec.rest(t.width) : 0)
+                y().value = .number(spec.movesY ? spec.rest(t.height) : 0)
             }
         }
         return content
@@ -97,8 +104,8 @@ struct DragModifier: ViewModifier {
                         }
                         guard claimed == true else { return }
                         let t = spec.follow(v.translation, from: origin)
-                        x.value = .number(t.width)
-                        y.value = .number(t.height)
+                        x().value = .number(t.width)
+                        y().value = .number(t.height)
                     }
                     .onEnded { v in
                         defer { claimed = nil }
@@ -128,8 +135,7 @@ struct DragModifier: ViewModifier {
             }
             .onDisappear {
                 // An instance that leaves the tree comes back at rest.
-                x.value = .number(0)
-                y.value = .number(0)
+                for axis in [":x", ":y"] { store.existingDriver(key + axis)?.value = .number(0) }
             }
     }
 }
@@ -141,17 +147,18 @@ struct A11yModifier: ViewModifier {
     let ctx: RenderContext
 
     func body(content: Content) -> some View {
-        let id = "wb.\(ctx.store.document.screen).\(node.id)\(ctx.idSuffix)"
+        let id = ctx.store.a11yID(node.id, idSuffix: ctx.idSuffix)
         let label: String? = if case let .string(s)? = node.a11y?.label.flatMap({ ctx.eval($0) }) { s } else { nil }
         let hidden = node.a11y?.hidden.flatMap { ctx.eval($0) } == .bool(true)
         let container = !node.children.isEmpty && node.on["tap"] == nil && node.on["longPress"] == nil
         if hidden {
             content.accessibilityHidden(true).accessibilityIdentifier(id)
         } else {
+            let traits = Self.traits(node.a11y?.role)
             grouped(content, container: container, labelled: label != nil)
                 .accessibilityIdentifier(id)
                 .modifier(LabelModifier(label: label))
-                .accessibilityAddTraits(Self.traits(node.a11y?.role))
+                .modifier(TraitsModifier(traits: traits), if: !traits.isEmpty)
         }
     }
 
@@ -174,6 +181,11 @@ struct A11yModifier: ViewModifier {
         default: []
         }
     }
+}
+
+struct TraitsModifier: ViewModifier {
+    let traits: AccessibilityTraits
+    func body(content: Content) -> some View { content.accessibilityAddTraits(traits) }
 }
 
 struct LabelModifier: ViewModifier {

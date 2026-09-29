@@ -1,6 +1,15 @@
 import Foundation
+import Observation
+import Synchronization
 import Testing
 @testable import WishboneUI
+
+/// Counts `withObservationTracking` change notifications.
+final class Changes: Sendable {
+    private let count = Mutex(0)
+    var value: Int { count.withLock { $0 } }
+    @Sendable func bump() { count.withLock { $0 += 1 } }
+}
 
 @MainActor
 @Suite struct StoreTests {
@@ -105,6 +114,91 @@ import Testing
         #expect(ctx.env("colorScheme") == .string("light"))
         store.wishbone.env.dark = true
         #expect(ctx.env("colorScheme") == .string("dark"))
+    }
+
+    /// An unchanged repeat item keeps its `Locals`, so its row's inputs compare equal and SwiftUI skips it (a page append
+    /// doesn't re-render every row); a changed value, a moved item and a removed key don't.
+    @Test func repeatItemsKeepTheLocalsOfUnchangedItems() throws {
+        let doc = try document(#"""
+        {"format": 1, "screen": "s", "state": [["rows", ["v", [{"id": "a", "n": 1}, {"id": "b", "n": 2}, {"id": "c", "n": 3}]]]],
+         "root": {"t": "stack", "id": "root", "c": [
+            {"t": "text", "id": "row", "rep": {"over": ["s", "rows"], "as": "item", "index": "i", "key": ["get", ["l", "item"], "id"]}}]}}
+        """#)
+        let store = Store(document: doc, params: [:], data: [:], wishbone: testWishbone())
+        let ctx = RenderContext(store: store), node = doc.root.children[0]
+        func locals() -> [String: Locals] {
+            Dictionary(uniqueKeysWithValues: RepeatItem.items(node.rep!, id: node.id, ctx: ctx).map { ($0.id, $0.ctx.locals!) })
+        }
+        let first = locals()
+        let again = locals()
+        #expect(["a", "b", "c"].allSatisfy { first[$0] === again[$0] })
+
+        ctx.set(scope: "s", name: "rows", path: [.number(1), .string("n")], value: .number(20), transaction: nil) // leaderboard refresh
+        let refreshed = locals()
+        #expect(refreshed["a"] === first["a"] && refreshed["c"] === first["c"])
+        #expect(refreshed["b"] !== first["b"] && refreshed["b"]?.value == .record(["id": .string("b"), "n": .number(20)]))
+
+        let rows: Value = .list([.record(["id": .string("c"), "n": .number(3)]), .record(["id": .string("a"), "n": .number(1)])])
+        ctx.set(scope: "s", name: "rows", path: [], value: rows, transaction: nil) // reorder + shrink
+        let moved = locals()
+        #expect(moved.keys.sorted() == ["a", "c"])
+        #expect(moved["a"] !== refreshed["a"] && moved["a"]?.parent?.value == .number(1)) // new index
+        #expect(moved["c"] !== refreshed["c"] && moved["c"]?.parent?.value == .number(0))
+        #expect(store.repeatLocals["row"]?.keys.sorted() == ["a", "c"]) // "b" dropped
+        #expect(locals()["c"] === moved["c"])
+    }
+
+    /// Computed values are memoised per change of what they read — state, env, scroll drivers, other computed — and a
+    /// reader served from the memo still re-renders when one of those changes.
+    @Test func computedValuesFollowEverythingTheyRead() throws {
+        let doc = try document(#"""
+        {"format": 1, "screen": "s", "state": [["early", ["c", "late2"]], ["count", ["v", 1]], ["late", ["v", 3]]],
+         "computed": {"next": ["op", "+", ["s", "count"], ["v", 1]], "twice": ["op", "*", ["c", "next"], ["v", 2]],
+                      "wide": ["op", ">", ["e", "screenWidth"], ["v", 400]], "y": ["dr", "scroll", "page", "y"],
+                      "late2": ["op", "*", ["s", "late"], ["v", 2]]},
+         "root": {"t": "stack", "id": "root"}}
+        """#)
+        let store = Store(document: doc, params: [:], data: [:], wishbone: testWishbone())
+        let ctx = RenderContext(store: store)
+        #expect(ctx.computed("late2") == .number(6)) // read by a state initializer before `late` existed
+        #expect(ctx.computed("next") == .number(2) && ctx.computed("twice") == .number(4))
+
+        let changes = Changes()
+        withObservationTracking { _ = ctx.computed("twice") } onChange: { changes.bump() } // a memo hit
+        ctx.set(scope: "s", name: "count", path: [], value: .number(5), transaction: nil)
+        #expect(changes.value == 1)
+        #expect(ctx.computed("next") == .number(6) && ctx.computed("twice") == .number(12))
+
+        #expect(ctx.computed("wide") == .bool(false))
+        store.geometry.screenSize = CGSize(width: 402, height: 874)
+        #expect(ctx.computed("wide") == .bool(true))
+
+        #expect(ctx.computed("y") == .number(0))
+        store.driver("scroll:page:y").value = .number(120)
+        #expect(ctx.computed("y") == .number(120))
+    }
+
+    /// Token values are memoised per theme: a brand switch re-resolves them (and re-renders their readers); colours
+    /// stay named, so the scheme still resolves them at render, light ↔ dark.
+    @Test func tokenValuesFollowTheTheme() throws {
+        let cache = DiskCache(dir: tempDir())
+        var kz = try JSONSerialization.jsonObject(with: contractFile("tokens/kz.json")) as! [String: Any]
+        kz["space"] = ["lg": 20]
+        let base = URL(string: "http://localhost:1")!
+        cache.themes.write(DiskCache.themeKey(scope: Wishbone.cacheScope(base, DefaultHost(), "kz")), try JSONSerialization.data(withJSONObject: kz))
+        let wb = Wishbone(baseURL: base, brand: "korpu", host: DefaultHost(), cache: cache)
+        let ctx = RenderContext(store: Store(document: try document(docV2), params: [:], data: [:], wishbone: wb))
+        #expect(ctx.token("space", "lg") == .number(16))
+
+        let changes = Changes()
+        withObservationTracking { _ = ctx.token("space", "lg") } onChange: { changes.bump() } // a memo hit
+        wb.brand = "kz"
+        #expect(changes.value == 1)
+        #expect(ctx.token("space", "lg") == .number(20))
+
+        let el16 = ctx.token("color", "el16")
+        #expect(el16 == color("el16"))
+        #expect(wb.theme.color(el16, dark: false) == RGBA(hex: "#080808FF") && wb.theme.color(el16, dark: true) == RGBA(hex: "#F5F5F5FF"))
     }
 
     @Test func handlerRunsWriteStateAndPerformEffects() async throws {

@@ -35,7 +35,7 @@ public struct SchemeColor: Equatable, Sendable, Decodable {
     }
 }
 
-public struct TypeStyle: Equatable, Sendable, Decodable {
+public struct TypeStyle: Hashable, Sendable, Decodable {
     public let family: String
     public let size: Double
     public let weight: Int
