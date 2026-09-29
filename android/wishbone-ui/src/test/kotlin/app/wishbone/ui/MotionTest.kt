@@ -76,7 +76,7 @@ class MotionTest {
 
     private val ms = 1_000_000L
 
-    private fun registry() = TimelineRegistry(
+    private fun registry(previous: TimelineRegistry? = null) = TimelineRegistry(
         Document.parse(
             """{"screen":"t","root":{"t":"stack","id":"root"},"timelines":{
               "fade":{"duration":400,"repeat":1,"autoreverse":false,"autoplay":false,"tracks":[
@@ -90,6 +90,7 @@ class MotionTest {
                 {"target":"item","prop":"scale","stagger":100,"keys":[{"t":0,"v":0},{"t":200,"v":1}]}]}}}""",
         ).timelines,
         now = 0,
+        previous = previous,
     )
 
     @Test
@@ -163,6 +164,24 @@ class MotionTest {
         assertEquals(0.5, r.transform("item", 2, 300 * ms, false).scale, 1e-9) // u = 300 − 2·100
         assertEquals(0.0, r.transform("item", 3, 250 * ms, false).scale, 1e-9)
         assertEquals(1.0, r.transform("item", 3, 0, true).scale, 1e-9)
+    }
+
+    /**
+     * SWR swap / hot reload: the rebuilt store's registry keeps an infinite timeline playing, but it runs only once its
+     * composed target registers with the new registry — NodeView's effect is keyed on the registry for that.
+     */
+    @Test
+    fun aRebuiltRegistryRunsAnInfiniteTimelineOnceItsTargetRegistersAgain() {
+        val r = registry()
+        r.play("spin", 0)
+        r.register("s", "s", 0)
+        val rebuilt = registry(previous = r)
+        assertTrue(rebuilt.isActive("spin"))
+        assertFalse(rebuilt.running(500 * ms)) // the spinner is registered with the old registry only
+        val v = rebuilt.version
+        rebuilt.register("s", "s", 0)
+        assertTrue(rebuilt.version > v) // the frame loop restarts
+        assertTrue(rebuilt.running(500 * ms))
     }
 
     @Test

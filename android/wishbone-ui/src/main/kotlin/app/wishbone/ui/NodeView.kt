@@ -45,7 +45,9 @@ internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Mo
     if (ctx.store.timelines.isTarget(node.id)) {
         val timelines = ctx.store.timelines
         val instance = node.id + ctx.keyPath
-        DisposableEffect(instance, ctx.index) {
+        // keyed on the registry too: a swapped store (SWR, hot reload) keeps ids and indices, and its new registry
+        // must learn the target is live, or an infinite timeline on it stops
+        DisposableEffect(timelines, instance, ctx.index) {
             timelines.register(node.id, instance, ctx.index)
             onDispose { timelines.unregister(node.id, instance) }
         }
