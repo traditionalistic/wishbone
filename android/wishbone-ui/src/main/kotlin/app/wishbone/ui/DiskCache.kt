@@ -23,7 +23,12 @@ data class CachedScreen(val etag: String, val revision: Int, val document: JsonO
  * doesn't rewrite them, so they would age out and a cold start would show the bundled theme first.
  */
 class DiskCache(private val dir: File) {
-    fun read(key: String): String? = runCatching { file(key).takeIf { it.exists() }?.readText() }.getOrNull()
+    fun read(key: String): String? = runCatching {
+        val f = file(key)
+        // a theme entry cached before the `theme-` prefix moves to it, so the first start after an update keeps its theme
+        if (!f.exists() && key.startsWith(THEME)) File(dir, f.name.removePrefix(THEME)).renameTo(f)
+        f.takeIf { it.exists() }?.readText()
+    }.getOrNull()
 
     fun write(key: String, text: String) {
         runCatching {
@@ -43,10 +48,8 @@ class DiskCache(private val dir: File) {
         others.map { it.lastModified() to it }.sortedByDescending { it.first }.drop(MAX_ENTRIES - 1).forEach { it.second.delete() }
     }
 
-    /** Marks the entry as just used (a revalidation that changed nothing), so the cap keeps it; a missing one is fine. */
-    fun touch(key: String) {
-        runCatching { file(key).setLastModified(System.currentTimeMillis()) }
-    }
+    /** Marks the entry as just used (a revalidation that changed nothing), so the cap keeps it; false when it is gone. */
+    fun touch(key: String): Boolean = runCatching { file(key).setLastModified(System.currentTimeMillis()) }.getOrDefault(false)
 
     /** Deletes the entry; a missing one is fine. */
     fun remove(key: String) {

@@ -101,8 +101,9 @@ internal class ScreenLoader(
         if (stored != null) {
             current()?.let { memo?.put(key, stored, it) }
             withContext(Dispatchers.IO) {
-                // unchanged: no rewrite, but marked as used, so the cap (oldest first) doesn't evict the entries revalidated most
-                if (cached == null || stored.etag != cached.etag || stored.data != cached.data) cache.writeScreen(id, params, scope, stored) else cache.touch(key)
+                // unchanged: no rewrite, but marked as used, so the cap (oldest first) doesn't evict the entries revalidated
+                // most; one the cap already evicted is written again
+                if (cached == null || stored.etag != cached.etag || stored.data != cached.data || !cache.touch(key)) cache.writeScreen(id, params, scope, stored)
             }
         }
         return current() != null

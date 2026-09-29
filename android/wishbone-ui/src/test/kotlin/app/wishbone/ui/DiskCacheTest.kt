@@ -69,6 +69,13 @@ class DiskCacheTest {
     }
 
     @Test
+    fun aThemeCachedBeforeThePrefixMovesToItOnRead() {
+        File(dir, "353e2c837a327d74efc2d27e4f09d940.json").writeText("{\"x\":1}") // "theme-korpu" by earlier versions
+        assertEquals("{\"x\":1}", DiskCache(dir).read("theme-korpu"))
+        assertEquals(setOf("theme-353e2c837a327d74efc2d27e4f09d940.json"), dir.list()!!.toSet())
+    }
+
+    @Test
     fun removeDeletesTheEntry() {
         val cache = DiskCache(dir)
         cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"4-abc\"", 4, doc, data))

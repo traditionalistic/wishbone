@@ -146,6 +146,17 @@ class ScreenLoaderTest {
     private val key = DiskCache.screenKey("s", emptyMap(), "korpu")
 
     @Test
+    fun anUnchangedEntryTheCapEvictedIsWrittenAgain() {
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"1-a\"", 1, v1, data1))
+        val s = Screen()
+        val loader = ScreenLoader(cache, "s", emptyMap(), "korpu")
+        val cached = loader.warm({ _, _, _ -> error("no memo for a screen") }, s::show)
+        cache.remove(key) // other screens' writes evicted it while this one was open
+        assertTrue(runBlocking { loader.load(cached, s::current, { ScreenResponse("\"1-a\"", 1, null, data1) }, s::show, {}, {}) })
+        assertEquals(CachedScreen("\"1-a\"", 1, v1, data1), cache.readScreen("s", emptyMap(), "korpu"))
+    }
+
+    @Test
     fun aSlotReappearsFromMemoryForThirtySeconds() {
         assertTrue(run(Screen(), slot = true) { ScreenResponse("\"1-a\"", 1, v1, data1) }) // cold: network
         assertEquals(1, requests)
