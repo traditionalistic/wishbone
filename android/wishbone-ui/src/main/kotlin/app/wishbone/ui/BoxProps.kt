@@ -8,7 +8,11 @@ internal sealed interface Dim {
     data object Wrap : Dim
 }
 
-internal data class Insets(val top: Double, val bottom: Double, val start: Double, val end: Double)
+internal data class Insets(val top: Double, val bottom: Double, val start: Double, val end: Double) {
+    companion object {
+        val ZERO = Insets(0.0, 0.0, 0.0, 0.0)
+    }
+}
 
 /** The numeric part of the common props (spec §2.1), defaults from contract/primitives.json `common`. */
 internal data class BoxProps(
@@ -84,7 +88,7 @@ internal data class BoxProps(
 
         private fun insets(v: Value?): Insets {
             if (v is Value.Num) return (finite(v) ?: 0.0).coerceAtLeast(0.0).let { Insets(it, it, it, it) }
-            val f = (v as? Value.Rec)?.fields ?: return Insets(0.0, 0.0, 0.0, 0.0)
+            val f = (v as? Value.Rec)?.fields ?: return Insets.ZERO
             fun n(k: String) = finite(f[k])?.coerceAtLeast(0.0)
             val h = n("h") ?: 0.0
             val vv = n("v") ?: 0.0

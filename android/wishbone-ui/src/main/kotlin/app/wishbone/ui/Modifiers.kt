@@ -34,15 +34,53 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import app.wishbone.core.Expr
 import app.wishbone.core.Node
 import app.wishbone.core.Value
 
 private val Double.dpv: Dp get() = toFloat().dp
 
+private val TRANSFORM = listOf("opacity", "offsetX", "offsetY", "scale", "rotation")
+
+/**
+ * Per node id: the transform props the layer block evaluates (draw phase), so a change — every scroll frame for
+ * `scroll.*`-driven ones — redraws the layer without recomposing the node. Not those that animate: an implicit
+ * `anim` for the prop, or (in a screen with `animate(…)` blocks) an expression a handler's write can change.
+ */
+internal fun layerProps(root: Node, extras: Map<String, NodeExtras>, transactions: Boolean): Map<String, Map<String, Expr>> {
+    val out = HashMap<String, Map<String, Expr>>()
+    fun walk(n: Node) {
+        val anim = extras[n.id]?.anim
+        if (anim?.get("*") == null) {
+            val layer = TRANSFORM.mapNotNull { k -> n.props[k]?.takeIf { anim?.get(k) == null && (!transactions || it.writeFree()) }?.let { k to it } }
+            if (layer.isNotEmpty()) out[n.id] = layer.toMap()
+        }
+        n.children.forEach(::walk)
+    }
+    walk(root)
+    return out
+}
+
+/** Nothing a handler writes can change it: literals, env, tokens, params, drivers and pure operations on them (fns see only their params). */
+private fun Expr.writeFree(): Boolean = when (this) {
+    is Expr.Lit, is Expr.EnvRef, is Expr.TokenRef, is Expr.ParamRef, is Expr.DriverRef -> true
+    is Expr.Get -> obj.writeFree()
+    is Expr.At -> obj.writeFree() && key.writeFree()
+    is Expr.BinOp -> a.writeFree() && b.writeFree()
+    is Expr.UnOp -> a.writeFree()
+    is Expr.If -> cond.writeFree() && then.writeFree() && otherwise.writeFree()
+    is Expr.Call -> args.all { it.writeFree() }
+    is Expr.UserCall -> args.all { it.writeFree() }
+    is Expr.ListLit -> items.all { it.writeFree() }
+    is Expr.RecLit -> fields.values.all { it.writeFree() }
+    is Expr.StrInterp -> parts.all { it.writeFree() }
+    else -> false // state, instance state, computed, data, locals, self.pressed, lambdas
+}
+
 /**
  * Canonical box model, outer half: zIndex → transform layer → shadow → size/fill (renderer-decisions.md).
  * The transform layer composes props with active timelines (×/+) and the drag translation; it reads
- * those per frame inside the layer block, so only drawing is redone.
+ * those per frame inside the layer block, so only drawing is redone — as it does the node's [layerProps].
  */
 internal fun Modifier.boxOuter(node: Node, b: BoxProps, p: Map<String, Value>, ctx: RenderContext): Modifier {
     var m = this
@@ -52,15 +90,18 @@ internal fun Modifier.boxOuter(node: Node, b: BoxProps, p: Map<String, Value>, c
     val drag = store.extras[node.id]?.drag
     val dx = drag?.let { store.driverCell("drag", node.id + ctx.keyPath, "x") }
     val dy = drag?.let { store.driverCell("drag", node.id + ctx.keyPath, "y") }
-    if (b.hasTransform || timeline || drag != null) {
+    val layer = store.layerProps[node.id]
+    if (b.hasTransform || timeline || drag != null || layer != null) {
         m = m.graphicsLayer {
+            // like BoxProps: a non-number or non-finite value is the prop's default (an eval error is logged)
+            fun prop(name: String, fallback: Double) = (layer?.get(name)?.let { ctx.evalOrNull(it) } as? Value.Num)?.value?.takeIf { it.isFinite() } ?: fallback
             val t = if (timeline) store.timelines.transform(node.id, ctx.index, store.frameNanos.longValue, store.reduceMotion) else LayerTransform.IDENTITY
-            alpha = (b.opacity * t.opacity).toFloat().coerceIn(0f, 1f)
-            scaleX = (b.scale * t.scale).toFloat()
+            alpha = (prop("opacity", b.opacity) * t.opacity).toFloat().coerceIn(0f, 1f)
+            scaleX = (prop("scale", b.scale) * t.scale).toFloat()
             scaleY = scaleX
-            rotationZ = (b.rotation + t.rotation).toFloat()
-            translationX = (b.offsetX + t.offsetX + (dx?.doubleValue ?: 0.0)).dpv.toPx()
-            translationY = (b.offsetY + t.offsetY + (dy?.doubleValue ?: 0.0)).dpv.toPx()
+            rotationZ = (prop("rotation", b.rotation) + t.rotation).toFloat()
+            translationX = (prop("offsetX", b.offsetX) + t.offsetX + (dx?.doubleValue ?: 0.0)).dpv.toPx()
+            translationY = (prop("offsetY", b.offsetY) + t.offsetY + (dy?.doubleValue ?: 0.0)).dpv.toPx()
         }
     }
     val shadow = p.rec("shadow")
@@ -110,7 +151,7 @@ internal fun Modifier.boxInner(b: BoxProps, p: Map<String, Value>, ctx: RenderCo
     val borderWidth = (border?.get("width") as? Value.Num)?.value
     if (borderColor != null && borderWidth != null && borderWidth > 0) m = m.border(borderWidth.dpv, borderColor, shape)
     val pad = b.padding
-    if (padding && pad != Insets(0.0, 0.0, 0.0, 0.0)) m = m.padding(start = pad.start.dpv, top = pad.top.dpv, end = pad.end.dpv, bottom = pad.bottom.dpv)
+    if (padding && pad != Insets.ZERO) m = m.padding(start = pad.start.dpv, top = pad.top.dpv, end = pad.end.dpv, bottom = pad.bottom.dpv)
     return m
 }
 
@@ -119,7 +160,7 @@ internal fun Modifier.boxInner(b: BoxProps, p: Map<String, Value>, ctx: RenderCo
 @Composable
 internal fun Modifier.interactions(node: Node, ctx: RenderContext, source: MutableInteractionSource?): Modifier {
     val ex = ctx.store.extras[node.id]
-    val id = ctx.identifier(node)
+    val id = remember(node, ctx.keyPath) { ctx.identifier(node) }
     var m = if (ex?.a11yHidden?.let { ctx.evalOrNull(it) } == Value.TRUE) {
         clearAndSetSemantics { testTag = id }
     } else {
