@@ -96,7 +96,7 @@ func run(ctx context.Context, addr, contractDir, adminDir string, withPreview bo
 		return err
 	}
 
-	hs := &http.Server{Addr: addr, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
+	hs := &http.Server{Addr: addr, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 120 * time.Second}
 	stopped := make(chan error, 1)
 	go func() {
 		<-ctx.Done()
