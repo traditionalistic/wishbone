@@ -50,4 +50,14 @@ class StdlibStringTest {
         assertEquals(Value.Num(-3.0), call("num", s(" -3 ")))
         assertEquals(Value.Null, call("num", s("1e999")))
     }
+
+    @Test
+    fun `eval error carries no stack trace and caps the embedded value text`() {
+        val long = "x".repeat(500)
+        val e = org.junit.jupiter.api.assertThrows<InterpreterException.EvalError> {
+            TestHarness.eval("""["f","abs",[["v","$long"]]]""")
+        }
+        assertEquals(0, e.stackTrace.size)
+        assertEquals(true, e.message!!.length < 260)
+    }
 }

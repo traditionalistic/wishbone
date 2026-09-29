@@ -3,20 +3,25 @@ package app.wishbone.core
 import kotlinx.coroutines.CancellationException
 import kotlin.math.floor
 
-sealed class InterpreterException(message: String) : Exception(message) {
+/** No stack trace: eval errors are reported as text, and filling one in costs more than the failing eval itself. */
+sealed class InterpreterException(message: String) : Exception(message, null, false, false) {
     class BudgetExceeded : InterpreterException("step budget exceeded (10000)")
     class EvalError(message: String) : InterpreterException(message)
 }
 
 private const val STEP_BUDGET = 10_000
 
-/** One step per expression/statement node visited, scoped to a single top-level eval/run call. */
-private class Budget {
-    private var remaining = STEP_BUDGET
-    fun tick() {
-        remaining--
-        if (remaining < 0) throw InterpreterException.BudgetExceeded()
-    }
+/** A [Value] rendered for an error message, capped so a huge list/record can't bloat it. */
+internal fun describe(v: Value): String {
+    val text = v.toString()
+    return if (text.length > 200) text.substring(0, 200) + "…" else text
+}
+
+/** Binds [params] to [args] pairwise, stopping at the shorter (same truncation as `zip`). */
+private fun Locals?.bindAll(params: List<String>, args: List<Value>): Locals? {
+    var loc = this
+    for (i in 0 until minOf(params.size, args.size)) loc = loc.bind(params[i], args[i])
+    return loc
 }
 
 /**
@@ -29,6 +34,34 @@ class Interpreter(
     private val scope: Scope,
     private val effects: EffectSink,
 ) {
+    /**
+     * One step per expression/statement node visited, scoped to a single top-level eval/run call.
+     * Doubles as the [StdlibContext] of that eval, so a stdlib call allocates no context object.
+     */
+    private inner class Budget : StdlibContext {
+        private var remaining = STEP_BUDGET
+        fun tick() {
+            remaining--
+            if (remaining < 0) throw InterpreterException.BudgetExceeded()
+        }
+
+        override val scope: Scope get() = this@Interpreter.scope
+
+        override fun apply(lambda: Value.Lambda, a: Value): Value {
+            val p = lambda.params
+            val loc = if (p.isNotEmpty()) lambda.closure.bind(p[0], a) else lambda.closure
+            return evalInternal(lambda.body, loc, this)
+        }
+
+        override fun apply(lambda: Value.Lambda, a: Value, b: Value): Value {
+            val p = lambda.params
+            var loc = lambda.closure
+            if (p.isNotEmpty()) loc = loc.bind(p[0], a)
+            if (p.size >= 2) loc = loc.bind(p[1], b)
+            return evalInternal(lambda.body, loc, this)
+        }
+    }
+
     /** Pure; throws [InterpreterException] on error (unknown tag, budget exceeded, type error). */
     fun eval(expr: Expr, locals: Locals?): Value = evalInternal(expr, locals, Budget())
 
@@ -39,9 +72,7 @@ class Interpreter(
             effects.error("unknown handler: $handlerName")
             return
         }
-        var locals: Locals? = null
-        for ((p, v) in handler.params.zip(args)) locals = locals.bind(p, v)
-        runStatements(handler.body, locals)
+        runStatements(handler.body, null.bindAll(handler.params, args))
     }
 
     /**
@@ -103,9 +134,7 @@ class Interpreter(
                 val handler = doc.handlers[stmt.handler]
                     ?: throw InterpreterException.EvalError("unknown handler: ${stmt.handler}")
                 val args = stmt.args.map { evalInternal(it, locals, budget) }
-                var handlerLocals: Locals? = null
-                for ((p, v) in handler.params.zip(args)) handlerLocals = handlerLocals.bind(p, v)
-                execStmts(handler.body, handlerLocals, budget, transaction)
+                execStmts(handler.body, null.bindAll(handler.params, args), budget, transaction)
                 locals
             }
             is Stmt.Unknown -> throw InterpreterException.EvalError("unknown statement tag: ${stmt.tag}")
@@ -176,7 +205,7 @@ class Interpreter(
             "+" -> when {
                 a is Value.Num && b is Value.Num -> Value.Num(a.value + b.value)
                 a is Value.Str && b is Value.Str -> Value.Str(a.value + b.value)
-                else -> throw InterpreterException.EvalError("'+' requires two numbers or two strings, got $a, $b")
+                else -> throw InterpreterException.EvalError("'+' requires two numbers or two strings, got ${describe(a)}, ${describe(b)}")
             }
             "-" -> Value.Num(asNum(a) - asNum(b))
             "*" -> Value.Num(asNum(a) * asNum(b))
@@ -201,13 +230,13 @@ class Interpreter(
     private fun isLess(a: Value, b: Value): Boolean = when {
         a is Value.Num && b is Value.Num -> a.value < b.value
         a is Value.Str && b is Value.Str -> compareCodePoints(a.value, b.value) < 0
-        else -> throw InterpreterException.EvalError("cannot compare $a and $b")
+        else -> throw InterpreterException.EvalError("cannot compare ${describe(a)} and ${describe(b)}")
     }
 
     private fun isLessOrEqual(a: Value, b: Value): Boolean = when {
         a is Value.Num && b is Value.Num -> a.value <= b.value
         a is Value.Str && b is Value.Str -> compareCodePoints(a.value, b.value) <= 0
-        else -> throw InterpreterException.EvalError("cannot compare $a and $b")
+        else -> throw InterpreterException.EvalError("cannot compare ${describe(a)} and ${describe(b)}")
     }
 
     private fun evalUnOp(e: Expr.UnOp, locals: Locals?, budget: Budget): Value {
@@ -221,25 +250,15 @@ class Interpreter(
 
     private fun evalCall(e: Expr.Call, locals: Locals?, budget: Budget): Value {
         val argValues = e.args.map { evalInternal(it, locals, budget) }
-        val ctx = object : StdlibContext {
-            override val scope: Scope get() = this@Interpreter.scope
-            override fun apply(lambda: Value.Lambda, args: List<Value>): Value {
-                var lambdaLocals = lambda.closure
-                for ((p, v) in lambda.params.zip(args)) lambdaLocals = lambdaLocals.bind(p, v)
-                return evalInternal(lambda.body, lambdaLocals, budget)
-            }
-        }
-        return Stdlib(ctx).call(e.name, argValues)
+        return Stdlib.call(budget, e.name, argValues)
     }
 
     private fun evalUserCall(e: Expr.UserCall, locals: Locals?, budget: Budget): Value {
         val fn = doc.fns[e.name] ?: throw InterpreterException.EvalError("unknown fn: ${e.name}")
         val argValues = e.args.map { evalInternal(it, locals, budget) }
-        var fnLocals: Locals? = null
-        for ((p, v) in fn.params.zip(argValues)) fnLocals = fnLocals.bind(p, v)
-        return evalInternal(fn.body, fnLocals, budget)
+        return evalInternal(fn.body, null.bindAll(fn.params, argValues), budget)
     }
 
-    private fun asBool(v: Value): Boolean = (v as? Value.Bool)?.value ?: throw InterpreterException.EvalError("expected bool, got $v")
-    private fun asNum(v: Value): Double = (v as? Value.Num)?.value ?: throw InterpreterException.EvalError("expected number, got $v")
+    private fun asBool(v: Value): Boolean = (v as? Value.Bool)?.value ?: throw InterpreterException.EvalError("expected bool, got ${describe(v)}")
+    private fun asNum(v: Value): Double = (v as? Value.Num)?.value ?: throw InterpreterException.EvalError("expected number, got ${describe(v)}")
 }
