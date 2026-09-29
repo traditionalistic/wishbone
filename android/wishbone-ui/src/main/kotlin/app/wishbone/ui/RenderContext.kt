@@ -143,7 +143,7 @@ internal class RenderContext(
     override fun state(name: String) = store.state(name)
     override fun instanceState(name: String) = instance?.find(name)?.value ?: Value.Null
     override fun computed(name: String) = store.computed(name)
-    override fun data(name: String) = store.data[name] ?: Value.Null
+    override fun data(name: String) = store.data(name)
     override fun param(name: String) = store.param(name)
     override fun env(name: String) = store.env(name)
     override fun token(group: String, name: String) = store.token(group, name)

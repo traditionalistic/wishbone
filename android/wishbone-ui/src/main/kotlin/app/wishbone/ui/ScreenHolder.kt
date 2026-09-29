@@ -54,7 +54,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
                 hasContent = { store != null },
                 fetch = { etag -> wishbone.client.screen(entry.screen, entry.params, etag) },
                 show = ::apply,
-                refreshData = { data -> store?.data?.putAll(dataValues(data)) },
+                refreshData = { data -> store?.putData(dataValues(data)) },
                 log = { wishbone.log("warn", it) },
             )
             if (!ok) state = LoadState.Failed
@@ -115,7 +115,7 @@ private class ScreenEffects(private val holder: ScreenHolder) : EffectSink {
                 val store = holder.store ?: return
                 val name = str(0) ?: return
                 runCatching { wishbone.client.data(store.doc.screen, store.revision, store.params, listOf(name)) }
-                    .onSuccess { store.data.putAll(it) }
+                    .onSuccess { store.putData(it) }
                     .onFailure { wishbone.log("warn", "refresh $name: ${it.message}") }
             }
             else -> error("unknown effect '$effect'")
