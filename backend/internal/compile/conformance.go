@@ -55,6 +55,33 @@ func Conformance(c *Contract, dir string) (map[string][]byte, error) {
 	return out, nil
 }
 
+// ConformanceScreens are contract screens whose wire documents the SDK tests run as they are (their handlers against
+// scripted calls): contract/conformance/compiled-screens/<id>.json.
+var ConformanceScreens = []string{"raffle.main"}
+
+// CompiledScreens compiles contract/screens/<id>.json of each of ConformanceScreens (revision 0), indented as the
+// compiled vectors are. The result is deterministic.
+func CompiledScreens(c *Contract, contractDir string) (map[string][]byte, error) {
+	out := map[string][]byte{}
+	for _, id := range ConformanceScreens {
+		src, err := os.ReadFile(filepath.Join(contractDir, "screens", id+".json"))
+		if err != nil {
+			return nil, err
+		}
+		doc, _, diags := Screen(c, src, 0)
+		if len(diags) > 0 {
+			return nil, fmt.Errorf("%s: %v", id, diags)
+		}
+		var pretty bytes.Buffer
+		if err := json.Indent(&pretty, doc, "", " "); err != nil {
+			return nil, err
+		}
+		pretty.WriteByte('\n')
+		out[id] = pretty.Bytes()
+	}
+	return out, nil
+}
+
 func (c *Contract) compileVector(raw json.RawMessage) ([]byte, error) {
 	fields, err := orderedFields(raw)
 	if err != nil {

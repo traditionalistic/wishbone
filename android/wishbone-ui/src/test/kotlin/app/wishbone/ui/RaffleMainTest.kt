@@ -10,22 +10,14 @@ import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
- * contract/screens/raffle.main's leaderboard handlers, compiled by `wbc` from the current source (the Go toolchain,
- * as for the backend suite), run against a [Store] whose `call`s the test answers by hand.
+ * contract/screens/raffle.main's leaderboard handlers (compiled: contract/conformance/compiled-screens, kept current by
+ * the backend's `TestCompiledScreensGolden`), run against a [Store] whose `call`s the test answers by hand.
  */
 class RaffleMainTest {
     private val theme = Theme.parse(File("../../contract/tokens/korpu.json").readText())
-
-    private val doc: Document by lazy {
-        val p = ProcessBuilder("go", "run", "./cmd/wbc", "compile", "-contract", "../contract", "../contract/screens/raffle.main.json")
-            .directory(File("../../backend")).redirectError(ProcessBuilder.Redirect.INHERIT).start()
-        val out = p.inputStream.bufferedReader().readText()
-        check(p.waitFor(120, TimeUnit.SECONDS) && p.exitValue() == 0) { "wbc compile raffle.main failed" }
-        Document.parse(out)
-    }
+    private val doc = Document.parse(File("../../contract/conformance/compiled-screens/raffle.main.json").readText())
 
     /** Calls in the order made; each waits until the test completes it. */
     private val calls = mutableListOf<Pair<String, CompletableDeferred<Value>>>()
@@ -79,6 +71,7 @@ class RaffleMainTest {
         assertEquals(0, s.rows())
         assertEquals(Value.FALSE, s.state("boardDone"))
         assertEquals(Value.FALSE, s.state("moreFailed"))
+        assertEquals(Value.FALSE, s.state("loadingMore"))
         assertEquals(listOf("refresh" to listOf<Value>(Value.Str("board"))), performed)
 
         s.run("loadMore")
@@ -93,6 +86,7 @@ class RaffleMainTest {
         s.run("loadMore") // page 2, asked for under the old masking
         s.run("toggleHidden")
         answer("raffle.toggleHidden", ok(Value.rec("hidden" to Value.TRUE)))
+        assertEquals(Value.FALSE, s.state("loadingMore"))
         s.run("loadMore") // the table asks again at once, not held up by the stale request
         answer("raffle.leaderboard", ok(Value.rec("items" to page(20)))) // the stale page 2
         assertEquals(0, s.rows())

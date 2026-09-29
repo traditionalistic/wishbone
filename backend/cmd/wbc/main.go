@@ -1,6 +1,6 @@
 // Command wbc is the Wishbone compiler CLI.
 //
-//	wbc conformance [-contract ../contract]           writes contract/conformance/compiled/*.json
+//	wbc conformance [-contract ../contract]           writes contract/conformance/compiled/*.json and compiled-screens/*.json
 //	wbc compile [-contract ../contract] screen.json   prints the wire document, or diagnostics (exit 1)
 package main
 
@@ -40,6 +40,20 @@ func main() {
 			}
 		}
 		fmt.Printf("wrote %d files to %s\n", len(out), dst)
+		screens, err := compile.CompiledScreens(c, *dir)
+		if err != nil {
+			fail(err)
+		}
+		dst = filepath.Join(*dir, "conformance", "compiled-screens")
+		if err := os.MkdirAll(dst, 0o755); err != nil {
+			fail(err)
+		}
+		for _, id := range compile.ConformanceScreens {
+			if err := os.WriteFile(filepath.Join(dst, id+".json"), screens[id], 0o644); err != nil {
+				fail(err)
+			}
+		}
+		fmt.Printf("wrote %d files to %s\n", len(screens), dst)
 	case "compile":
 		if fs.NArg() != 1 {
 			usage()

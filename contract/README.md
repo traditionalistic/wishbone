@@ -39,6 +39,10 @@ Env по умолчанию: `{now: 0, platform: "test", locale: "ru", brand: "k
 
 Исходные поля (`state`, `data`, `params`, `args`, `calls`, `expect`, `samples`, `node`, `event`, `payload`, `repeatIndex`) копируются как есть.
 
+### Скомпилированные экраны (`conformance/compiled-screens/<id>.json`, генерирует тот же `wbc conformance`)
+
+Проводные документы экранов из `screens/` (ревизия 0), обработчики которых тесты SDK прогоняют против заданных ответов `call` (сейчас `raffle.main`: догрузка таблицы и сброс после «ФИО»). Список — `ConformanceScreens` в `backend/internal/compile/conformance.go`; `go test` падает, если файл устарел.
+
 ### Правила харнесса (одинаковы для Swift и Kotlin)
 
 1. Скоуп: стейт инициализируется из `document.state` по порядку (инициализаторы видят `params`, `data`, `env` и предыдущий стейт), затем поверх кладутся значения `state` вектора. `data`/`params` вектора — значения источников и параметров.
