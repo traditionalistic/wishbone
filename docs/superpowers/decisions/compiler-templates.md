@@ -15,7 +15,7 @@ Reads primitives.json, stdlib.json, operations.json, tokens/*.json (every theme 
 - Timelines: tracks target an existing node id, prop ∈ `timelineProps`, keys sorted by t (t ≥ 0), ease names → 4-number arrays from stdlib `easings` (linear → omitted), duplicate (target, prop) → error, repeat ≥ 1 or −1 (default 1), wire `duration` = max key t, `autoplay` default false.
 - Screen `param`s must have defaults (runtime has no other source). Data decls → wire `data` with args JSON (params as `{"$param": name}`).
 - Limits after template expansion: serialized document ≤ 512 KB, depth ≤ 32, nodes ≤ 2000 → error "limit".
-- `runtimeMin`: max `since` over used features — table in code, everything is "1.0.0" today; keep it one small function.
+- `runtimeMin`: max `since` over the features left in the expanded, pruned tree — the `since` table in `compile.go`, keyed `<primitive>.<prop>`, anything unlisted is "1.0.0"; `shape.trim` is "1.1.0" (so the Loader, and a Button whose `loading` isn't literal false, need 1.1.0). A new primitive capability lands with its `since` entry and both SDK runtime constants (`WishboneCoreVersion.runtime`, `WISHBONE_RUNTIME`) bumped to it. `trim` on a literal non-circle `kind` (rect is the default) is an error at `…/props/trim`.
 - `Meta`: runtimeMin, ops referenced by `call` (for OPERATION_NOT_BOUND), data decls (name, op, args JSON, required).
 - Diag paths exactly contract/api.md (source JSON keys: `root/children/2/props/text`, `…/on/tap`, `…/when`, `…/repeat/over`, `…/animate/scale`, `…/transition/in`, `…/matchId`, `…/drag`, `…/a11y/label`, `…/id`, `script`, `timelines/0/tracks/1/keys/2`; node-level errors at the node path). line/col relative to the fragment.
 

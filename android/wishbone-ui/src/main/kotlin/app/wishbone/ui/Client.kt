@@ -29,7 +29,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-const val WISHBONE_RUNTIME = "1.0.0"
+const val WISHBONE_RUNTIME = "1.1.0"
 
 class WishboneException(val code: String, message: String, val status: Int, val retryable: Boolean) : Exception(message)
 

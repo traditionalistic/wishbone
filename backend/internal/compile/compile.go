@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -112,10 +113,11 @@ func compileScreen(c *Contract, src []byte, rev int) (*unit, *Document) {
 	for name, d := range u.fns {
 		decls.Fns[name] = d
 	}
-	doc := &Document{Format: 1, RuntimeMin: runtimeMin(), Screen: s.ID, Revision: rev, Params: decls.Params,
+	doc := &Document{Format: 1, Screen: s.ID, Revision: rev, Params: decls.Params,
 		State: decls.State, Computed: decls.Computed, Fns: decls.Fns, Handlers: decls.Handlers, Data: decls.Data,
 		Timelines: u.tls, Root: root}
 	prune(doc)
+	doc.RuntimeMin = runtimeMin(doc.Root)
 	u.lazyLists(root)
 	nodes, depth := count(root, 1)
 	if nodes > maxNodes {
@@ -251,9 +253,28 @@ func (u *unit) repeatPath(id string) string {
 	}
 }
 
-// runtimeMin is the oldest runtime that understands the document.
-// ponytail: every V1 feature is 1.0.0; add a since-table keyed by primitive / wire form with the first 1.x feature.
-func runtimeMin() string { return "1.0.0" }
+// since is the runtime that first understands a feature, keyed `<primitive>.<prop>`; anything unlisted is 1.0.0.
+// ponytail: node props only; key expression / statement forms here too when the first such 1.x feature lands.
+var since = map[string][3]int{"shape.trim": {1, 1, 0}}
+
+// runtimeMin is the oldest runtime that understands the document: the latest `since` over the features left in the
+// expanded, pruned tree.
+func runtimeMin(root *Node) string {
+	v := [3]int{1, 0, 0}
+	var walk func(n *Node)
+	walk = func(n *Node) {
+		for k := range n.P {
+			if s, ok := since[n.T+"."+k]; ok && slices.Compare(s[:], v[:]) > 0 {
+				v = s
+			}
+		}
+		for _, c := range n.C {
+			walk(c)
+		}
+	}
+	walk(root)
+	return fmt.Sprintf("%d.%d.%d", v[0], v[1], v[2])
+}
 
 func count(n *Node, depth int) (nodes, maxd int) {
 	nodes, maxd = 1, depth
@@ -548,6 +569,10 @@ func (u *unit) node(n *srcNode, locals map[string]*dsl.Type) *Node {
 		if prim.Props[k].Required && n.Props[k] == nil {
 			u.errf(n.path, "missing required prop '%s' for %s", k, n.Type)
 		}
+	}
+	// A literal non-circle kind (rect is the default) never draws a trim; a non-literal kind is left to the renderer.
+	if kind := string(w.P["kind"]); n.Type == "shape" && w.P["trim"] != nil && (n.Props["kind"] == nil || (strings.HasPrefix(kind, `["v",`) && kind != `["v","circle"]`)) {
+		u.errf(n.path+"/props/trim", `trim draws only on a circle; set kind to "circle"`)
 	}
 
 	events := u.eventTypes(n, prim.Events)

@@ -24,7 +24,7 @@ Work is split: **phase a** = store, client, cache, theme, fonts, renderer of eve
 - `GET /v1/theme?brand=` with ETag, cached on disk; bundled fallback = copy of contract/tokens/korpu.json inside the SDK (a unit test asserts the copy equals the contract file). Fonts from contract/assets/fonts bundled in the SDK and registered at startup (iOS `CTFontManagerRegisterFontsForURL`; Android `res/font` + FontFamily by family name and weight; missing weight → nearest). Scheme follows the system unless the host/playground overrides it.
 
 ## Network & cache (`Client`)
-- Exactly contract/api.md; headers `X-Wishbone-Runtime: 1.0.0`, platform, brand, `Accept-Language`, plus `host.authHeaders()`. iOS URLSession, Android OkHttp 4.12 + kotlinx.serialization.
+- Exactly contract/api.md; headers `X-Wishbone-Runtime: 1.1.0` (the SDK runtime; bumped with each primitive capability the compiler gates by `runtimeMin`), platform, brand, `Accept-Language`, plus `host.authHeaders()`. iOS URLSession, Android OkHttp 4.12 + kotlinx.serialization.
 - Screen: show the cached response immediately (disk cache per screen+params: document + etag + data), fetch with `If-None-Match`, swap in the fresh one; no cache + error → built-in fallback view (message + Retry, strings ru/en in the SDK).
 - `call`: POST /v1/call with a fresh UUID idempotencyKey per invocation; transport failure → `{ok: false, error: {code: "NETWORK", message}}`. `refresh(x)` → POST /v1/data.
 

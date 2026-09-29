@@ -219,6 +219,8 @@ func TestScreenErrors(t *testing.T) {
 		{"number out of range", "", `{"type": "spacer", "id": "root", "props": {"opacity": 1e999}}`, "", "root/props/opacity", "out of range"},
 		{"number out of range nested", "", `{"type": "spacer", "id": "root", "props": {"padding": {"top": -1e999}}}`, "", "root/props/padding", "out of range"},
 		{"@ expression", "", `{"type": "spacer", "id": "root", "props": {"opacity": "@space.lg * 2 + 1"}}`, "", "root/props/opacity", "="},
+		{"trim on the default rect", "", `{"type": "shape", "id": "root", "props": {"trim": {"from": 0, "to": 0.5}}}`, "", "root/props/trim", "circle"},
+		{"trim on a capsule", "", `{"type": "shape", "id": "root", "props": {"kind": "capsule", "trim": "={from: 0, to: 0.5}"}}`, "", "root/props/trim", "circle"},
 		{"lazy list in a card", `state xs = ["a"]`, `{"type": "scroll", "id": "root", "props": {"lazy": true}, "children": [{"type": "stack", "id": "card", "children": [{"type": "text", "id": "row", "repeat": {"over": "xs"}, "props": {"text": "=item"}}]}]}`, "", "root/children/0/children/0/repeat", "lazy scroll 'root': repeat 'row' is nested in 'card'"},
 		{"lazy list in a repeated section", `state xs = ["a"]`, `{"type": "scroll", "id": "root", "props": {"lazy": true}, "children": [{"type": "stack", "id": "sec", "repeat": {"over": "xs"}, "children": [{"type": "text", "id": "row", "repeat": {"over": "xs"}, "props": {"text": "=item"}}]}]}`, "", "root/children/0/children/0/repeat", "nested in 'sec'"},
 		{"lazy list from a template", "", `{"type": "scroll", "id": "root", "props": {"lazy": true}, "children": [{"type": "Inner", "id": "inn", "props": {"tag": "a"}}]}`, "", "root/children/0", "repeat 'inn/t' is nested in 'inn'"},
@@ -303,9 +305,10 @@ func itoa(i int) string {
 
 // shape.trim — the stroked part of a circle, as fractions of the circumference from 12 o'clock clockwise.
 func TestShapeTrim(t *testing.T) {
-	doc, _ := compileOK(t, src(`param to: number = 0.375`, `{"type": "stack", "id": "root", "children": [
+	doc, _ := compileOK(t, src("param to: number = 0.375\nstate k: \"circle\" | \"rect\" = \"circle\"", `{"type": "stack", "id": "root", "children": [
 	  {"type": "shape", "id": "lit", "props": {"kind": "circle", "stroke": "={color: @color.el16, width: 4}", "trim": {"from": 0, "to": 0.25}}},
-	  {"type": "shape", "id": "expr", "props": {"kind": "circle", "trim": "={from: 0.1, to: to}"}}]}`, ""))
+	  {"type": "shape", "id": "expr", "props": {"kind": "circle", "trim": "={from: 0.1, to: to}"}},
+	  {"type": "shape", "id": "dyn", "props": {"kind": "=k", "trim": {"from": 0, "to": 1}}}]}`, ""))
 	if got := js(at(doc, "root/c/0/p/trim")); got != `["v",{"from":0,"to":0.25}]` {
 		t.Errorf("literal trim: %s", got)
 	}
@@ -316,6 +319,41 @@ func TestShapeTrim(t *testing.T) {
 		_, _, diags := Screen(contract(t), src("", `{"type": "shape", "id": "root", "props": {`+bad+`}}`, ""), 1)
 		if len(diags) == 0 || diags[0].Path != "root/props/trim" {
 			t.Errorf("%s: diags %v, want one at root/props/trim", bad, diags)
+		}
+	}
+}
+
+// runtimeMin is the latest `since` over the features left in the expanded, pruned document (an old client never gets
+// what it doesn't understand): shape.trim is 1.1.0, so the shipped Loader and a Button that can show it need 1.1.0.
+func TestRuntimeMin(t *testing.T) {
+	shipped, err := LoadContract(contractDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name   string
+		c      *Contract
+		script string
+		root   string
+		want   string
+	}{
+		{"no 1.x feature", contract(t), "", `{"type": "shape", "id": "root", "props": {"kind": "circle", "stroke": "={color: @color.el16, width: 4}"}}`, "1.0.0"},
+		{"trimmed circle", contract(t), "", `{"type": "stack", "id": "root", "children": [{"type": "shape", "id": "ring", "props": {"kind": "circle", "trim": {"from": 0, "to": 0.5}}}]}`, "1.1.0"},
+		{"trim pruned by when false", contract(t), "", `{"type": "stack", "id": "root", "children": [{"type": "shape", "id": "ring", "when": "false", "props": {"kind": "circle", "trim": {"from": 0, "to": 0.5}}}]}`, "1.0.0"},
+		{"Loader", shipped, "", `{"type": "Loader", "id": "root"}`, "1.1.0"},
+		{"Button that can load", shipped, "state busy = false", `{"type": "Button", "id": "root", "props": {"title": "Go", "loading": "=busy"}}`, "1.1.0"},
+		{"Button that never loads", shipped, "", `{"type": "Button", "id": "root", "props": {"title": "Go"}}`, "1.0.0"},
+	}
+	for _, c := range cases {
+		doc, meta, diags := Screen(c.c, src(c.script, c.root, ""), 1)
+		if len(diags) > 0 {
+			t.Errorf("%s: diags %v", c.name, diags)
+			continue
+		}
+		var m map[string]any
+		_ = json.Unmarshal(doc, &m)
+		if meta.RuntimeMin != c.want || m["runtimeMin"] != c.want {
+			t.Errorf("%s: meta %q, document %v, want %q", c.name, meta.RuntimeMin, m["runtimeMin"], c.want)
 		}
 	}
 }

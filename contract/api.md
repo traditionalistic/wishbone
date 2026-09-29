@@ -4,7 +4,7 @@
 
 ## Публичный API (SDK)
 
-Заголовки каждого запроса SDK: `X-Wishbone-Runtime: 1.0.0`, `X-Wishbone-Platform: ios|android`, `X-Wishbone-Brand: korpu`, `Accept-Language: ru`, плюс заголовки хоста (`Authorization` и т.п.).
+Заголовки каждого запроса SDK: `X-Wishbone-Runtime: 1.1.0`, `X-Wishbone-Platform: ios|android`, `X-Wishbone-Brand: korpu`, `Accept-Language: ru`, плюс заголовки хоста (`Authorization` и т.п.).
 
 ### `GET /v1/screens/{id}?params=<urlencoded JSON object>`
 `If-None-Match: <etag>` — опционально.
@@ -33,7 +33,7 @@
 Документы, пришедшие по превью, несут `revision: 0`: `/v1/call` и `/v1/data` с `revision: 0` адресуются к последнему документу живой превью-сессии этого экрана (операции и источники берутся из него).
 
 - `GET /v1/preview/sessions` → `[{"code": "K7Q2", "screen": "showcase.promo", "title": "Промо", "devices": 1, "updatedAt": "RFC3339"}]` (только живые сессии: последняя активность < 2 ч).
-- `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.0.0"}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`.
+- `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.1.0"}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`.
 
 ## Admin API
 

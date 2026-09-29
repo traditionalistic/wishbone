@@ -27,7 +27,7 @@ class ClientTest {
     @Test
     fun headersIncludeRuntimePlatformBrandLanguageAndHost() = runBlocking {
         val h = client.headers()
-        assertEquals("1.0.0", h["X-Wishbone-Runtime"])
+        assertEquals("1.1.0", h["X-Wishbone-Runtime"])
         assertEquals("android", h["X-Wishbone-Platform"])
         assertEquals("kz", h["X-Wishbone-Brand"])
         assertEquals("ru", h["Accept-Language"])
@@ -126,7 +126,7 @@ class ClientTest {
         val hello = Json.parseToJsonElement(PreviewClient.hello("Pixel")).jsonObject
         assertEquals("hello", hello["type"]!!.jsonPrimitive.content)
         assertEquals("android", hello["platform"]!!.jsonPrimitive.content)
-        assertEquals("1.0.0", hello["runtime"]!!.jsonPrimitive.content)
+        assertEquals("1.1.0", hello["runtime"]!!.jsonPrimitive.content)
         val doc = PreviewClient.parse("""{"type":"document","screen":"s","document":{"screen":"s"},"data":{}}""")
         assertTrue(doc is PreviewMessage.Doc)
         assertEquals(PreviewMessage.Play("intro"), PreviewClient.parse("""{"type":"play","timeline":"intro"}"""))

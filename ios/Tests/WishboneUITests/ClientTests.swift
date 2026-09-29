@@ -9,7 +9,7 @@ import Testing
 
     @Test func commonHeaders() {
         let req = API.screen(info, id: "showcase.promo", params: [:], etag: nil)
-        #expect(req.value(forHTTPHeaderField: "X-Wishbone-Runtime") == "1.0.0")
+        #expect(req.value(forHTTPHeaderField: "X-Wishbone-Runtime") == "1.1.0")
         #expect(req.value(forHTTPHeaderField: "X-Wishbone-Platform") == "ios")
         #expect(req.value(forHTTPHeaderField: "X-Wishbone-Brand") == "kz")
         #expect(req.value(forHTTPHeaderField: "Accept-Language") == "ru-ru")
