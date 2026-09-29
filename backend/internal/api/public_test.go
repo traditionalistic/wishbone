@@ -121,6 +121,71 @@ func TestDataSourceFailures(t *testing.T) {
 	}
 }
 
+// addOps adds extra operations.json entries to a contract dir made by makeContract, so a test can
+// exercise an op the shared contractDir doesn't define (each value is one op's JSON body).
+func addOps(t *testing.T, dir string, extra map[string]string) {
+	t.Helper()
+	path := filepath.Join(dir, "operations.json")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatal(err)
+	}
+	var opsMap map[string]json.RawMessage
+	if err := json.Unmarshal(raw["operations"], &opsMap); err != nil {
+		t.Fatal(err)
+	}
+	for id, def := range extra {
+		opsMap[id] = json.RawMessage(def)
+	}
+	if raw["operations"], err = json.Marshal(opsMap); err != nil {
+		t.Fatal(err)
+	}
+	if b, err = json.Marshal(raw); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestDataSourceTimeoutMs: an op's timeoutMs overrides the default 500 ms source timeout. A handler
+// slower than 500 ms but under its op's timeoutMs succeeds; the same handler under an op without
+// timeoutMs still fails with DATA_SOURCE_FAILED.
+func TestDataSourceTimeoutMs(t *testing.T) {
+	dir, err := makeContract(chipV1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addOps(t, dir, map[string]string{
+		"t.slow":        `{"kind": "read", "args": "{}", "result": "bool", "timeoutMs": 900}`,
+		"t.slowDefault": `{"kind": "read", "args": "{}", "result": "bool"}`,
+	})
+	slow := func(context.Context, ops.Req) (ops.Result, error) {
+		time.Sleep(700 * time.Millisecond) // ignores ctx, like the demo handlers in TestDataSourceFailures
+		return ops.OK(true), nil
+	}
+	e := newEnvWith(t, dir, map[string]ops.Handler{"t.slow": slow, "t.slowDefault": slow})
+	const timeoutScreen = `{"id": "t.timeout", "title": "Timeout", "script": "data a = t.slow()\ndata b = t.slowDefault()", "timelines": [],
+	 "root": {"type": "stack", "id": "root", "children": []}}`
+	e.publish(timeoutScreen)
+
+	code, _, b := e.do("GET", "/v1/screens/t.timeout", nil)
+	if code != 200 {
+		t.Fatalf("%d %s", code, b)
+	}
+	m := obj(t, b)
+	if get(m, "data", "a", "ok") != true {
+		t.Fatalf("op timeoutMs: 900 must let a 700 ms handler finish: %v", get(m, "data", "a"))
+	}
+	if get(m, "data", "b", "ok") != false || get(m, "data", "b", "error", "code") != "DATA_SOURCE_FAILED" {
+		t.Fatalf("without timeoutMs the default 500 ms timeout must fail a 700 ms handler: %v", get(m, "data", "b"))
+	}
+}
+
 func TestDataEndpoint(t *testing.T) {
 	e := newEnv(t)
 	rev := e.publish(promoScreen)
@@ -291,5 +356,42 @@ func TestServedDocumentMatchesETag(t *testing.T) {
 	sum := sha256.Sum256(resp.Document)
 	if want := fmt.Sprintf("%d-%x", resp.Revision, sum[:8]); resp.ETag != want || !bytes.Contains(resp.Document, []byte("a < b && c > d")) {
 		t.Fatalf("served document bytes must be the hashed bytes: etag %s, hash of served %s\n%s", resp.ETag, want, resp.Document)
+	}
+}
+
+func TestScreenETagList(t *testing.T) {
+	e := newEnv(t)
+	e.publish(htmlScreen)
+	_, _, b := e.do("GET", "/v1/screens/t.html", nil)
+	var full struct {
+		ETag     string
+		Document json.RawMessage
+	}
+	if err := json.Unmarshal(b, &full); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		inm string
+		doc bool
+	}{
+		{`"0-stale"`, true},
+		{`"0-stale", "9-other"`, true},
+		{`"0-stale", W/"` + full.ETag + `", "9-other"`, false},
+	} {
+		_, _, b := e.do("GET", "/v1/screens/t.html", nil, "If-None-Match", c.inm)
+		var got struct {
+			ETag     string
+			Revision int
+			Document json.RawMessage
+		}
+		if err := json.Unmarshal(b, &got); err != nil {
+			t.Fatalf("%s: invalid JSON %v: %s", c.inm, err, b)
+		}
+		if got.ETag != full.ETag || got.Revision != 1 {
+			t.Fatalf("%s: %s", c.inm, b)
+		}
+		if c.doc && !bytes.Equal(got.Document, full.Document) || !c.doc && string(got.Document) != "null" {
+			t.Fatalf("%s: document %s, want present=%v", c.inm, got.Document, c.doc)
+		}
 	}
 }

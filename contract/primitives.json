@@ -262,6 +262,10 @@
         },
         "stroke": {
           "type": "{color: color, width: number}"
+        },
+        "trim": {
+          "type": "{from: number, to: number}",
+          "doc": "circle only: draws just this part of the stroke, as fractions of the circumference (each clamped to 0…1) from 12 o'clock clockwise, with round line caps; to <= from draws no stroke; fill is not trimmed"
         }
       },
       "events": {},

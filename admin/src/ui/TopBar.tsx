@@ -18,6 +18,8 @@ interface Props {
   onSave: () => void
   onPublish: () => void
   publishedRev: number | null
+  unpublished: boolean
+  onUnpublish: () => void
   revisions: Revision[]
   onRollback: (rev: number) => void
   onLogout: () => void
@@ -36,7 +38,7 @@ export function TopBar(p: Props) {
         {p.screens.map((s) => (
           <option key={s.id} value={s.id}>
             {s.id} — {s.title}
-            {s.publishedRev ? ` (r${s.publishedRev})` : ' (draft)'}
+            {s.unpublished ? ' (снят)' : s.publishedRev ? ` (r${s.publishedRev})` : ' (draft)'}
           </option>
         ))}
       </select>
@@ -69,6 +71,15 @@ export function TopBar(p: Props) {
           <button className="primary" onClick={p.onPublish} disabled={p.busy} title="Compile and publish a new revision">
             Publish
           </button>
+          <button
+            onClick={() => {
+              if (confirm('Снять экран с публикации? Клиенты получат SCREEN_NOT_FOUND до следующей публикации.')) p.onUnpublish()
+            }}
+            disabled={p.busy || !p.publishedRev || p.unpublished}
+            title="Снять экран с публикации"
+          >
+            Снять с публикации
+          </button>
           <select
             value=""
             onChange={(e) => {
@@ -76,7 +87,7 @@ export function TopBar(p: Props) {
               if (rev && confirm(`Roll back to r${rev}? It is published as a new revision and becomes the draft.`)) p.onRollback(rev)
             }}
           >
-            <option value="">{p.publishedRev ? `Live r${p.publishedRev}` : 'Not published'}</option>
+            <option value="">{p.unpublished ? 'Снят с публикации' : p.publishedRev ? `Live r${p.publishedRev}` : 'Not published'}</option>
             {p.revisions.map((r) => (
               <option key={r.revision} value={r.revision}>
                 r{r.revision} · {new Date(r.publishedAt).toLocaleString()} · runtime ≥ {r.runtimeMin} — roll back

@@ -70,7 +70,8 @@ func (s *Server) seed(ctx context.Context, f string) error {
 
 // Recompile rebuilds every live revision against the current contract (templates may have changed). Two passes:
 // if any source no longer compiles it is an error and nothing is published (spec §2.3); otherwise every changed
-// document is published as a new revision.
+// document is published as a new revision. Unpublished screens are skipped: they are off the air, and Publish
+// would otherwise put them back on it.
 func (s *Server) Recompile(ctx context.Context) error {
 	screens, err := s.Store.Screens(ctx)
 	if err != nil {
@@ -79,10 +80,10 @@ func (s *Server) Recompile(ctx context.Context) error {
 	var broken, changed []string
 	live := map[string]int{}
 	for _, sc := range screens {
-		if sc.PublishedRev == nil {
+		if sc.PublishedRev == nil || sc.Unpublished {
 			continue
 		}
-		rev, err := s.Store.Live(ctx, sc.ID)
+		rev, err := s.Store.Revision(ctx, sc.ID, *sc.PublishedRev)
 		if err != nil {
 			return err
 		}

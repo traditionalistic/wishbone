@@ -53,22 +53,20 @@ public enum TimelineSampler {
     public static func sample(_ timeline: Timeline, at tMs: Double, index: Int) -> [String: Double] {
         var result: [String: Double] = [:]
         for track in timeline.tracks {
-            result["\(track.target).\(track.prop)"] = sampleTrack(
-                track, duration: timeline.duration, repeatCount: timeline.repeatCount,
-                autoreverse: timeline.autoreverse, tMs: tMs, index: index
-            )
+            result["\(track.target).\(track.prop)"] = sampleTrack(timeline, track: track, ms: tMs, index: index)
         }
         return result
     }
 
-    private static func sampleTrack(
-        _ track: TimelineTrack, duration D: Double, repeatCount: Int, autoreverse: Bool, tMs: Double, index: Int
-    ) -> Double {
+    /// One track of `timeline` at time `ms` for repeat-instance `index` — the `sample` entry
+    /// for that track, without building the dictionary (the renderer samples per frame).
+    public static func sampleTrack(_ timeline: Timeline, track: TimelineTrack, ms: Double, index: Int) -> Double {
+        let D = timeline.duration, repeatCount = timeline.repeatCount, autoreverse = timeline.autoreverse
         // `track.keys` is sorted once at decode time (Document.swift) — not re-sorted here.
         let keys = track.keys
         guard let k0 = keys.first, let kn = keys.last else { return 0 }
         if D == 0 { return kn.v }
-        let u = tMs - track.stagger * Double(index)
+        let u = ms - track.stagger * Double(index)
         if u < 0 { return k0.v }
         let c = (u / D).rounded(.down)
         var ph = u - c * D

@@ -19,10 +19,11 @@ object TimelineSampler {
         return result
     }
 
-    private fun sampleTrack(timeline: Timeline, track: Track, tMs: Double, index: Int): Double {
+    /** One track at time [ms] for repeat-instance [index]; allocation-free, for per-frame callers that already hold the [Track]. */
+    fun sampleTrack(timeline: Timeline, track: Track, ms: Double, index: Int): Double {
         val keys = track.keys
         val d = timeline.duration
-        val u = tMs - track.stagger * index
+        val u = ms - track.stagger * index
 
         if (d == 0.0) return keys.last().v
         if (u < 0.0) return keys.first().v

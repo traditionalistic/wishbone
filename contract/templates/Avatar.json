@@ -1,12 +1,12 @@
 {
  "id": "Avatar",
  "title": "Avatar",
- "script": "// Avatar (ds-metrics §15 — CommentsAuthorAvatar): circle, el2 (≈ commentsAvatarPlaceholder) with initials (el9,\n// bodySmallStrong; title from 56pt) under the remote image. Initials = first letters of up to two words of `name`,\n// a leading '@' stripped, uppercased, \"?\" when empty. The image placeholder is transparent so initials show until it loads.\nparam name: string = \"\"\nparam url: string = \"\"\nparam size: number = 40\nlet letters = name.split(\" \").map(w => w.startsWith(\"@\") ? w.substring(1) : w).filter(w => w != \"\").slice(0, 2).map(w => w.substring(0, 1).upper())\nlet initials = letters.isEmpty ? \"?\" : letters.join(\"\")",
+ "script": "// Avatar (ds-metrics §15 — CommentsAuthorAvatar): circle, commentsAvatarPlaceholder with initials (el9,\n// bodySmallStrong; title from 56pt) under the remote image. Initials = first letters of up to two words of `name`,\n// a leading '@' stripped, uppercased, \"?\" when empty. The image placeholder is transparent so initials show until it loads.\nparam name: string = \"\"\nparam url: string = \"\"\nparam size: number = 40\nlet letters = name.split(\" \").map(w => w.startsWith(\"@\") ? w.substring(1) : w).filter(w => w != \"\").slice(0, 2).map(w => w.substring(0, 1).upper())\nlet initials = letters.isEmpty ? \"?\" : letters.join(\"\")",
  "root": {"type": "stack", "id": "root",
-  "props": {"axis": "z", "width": "=size", "height": "=size", "corner": "@radius.pill", "background": "@color.el2", "clip": true},
+  "props": {"axis": "z", "width": "=size", "height": "=size", "corner": "@radius.pill", "background": "@color.commentsAvatarPlaceholder", "clip": true},
   "a11y": {"label": "name", "role": "image"},
   "children": [
    {"type": "text", "id": "initials", "props": {"text": "=initials", "maxLines": 1, "style": "=size >= 56 ? @type.title : @type.bodySmallStrong", "color": "@color.el9"}},
-   {"type": "image", "id": "photo", "when": "url != \"\"", "props": {"url": "=url", "width": "fill", "height": "fill", "placeholder": "=alpha(@color.el2, 0)"}}
+   {"type": "image", "id": "photo", "when": "url != \"\"", "props": {"url": "=url", "width": "fill", "height": "fill", "placeholder": "=alpha(@color.commentsAvatarPlaceholder, 0)"}}
   ]}
 }

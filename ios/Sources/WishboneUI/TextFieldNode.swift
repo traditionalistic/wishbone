@@ -26,7 +26,7 @@ struct TextFieldNode: View {
         let prompt = Text(verbatim: props.string("placeholder") ?? "").foregroundStyle(color.opacity(0.4))
         field(prompt: prompt)
             .textFieldStyle(.plain)
-            .font(style.map(Fonts.font) ?? .body)
+            .font(style.map { Fonts.resolved($0).font } ?? .body)
             .foregroundStyle(color)
             .modifier(KeyboardModifier(kind: props.string("keyboard") ?? "text"))
             .onSubmit { fire("submit") }

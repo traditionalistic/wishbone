@@ -59,5 +59,59 @@ class DiskCacheTest {
         val cache = DiskCache(File(dir, "nested/deeper"))
         cache.write("theme-korpu", "{\"x\":1}")
         assertEquals("{\"x\":1}", cache.read("theme-korpu"))
+        cache.write("plain", "x")
+        // file name = the first 16 bytes of SHA-256(key) in lowercase hex (screen entries cached by earlier versions still
+        // read); theme entries carry a prefix that keeps them out of the cap
+        assertEquals(
+            setOf("theme-353e2c837a327d74efc2d27e4f09d940.json", "a116c9ed46d6207734a43317d30fd88f.json"),
+            File(dir, "nested/deeper").list()!!.toSet(),
+        )
+    }
+
+    @Test
+    fun aThemeCachedBeforeThePrefixMovesToItOnRead() {
+        File(dir, "353e2c837a327d74efc2d27e4f09d940.json").writeText("{\"x\":1}") // "theme-korpu" by earlier versions
+        assertEquals("{\"x\":1}", DiskCache(dir).read("theme-korpu"))
+        assertEquals(setOf("theme-353e2c837a327d74efc2d27e4f09d940.json"), dir.list()!!.toSet())
+    }
+
+    @Test
+    fun removeDeletesTheEntry() {
+        val cache = DiskCache(dir)
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"4-abc\"", 4, doc, data))
+        cache.remove(DiskCache.screenKey("s", emptyMap(), "korpu"))
+        assertNull(cache.readScreen("s", emptyMap(), "korpu"))
+        cache.remove("absent") // no-op
+    }
+
+    @Test
+    fun keepsTheNewest64Entries() {
+        val cache = DiskCache(dir)
+        for (i in 0 until 64) {
+            cache.write("k$i", "$i")
+            dir.listFiles()!!.single { it.readText() == "$i" }.setLastModified(1_000_000L + i * 1000) // distinct, ordered times
+        }
+        cache.write("k64", "64")
+        assertEquals(64, dir.listFiles()!!.size)
+        assertNull(cache.read("k0")) // the oldest went
+        assertEquals("1", cache.read("k1"))
+        assertEquals("64", cache.read("k64"))
+        // the entry just written is never the one to go, even when the others look newer (clock change, mtime ties)
+        dir.listFiles()!!.forEach { it.setLastModified(System.currentTimeMillis() + 3_600_000) }
+        cache.write("k65", "65")
+        assertEquals("65", cache.read("k65"))
+        assertEquals(64, dir.listFiles()!!.size)
+    }
+
+    @Test
+    fun themeEntriesAreOutsideTheCap() {
+        val cache = DiskCache(dir)
+        cache.write("theme-scope", "{}")
+        cache.write("theme-etag-scope", "\"1\"")
+        dir.listFiles()!!.forEach { it.setLastModified(1_000) } // older than every screen entry (a 304 never rewrites them)
+        for (i in 0..64) cache.writeScreen("s$i", emptyMap(), "korpu", CachedScreen("\"1\"", 1, doc, data))
+        assertEquals("{}", cache.read("theme-scope"))
+        assertEquals("\"1\"", cache.read("theme-etag-scope"))
+        assertEquals(64, dir.listFiles()!!.count { !it.name.startsWith("theme-") })
     }
 }

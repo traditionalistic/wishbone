@@ -15,14 +15,17 @@ import kotlin.math.sqrt
 /** What [Stdlib] needs back from the interpreter: apply a lambda value, and read env for format functions. */
 interface StdlibContext {
     val scope: Scope
-    fun apply(lambda: Value.Lambda, args: List<Value>): Value
+    /** Calls [lambda] with one argument; a lambda declaring no params ignores it. */
+    fun apply(lambda: Value.Lambda, a: Value): Value
+    /** Calls [lambda] with two arguments; params beyond the lambda's arity are dropped. */
+    fun apply(lambda: Value.Lambda, a: Value, b: Value): Value
 }
 
-private val WHITESPACE_CODEPOINTS: Set<Int> = buildSet {
-    for (c in 0x09..0x0D) add(c)
-    add(0x20); add(0x85); add(0xA0); add(0x1680)
-    for (c in 0x2000..0x200A) add(c)
-    add(0x2028); add(0x2029); add(0x202F); add(0x205F); add(0x3000)
+private fun isWhitespace(cp: Int): Boolean = when {
+    cp in 0x09..0x0D || cp == 0x20 -> true
+    cp < 0x85 -> false
+    else -> cp == 0x85 || cp == 0xA0 || cp == 0x1680 || cp in 0x2000..0x200A ||
+        cp == 0x2028 || cp == 0x2029 || cp == 0x202F || cp == 0x205F || cp == 0x3000
 }
 
 private val NUM_PATTERN: Pattern = Pattern.compile("^[+-]?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d+)?$")
@@ -77,14 +80,14 @@ private val NULL_PROPAGATING_METHODS = setOf(
 )
 
 /** Every function in contract/stdlib.json `functions`, dispatched by name on already-evaluated args. */
-class Stdlib(private val ctx: StdlibContext) {
+object Stdlib {
 
-    fun call(name: String, args: List<Value>): Value {
+    fun call(ctx: StdlibContext, name: String, args: List<Value>): Value {
         if (name in NULL_PROPAGATING_METHODS && args.isNotEmpty() && args[0] == Value.Null) return Value.Null
-        return dispatch(name, args)
+        return dispatch(ctx, name, args)
     }
 
-    private fun dispatch(name: String, args: List<Value>): Value = when (name) {
+    private fun dispatch(ctx: StdlibContext, name: String, args: List<Value>): Value = when (name) {
         "min" -> Value.Num(min(num(args[0]), num(args[1])))
         "max" -> Value.Num(kotlin.math.max(num(args[0]), num(args[1])))
         "abs" -> Value.Num(abs(num(args[0])))
@@ -96,7 +99,7 @@ class Stdlib(private val ctx: StdlibContext) {
         "sin" -> Value.Num(sin(num(args[0])))
         "cos" -> Value.Num(cos(num(args[0])))
         "clamp" -> Value.Num(min(kotlin.math.max(num(args[0]), num(args[1])), num(args[2]))) // literally min(max(x,lo),hi) — no bound swapping
-        "interpolate" -> Value.Num(interpolate(num(args[0]), numList(args[1]), numList(args[2])))
+        "interpolate" -> Value.Num(interpolate(num(args[0]), list(args[1]), list(args[2])))
 
         "length" -> Value.Num(str(args[0]).codePointCount(0, str(args[0]).length).toDouble())
         "isEmpty" -> when (val a = args[0]) {
@@ -130,11 +133,15 @@ class Stdlib(private val ctx: StdlibContext) {
         "matches" -> Value.of(compiledPattern(str(args[1])).matcher(str(args[0])).matches())
         "substring" -> {
             val s = str(args[0])
-            val cps = codePoints(s)
-            val n = cps.size
+            val n = s.codePointCount(0, s.length)
             val start = clampIndex(num(args[1]), n)
             val end = if (args.size > 2 && args[2] != Value.Null) clampIndex(num(args[2]), n) else n
-            if (start >= end) Value.Str("") else Value.Str(codePointsToString(cps.subList(start, end)))
+            if (start >= end) {
+                Value.Str("")
+            } else {
+                val from = s.offsetByCodePoints(0, start)
+                Value.Str(s.substring(from, s.offsetByCodePoints(from, end - start)))
+            }
         }
         "num" -> {
             val s = trimWhitespace(str(args[0]))
@@ -150,12 +157,12 @@ class Stdlib(private val ctx: StdlibContext) {
         "count" -> Value.Num(list(args[0]).size.toDouble())
         "first" -> list(args[0]).firstOrNull() ?: Value.Null
         "last" -> list(args[0]).lastOrNull() ?: Value.Null
-        "map" -> Value.ListV(list(args[0]).mapIndexed { i, v -> applyLambda(args[1], v, i) })
-        "filter" -> Value.ListV(list(args[0]).filterIndexed { i, v -> truthy(applyLambda(args[1], v, i)) })
-        "find" -> list(args[0]).withIndex().firstOrNull { (i, v) -> truthy(applyLambda(args[1], v, i)) }?.value ?: Value.Null
-        "some" -> Value.of(list(args[0]).withIndex().any { (i, v) -> truthy(applyLambda(args[1], v, i)) })
-        "every" -> Value.of(list(args[0]).withIndex().all { (i, v) -> truthy(applyLambda(args[1], v, i)) })
-        "reduce" -> list(args[0]).fold(args[1]) { acc, v -> ctx.apply(args[2] as Value.Lambda, listOf(acc, v)) }
+        "map" -> Value.ListV(list(args[0]).mapIndexed { i, v -> applyLambda(ctx, args[1], v, i) })
+        "filter" -> Value.ListV(list(args[0]).filterIndexed { i, v -> truthy(applyLambda(ctx, args[1], v, i)) })
+        "find" -> list(args[0]).let { xs -> xs.indices.firstOrNull { truthy(applyLambda(ctx, args[1], xs[it], it)) }?.let { xs[it] } } ?: Value.Null
+        "some" -> Value.of(list(args[0]).let { xs -> xs.indices.any { truthy(applyLambda(ctx, args[1], xs[it], it)) } })
+        "every" -> Value.of(list(args[0]).let { xs -> xs.indices.all { truthy(applyLambda(ctx, args[1], xs[it], it)) } })
+        "reduce" -> list(args[0]).fold(args[1]) { acc, v -> ctx.apply(args[2] as Value.Lambda, acc, v) }
         "sum" -> Value.Num(list(args[0]).sumOf { num(it) })
         "join" -> Value.Str(list(args[0]).joinToString(str(args[1])) { Format.str(it) })
         "append" -> Value.ListV(list(args[0]) + args[1])
@@ -174,7 +181,7 @@ class Stdlib(private val ctx: StdlibContext) {
             if (start >= end) Value.ListV(emptyList()) else Value.ListV(xs.subList(start, end))
         }
         "indexOf" -> Value.Num(list(args[0]).indexOfFirst { deepEquals(it, args[1]) }.toDouble())
-        "sortBy" -> sortBy(list(args[0]), args[1] as Value.Lambda)
+        "sortBy" -> sortBy(ctx, list(args[0]), args[1] as Value.Lambda)
         "reverse" -> Value.ListV(list(args[0]).reversed())
         "range" -> {
             val n = num(args[0])
@@ -189,8 +196,8 @@ class Stdlib(private val ctx: StdlibContext) {
 
         "formatNumber" -> Value.Str(Format.formatNumber(num(args[0]), num(args[1])))
         "formatDuration" -> Value.Str(Format.formatDuration(num(args[0]), str(args[1])))
-        "formatDate" -> Value.Str(Format.formatDate(num(args[0]), str(args[1]), envStr("timeZone")))
-        "plural" -> Value.Str(Plural.format(num(args[0]), (args[1] as Value.Rec).fields, envStr("locale")))
+        "formatDate" -> Value.Str(Format.formatDate(num(args[0]), str(args[1]), envStr(ctx, "timeZone")))
+        "plural" -> Value.Str(Plural.format(num(args[0]), (args[1] as Value.Rec).fields, envStr(ctx, "locale")))
 
         "gradient" -> Value.rec("\$gradient" to args[0], "angle" to args[1])
         "alpha" -> alpha(args[0] as Value.Rec, num(args[1]))
@@ -202,14 +209,13 @@ class Stdlib(private val ctx: StdlibContext) {
         else -> throw InterpreterException.EvalError("unknown stdlib function: $name")
     }
 
-    private fun applyLambda(fn: Value, item: Value, index: Int): Value {
+    private fun applyLambda(ctx: StdlibContext, fn: Value, item: Value, index: Int): Value {
         val lambda = fn as Value.Lambda
-        val callArgs = if (lambda.params.size >= 2) listOf(item, Value.Num(index.toDouble())) else listOf(item)
-        return ctx.apply(lambda, callArgs)
+        return if (lambda.params.size >= 2) ctx.apply(lambda, item, Value.Num(index.toDouble())) else ctx.apply(lambda, item)
     }
 
-    private fun sortBy(items: List<Value>, keyFn: Value.Lambda): Value {
-        val keys = items.map { ctx.apply(keyFn, listOf(it)) }
+    private fun sortBy(ctx: StdlibContext, items: List<Value>, keyFn: Value.Lambda): Value {
+        val keys = items.map { ctx.apply(keyFn, it) }
         val byString = keys.firstOrNull { it is Value.Str } != null
         val indices = items.indices.sortedWith(
             if (byString) {
@@ -248,23 +254,27 @@ class Stdlib(private val ctx: StdlibContext) {
         ),
     )
 
-    private fun interpolate(x: Double, input: List<Double>, output: List<Double>): Double {
-        if (input.size != output.size || input.size < 2) return output.firstOrNull() ?: 0.0
-        for (i in 0 until input.size - 1) if (input[i + 1] < input[i]) return output.firstOrNull() ?: 0.0
-        if (x <= input.first()) return output.first()
-        if (x >= input.last()) return output.last()
+    private fun interpolate(x: Double, input: List<Value>, output: List<Value>): Double {
+        // Every element must be a number even on the early-return paths (same errors as before).
+        for (v in input) num(v)
+        for (v in output) num(v)
+        if (input.size != output.size || input.size < 2) return if (output.isEmpty()) 0.0 else num(output[0])
+        for (i in 0 until input.size - 1) if (num(input[i + 1]) < num(input[i])) return num(output[0])
+        if (x <= num(input[0])) return num(output[0])
+        if (x >= num(input[input.size - 1])) return num(output[output.size - 1])
         // last stop <= x — resolves a duplicated stop to the later segment.
         var i = 0
-        for (j in input.indices) if (input[j] <= x) i = j
-        val x0 = input[i]; val x1 = input[i + 1]
+        for (j in input.indices) if (num(input[j]) <= x) i = j
+        val x0 = num(input[i]); val x1 = num(input[i + 1])
         val t = if (x1 == x0) 1.0 else (x - x0) / (x1 - x0)
-        return output[i] + (output[i + 1] - output[i]) * t
+        return num(output[i]) + (num(output[i + 1]) - num(output[i])) * t
     }
 
-    private fun envStr(name: String): String = (ctx.scope.env(name) as? Value.Str)?.value ?: ""
+    private fun envStr(ctx: StdlibContext, name: String): String = (ctx.scope.env(name) as? Value.Str)?.value ?: ""
 
     /** Full case mapping (can expand one code point to several, e.g. "ß" -> "SS"), applied per code point so no cross-character context (locale, final-sigma) ever applies. */
     private fun mapCase(s: String, toUpper: Boolean): String {
+        if (s.all { it.code < 0x80 }) return if (toUpper) s.uppercase(Locale.ROOT) else s.lowercase(Locale.ROOT)
         val sb = StringBuilder(s.length)
         var i = 0
         while (i < s.length) {
@@ -277,12 +287,19 @@ class Stdlib(private val ctx: StdlibContext) {
     }
 
     private fun trimWhitespace(s: String): String {
-        val cps = codePoints(s)
         var start = 0
-        var end = cps.size
-        while (start < end && cps[start] in WHITESPACE_CODEPOINTS) start++
-        while (end > start && cps[end - 1] in WHITESPACE_CODEPOINTS) end--
-        return codePointsToString(cps.subList(start, end))
+        var end = s.length
+        while (start < end) {
+            val cp = s.codePointAt(start)
+            if (!isWhitespace(cp)) break
+            start += Character.charCount(cp)
+        }
+        while (end > start) {
+            val cp = s.codePointBefore(end)
+            if (!isWhitespace(cp)) break
+            end -= Character.charCount(cp)
+        }
+        return s.substring(start, end)
     }
 
     private fun clampIndex(n: Double, length: Int): Int {
@@ -309,15 +326,8 @@ private fun codePoints(s: String): List<Int> {
     return list
 }
 
-private fun codePointsToString(cps: List<Int>): String {
-    val sb = StringBuilder(cps.size)
-    for (cp in cps) sb.appendCodePoint(cp)
-    return sb.toString()
-}
-
-private fun num(v: Value): Double = (v as? Value.Num)?.value ?: throw InterpreterException.EvalError("expected number, got $v")
-private fun str(v: Value): String = (v as? Value.Str)?.value ?: throw InterpreterException.EvalError("expected string, got $v")
-private fun list(v: Value): List<Value> = (v as? Value.ListV)?.items ?: throw InterpreterException.EvalError("expected list, got $v")
-private fun numList(v: Value): List<Double> = list(v).map { num(it) }
-private fun truthy(v: Value): Boolean = (v as? Value.Bool)?.value ?: throw InterpreterException.EvalError("expected bool, got $v")
-private fun typeError(fn: String, v: Value): Throwable = InterpreterException.EvalError("$fn: unsupported argument type $v")
+private fun num(v: Value): Double = (v as? Value.Num)?.value ?: throw InterpreterException.EvalError("expected number, got ${describe(v)}")
+private fun str(v: Value): String = (v as? Value.Str)?.value ?: throw InterpreterException.EvalError("expected string, got ${describe(v)}")
+private fun list(v: Value): List<Value> = (v as? Value.ListV)?.items ?: throw InterpreterException.EvalError("expected list, got ${describe(v)}")
+private fun truthy(v: Value): Boolean = (v as? Value.Bool)?.value ?: throw InterpreterException.EvalError("expected bool, got ${describe(v)}")
+private fun typeError(fn: String, v: Value): Throwable = InterpreterException.EvalError("$fn: unsupported argument type ${describe(v)}")

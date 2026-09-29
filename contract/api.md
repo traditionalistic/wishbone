@@ -4,12 +4,14 @@
 
 ## Публичный API (SDK)
 
-Заголовки каждого запроса SDK: `X-Wishbone-Runtime: 1.0.0`, `X-Wishbone-Platform: ios|android`, `X-Wishbone-Brand: korpu`, `Accept-Language: ru`, плюс заголовки хоста (`Authorization` и т.п.).
+Заголовки каждого запроса SDK: `X-Wishbone-Runtime: 1.1.0`, `X-Wishbone-Platform: ios|android`, `X-Wishbone-Brand: korpu`, `Accept-Language: ru`, плюс заголовки хоста (`Authorization` и т.п.).
 
 ### `GET /v1/screens/{id}?params=<urlencoded JSON object>`
 `If-None-Match: <etag>` — опционально.
 - 200 `{"etag": "…", "revision": 4, "document": {…} | null, "data": {"<name>": {"ok": true, "value": …} | {"ok": false, "error": {code, message, retryable}}}}` — `document: null`, когда `If-None-Match` совпал (данные всё равно резолвятся и отдаются). `etag` = `"<rev>-<sha256(document)[:16]>"`.
 - 404 `SCREEN_NOT_FOUND`; 409 `UNSUPPORTED_RUNTIME` (runtimeMin ревизии > X-Wishbone-Runtime); 503 `DATA_REQUIRED_FAILED`.
+
+`operations.json` → `timeoutMs` (необязательно) — таймаут источника данных этой операции; по умолчанию 500 мс; бюджет экрана — max(1200 мс, самый долгий + 200 мс).
 
 ### `POST /v1/data`
 `{"screen": "id", "revision": 4, "params": {…}, "sources": ["me", "offers"]}` → 200 `{"<name>": {ok, value?|error?}}`. Аргументы источников сервер берёт из ревизии (с подстановкой `params`). 409 `REVISION_NOT_FOUND`.
@@ -31,7 +33,7 @@
 Документы, пришедшие по превью, несут `revision: 0`: `/v1/call` и `/v1/data` с `revision: 0` адресуются к последнему документу живой превью-сессии этого экрана (операции и источники берутся из него).
 
 - `GET /v1/preview/sessions` → `[{"code": "K7Q2", "screen": "showcase.promo", "title": "Промо", "devices": 1, "updatedAt": "RFC3339"}]` (только живые сессии: последняя активность < 2 ч).
-- `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.0.0"}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`.
+- `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.1.0"}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`.
 
 ## Admin API
 
@@ -39,11 +41,12 @@
 
 | Метод и путь | Тело → ответ |
 |---|---|
-| `GET /admin/api/screens` | → `[{"id", "title", "updatedAt", "publishedRev": 4 \| null}]` |
+| `GET /admin/api/screens` | → `[{"id", "title", "updatedAt", "publishedRev": 4 \| null, "unpublished": bool}]` |
 | `POST /admin/api/screens` | `{"id", "title"}` → 201 `{"id", "title", "draft": <исходник>}`; черновик по умолчанию — корень `stack` с одним `text`; 409 если id занят |
-| `GET /admin/api/screens/{id}` | → `{"id", "title", "draft": <исходник>, "publishedRev": n \| null, "updatedAt"}` |
+| `GET /admin/api/screens/{id}` | → `{"id", "title", "draft": <исходник>, "publishedRev": n \| null, "updatedAt", "unpublished": bool}` |
 | `PUT /admin/api/screens/{id}` | `{"title"?, "draft"}` → `{"updatedAt"}` (черновик сохраняется даже с ошибками компиляции) |
 | `POST /admin/api/screens/{id}/publish` | → 200 `{"revision", "etag"}` \| 422 `{"diags": [Diag]}` |
+| `POST /admin/api/screens/{id}/unpublish` | → 204 — снимает экран с публикации: `GET /v1/screens/{id}` → 404 `SCREEN_NOT_FOUND` до следующей публикации/отката |
 | `GET /admin/api/screens/{id}/revisions` | → `[{"revision", "etag", "publishedAt", "runtimeMin"}]` (новые сверху) |
 | `POST /admin/api/screens/{id}/rollback/{rev}` | → `{"revision", "etag"}` — исходник ревизии `rev` публикуется новой ревизией и становится черновиком |
 | `POST /admin/api/compile` | `{"source": <исходник>}` → `{"ok": bool, "diags": [Diag], "document": {…} \| null}` |

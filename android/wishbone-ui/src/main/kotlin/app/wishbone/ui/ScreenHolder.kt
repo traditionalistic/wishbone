@@ -13,9 +13,11 @@ import app.wishbone.core.EffectSink
 import app.wishbone.core.Value
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 
 internal sealed interface LoadState {
@@ -29,7 +31,7 @@ internal sealed interface LoadState {
  * `If-None-Match` fetch), the [Store] (rebuilt on a new document, keeping state), and the effects
  * sink. Lives as long as the entry is on the stack, so state survives pushes on top of it.
  */
-internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, val entry: Entry) {
+internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, val entry: Entry, private val slot: Boolean = false) {
     /** Main thread + the UI frame clock (transactions and `await play` count frames); a throwing host call is logged, not fatal. */
     val scope = CoroutineScope(
         SupervisorJob() + AndroidUiDispatcher.Main + CoroutineExceptionHandler { _, e -> wishbone.log("error", "screen ${entry.screen}: ${e.message ?: e}") },
@@ -38,22 +40,35 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     var env: Map<String, Value> = emptyMap()
     var view: View? = null
     private val effects = ScreenEffects(this)
-    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope)
+    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope, wishbone.slotMemo.takeIf { slot })
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
 
+    /** DSL state for the first store: the screen came back into the composition from a host back stack. */
+    var restored: StoreSnapshot? = null
+
+    fun snapshot(): StoreSnapshot? = store?.savedSnapshot() ?: restored
+
+    /**
+     * Entering the composition (or a retry from the fallback, which has nothing on screen): warm content in this frame —
+     * a slot's memory, else the disk cache — then the network (a slot's fresh memory skips it).
+     */
     fun load() {
         if (store == null) state = LoadState.Loading
-        scope.launch {
-            val ok = loader.load(
-                hasContent = { store != null },
-                fetch = { etag -> wishbone.client.screen(entry.screen, entry.params, etag) },
-                show = ::apply,
-                refreshData = { data -> store?.data?.putAll(dataValues(data)) },
-                log = { wishbone.log("warn", it) },
-            )
-            if (!ok) state = LoadState.Failed
-        }
+        val cached = loader.warm(::show, ::apply)
+        scope.launch { revalidate(cached) }
+    }
+
+    private suspend fun revalidate(cached: CachedScreen?) {
+        val ok = loader.load(
+            cached,
+            current = { store?.doc },
+            fetch = { etag -> wishbone.client.screen(entry.screen, entry.params, etag) },
+            show = { document, data, revision -> show(withContext(Dispatchers.Default) { runCatching { Document.decode(document) } }, data, revision) },
+            refreshData = { data -> store?.putData(dataValues(data)) },
+            log = { wishbone.log("warn", it) },
+        )
+        if (!ok) state = LoadState.Failed
     }
 
     private var applied: Pair<JsonObject, JsonObject>? = null
@@ -63,14 +78,17 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     /** Rebuilds the store for a new document (keeping state); false when it doesn't decode (the current one stays). */
     fun apply(document: JsonObject, data: JsonObject, revision: Int): Boolean {
         applied = document to data
-        val doc = try {
-            Document.decode(document)
-        } catch (e: Exception) {
-            wishbone.log("error", "screen ${entry.screen}: bad document: ${e.message}")
-            return false
-        }
-        state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store))
+        return show(runCatching { Document.decode(document) }, data, revision)
+    }
+
+    private fun show(doc: Result<Document>, data: JsonObject, revision: Int): Boolean {
+        show(doc.getOrElse { wishbone.log("error", "screen ${entry.screen}: bad document: ${it.message}"); return false }, data, revision)
         return true
+    }
+
+    private fun show(doc: Document, data: JsonObject, revision: Int) {
+        state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store, slot, restored))
+        restored = null
     }
 
     fun dispose() = scope.cancel()
@@ -109,7 +127,7 @@ private class ScreenEffects(private val holder: ScreenHolder) : EffectSink {
                 val store = holder.store ?: return
                 val name = str(0) ?: return
                 runCatching { wishbone.client.data(store.doc.screen, store.revision, store.params, listOf(name)) }
-                    .onSuccess { store.data.putAll(it) }
+                    .onSuccess { store.putData(it) }
                     .onFailure { wishbone.log("warn", "refresh $name: ${it.message}") }
             }
             else -> error("unknown effect '$effect'")

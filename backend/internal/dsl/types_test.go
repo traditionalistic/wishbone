@@ -3,6 +3,7 @@ package dsl
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func mustType(t *testing.T, src string) *Type {
@@ -44,6 +45,16 @@ func TestParseTypeErrors(t *testing.T) {
 		if _, err := ParseType(src); err == nil {
 			t.Errorf("%q: expected an error", src)
 		}
+	}
+}
+
+func TestLoadOpsTimeout(t *testing.T) {
+	m, err := LoadOps([]byte(`{"operations": {"a.x": {"kind": "read", "args": "{}", "result": "number", "timeoutMs": 3000}, "a.y": {"kind": "read", "args": "{}", "result": "number"}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m["a.x"].Timeout != 3*time.Second || m["a.y"].Timeout != 0 {
+		t.Fatalf("timeouts: %v %v", m["a.x"].Timeout, m["a.y"].Timeout)
 	}
 }
 

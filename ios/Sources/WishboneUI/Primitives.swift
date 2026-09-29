@@ -11,10 +11,18 @@ struct Children: View {
     let axis: String?
 
     var body: some View {
-        ForEach(Array(node.children.enumerated()), id: \.element.id) { i, child in
+        ForEach(Positioned(nodes: node.children), id: \.element.id) { i, child in
             NodeView(node: child, ctx: ctx.child(axis: axis, sibling: i))
         }
     }
+}
+
+/// Nodes with their positions, without copying them into an array on every render.
+struct Positioned: RandomAccessCollection {
+    let nodes: [Node]
+    var startIndex: Int { 0 }
+    var endIndex: Int { nodes.count }
+    subscript(i: Int) -> (offset: Int, element: Node) { (i, nodes[i]) }
 }
 
 struct StackNode: View {
@@ -131,11 +139,12 @@ struct TextNode: View {
     var body: some View {
         let wb = ctx.store.wishbone
         let style = wb.theme.textStyle(props["style"])
+        let font = style.map(Fonts.resolved)
         let maxLines = props.count("maxLines", in: 0...10_000) ?? 0
         Text(verbatim: props.string("text") ?? "")
-            .font(style.map(Fonts.font) ?? .body)
+            .font(font?.font ?? .body)
             .tracking(style?.tracking ?? 0)
-            .lineSpacing(style.map(Fonts.extraLineSpacing) ?? 0)
+            .lineSpacing(font?.lineSpacing ?? 0)
             .foregroundStyle(wb.theme.color(props["color"], dark: wb.env.dark)?.color ?? .primary)
             .multilineTextAlignment(Self.textAlignment(props.string("textAlign")))
             .lineLimit(maxLines > 0 ? maxLines : nil)
@@ -153,20 +162,33 @@ struct TextNode: View {
 struct ImageNode: View {
     let props: Props
     let ctx: RenderContext
+    /// The picture this view loaded; kept even if the shared cache evicts it.
+    @State private var loaded: (url: URL, image: PlatformImage)?
 
     var body: some View {
         let wb = ctx.store.wishbone
         let placeholder = wb.theme.color(props["placeholder"], dark: wb.env.dark)?.color ?? .clear
         let url = props.string("url").flatMap { Wishbone.resolve($0, base: wb.baseURL) }
         let fit = props.string("fit") == "fit"
-        AsyncImage(url: url) { phase in
-            if let image = phase.image {
-                image.resizable().aspectRatio(contentMode: fit ? .fit : .fill)
+        let image = url.flatMap { loaded?.url == $0 ? loaded?.image : ImageLoader.cached($0) }
+        Group {
+            if let image {
+                Image(platformImage: image).resizable().aspectRatio(contentMode: fit ? .fit : .fill)
             } else {
                 Rectangle().fill(placeholder)
             }
         }
         .clipped()
+        .task(id: url) {
+            // Runs on every appearance, so a load that failed (the placeholder stays) is retried when the cell comes
+            // back; one a lazy container cut off finishes into the cache meanwhile.
+            guard let url, loaded?.url != url else { return }
+            if let hit = ImageLoader.cached(url) {
+                loaded = (url, hit) // drawn from the cache already: keep it, without a hop off the main actor
+                return
+            }
+            if let image = try? await ImageLoader.load(url) { loaded = (url, image) }
+        }
     }
 }
 
@@ -207,8 +229,31 @@ struct ShapeNode: View {
         let wb = ctx.store.wishbone, dark = wb.env.dark
         let stroke: (Color, Double)? = if case let .record(s) = props["stroke"], let c = s["color"].flatMap({ wb.theme.color($0, dark: dark) }),
                                           case let .number(w)? = s["width"], w.isFinite, w > 0 { (c.color, w) } else { nil }
+        let trim = props.string("kind") == "circle" ? Self.trim(props["trim"]) : nil
         return PaintFill(paint: props.values["fill"].flatMap { wb.theme.paint($0, dark: dark) }, shape: shape)
-            .overlay { if let stroke { shape.strokeBorder(stroke.0, lineWidth: stroke.1) } }
+            .overlay {
+                if let stroke {
+                    if let trim {
+                        // Circle's trim starts at 3 o'clock: rotate so 0 is 12 o'clock. Inset keeps the stroke inside the bounds.
+                        if trim.to > trim.from {
+                            Circle().inset(by: stroke.1 / 2).trim(from: trim.from, to: trim.to)
+                                .stroke(stroke.0, style: StrokeStyle(lineWidth: stroke.1, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                        }
+                    } else {
+                        shape.strokeBorder(stroke.0, lineWidth: stroke.1)
+                    }
+                }
+            }
+    }
+
+    struct Trim: Equatable { let from, to: Double }
+
+    /// `shape.trim` clamped to 0…1; nil when absent or malformed (the whole stroke is drawn). to <= from draws nothing.
+    static func trim(_ v: Value?) -> Trim? {
+        guard case let .record(r)? = v, case let .number(from)? = r["from"], case let .number(to)? = r["to"],
+              from.isFinite, to.isFinite else { return nil }
+        return Trim(from: min(max(from, 0), 1), to: min(max(to, 0), 1))
     }
 }
 
@@ -225,6 +270,16 @@ struct NativeNode: View {
 }
 
 extension Fonts {
+    @MainActor private static var memo: [TypeStyle: (font: Font, lineSpacing: CGFloat)] = [:]
+
+    /// A text style's font and extra line spacing, made once per style (a theme has a handful).
+    @MainActor static func resolved(_ style: TypeStyle) -> (font: Font, lineSpacing: CGFloat) {
+        if let known = memo[style] { return known }
+        let made = (font(style), extraLineSpacing(style))
+        memo[style] = made
+        return made
+    }
+
     /// Extra spacing between lines so a line box is `lineHeight` tall (0 when unset or smaller).
     static func extraLineSpacing(_ style: TypeStyle) -> CGFloat {
         guard let lh = style.lineHeight else { return 0 }

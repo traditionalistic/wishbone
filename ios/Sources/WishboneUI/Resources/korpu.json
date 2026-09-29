@@ -165,9 +165,57 @@
       "light": "#FFFFFFFF",
       "dark": "#FFFFFFFF"
     },
+    "accentGradientEdge": {
+      "light": "#3A5893FF",
+      "dark": "#3A5893FF"
+    },
+    "accentGradientMid": {
+      "light": "#5A85D3FF",
+      "dark": "#6C97E5FF"
+    },
+    "accentGradientStroke": {
+      "light": "#73A1F6FF",
+      "dark": "#73A1F6FF"
+    },
+    "accentGradientLegibilityOverlay": {
+      "light": "#00000038",
+      "dark": "#00000038"
+    },
     "shadow": {
       "light": "#0000001F",
       "dark": "#00000066"
+    },
+    "solidChromeSurface": {
+      "light": "#FFFFFFFF",
+      "dark": "#2C2C2CFF"
+    },
+    "glassButtonBackground": {
+      "light": "#00000033",
+      "dark": "#00000033"
+    },
+    "cardSurface": {
+      "light": "#FFFFFFCC",
+      "dark": "#131313CC"
+    },
+    "cardBorder": {
+      "light": "#FFFFFFFF",
+      "dark": "#262626FF"
+    },
+    "cardShadow": {
+      "light": "#0000001A",
+      "dark": "#00000040"
+    },
+    "controlBorder": {
+      "light": "#ADADAD3D",
+      "dark": "#ADADAD3D"
+    },
+    "commentsAvatarPlaceholder": {
+      "light": "#E7E7E7FF",
+      "dark": "#454545FF"
+    },
+    "iconDisabled": {
+      "light": "#525252FF",
+      "dark": "#525252FF"
     }
   },
   "type": {

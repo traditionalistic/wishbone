@@ -6,8 +6,12 @@ struct Props {
     let values: [String: Value]
 
     subscript(_ key: String) -> Value {
-        values[key] ?? Props.defaults[type]?[key] ?? Props.defaults["common"]?[key] ?? .null
+        values[key] ?? Props.fallback[type, default: Props.common][key] ?? .null
     }
+
+    private static let common = defaults["common", default: [:]]
+    /// Per type: its defaults over the common ones (one lookup for a prop the node didn't set).
+    private static let fallback = defaults.mapValues { common.merging($0) { _, own in own } }
 
     /// Finite numbers only: a server document must never crash layout (NaN/±Inf are dropped).
     func number(_ key: String) -> Double? {

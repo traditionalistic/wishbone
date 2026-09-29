@@ -5,15 +5,58 @@ import WishboneCore
 
 /// One entry of the SDK-owned navigation stack.
 struct Route: Hashable, Identifiable, Sendable {
-    let id = UUID()
+    let id: UUID
     let screen: String
     let params: [String: Value]
     var fade = false
     /// Set for the live-preview root: documents come from the session, not from the network.
     var preview: PreviewClient?
 
+    init(id: UUID = UUID(), screen: String, params: [String: Value], fade: Bool = false, preview: PreviewClient? = nil) {
+        self.id = id
+        self.screen = screen
+        self.params = params
+        self.fade = fade
+        self.preview = preview
+    }
+
+    /// Rebuilds an internal `Route` from a host-issued `WishboneRoute` (`WishboneScreen(route:)`), keeping
+    /// the same `id` so the host's stack record and the SDK's route agree.
+    init(_ r: WishboneRoute) {
+        self.init(id: r.id, screen: r.screen, params: r.params, fade: r.transition == "fade")
+    }
+
     static func == (a: Route, b: Route) -> Bool { a.id == b.id }
     func hash(into h: inout Hasher) { h.combine(id) }
+}
+
+/// One entry of the HOST's navigation stack (spec §1.1): pushed via `Navigator.forward` when a screen
+/// is running in host-stack mode. Each push is a separate stack record, identified by `id`.
+public struct WishboneRoute: Hashable, Identifiable, Sendable {
+    public let id: UUID
+    public let screen: String
+    public let params: [String: Value]
+    /// "push" | "fade" | "present" (slots only) | nil — a hint for the host.
+    public let transition: String?
+
+    public init(screen: String, params: [String: Value] = [:], transition: String? = nil) {
+        id = UUID()
+        self.screen = screen
+        self.params = params
+        self.transition = transition
+    }
+
+    init(_ route: Route, transition: String? = nil) {
+        id = route.id
+        screen = route.screen
+        params = route.params
+        self.transition = transition ?? (route.fade ? "fade" : "push")
+    }
+
+    // `params` holds `Value`, which is Equatable but not Hashable (see WishboneCore/Value.swift);
+    // identity is `id`, same as `Route`.
+    public static func == (a: WishboneRoute, b: WishboneRoute) -> Bool { a.id == b.id }
+    public func hash(into h: inout Hasher) { h.combine(id) }
 }
 
 /// Stack of one `WishboneScreen` (or of a presented sheet): `navigate` pushes, `present` shows a
@@ -26,6 +69,13 @@ final class Navigator {
     @ObservationIgnored weak var presenter: Navigator?
     /// Leaves the SDK at the root (host's `dismiss`).
     @ObservationIgnored var exit: (() -> Void)?
+    /// Set when this screen runs in the host's stack (`WishboneScreen(onNavigate:)`): `navigate` forwards
+    /// to the host instead of pushing the SDK's own stack. Never set on a sheet's navigator — a sheet's
+    /// stack always stays inside the SDK (spec §1.2).
+    @ObservationIgnored var forward: ((WishboneRoute) -> Void)?
+    /// Slots only: `present` also forwards to the host (as `transition: "present"`) instead of opening
+    /// an SDK sheet — a slot has no sheet of its own.
+    @ObservationIgnored var forwardsPresent = false
     /// `env.screen*` / `env.safe*` of this stack.
     @ObservationIgnored let geometry = ScreenGeometry()
 
@@ -34,6 +84,7 @@ final class Navigator {
     }
 
     func navigate(_ route: Route) {
+        if let forward { return forward(WishboneRoute(route)) }
         guard route.fade else { return path.append(route) }
         var t = Transaction()
         t.disablesAnimations = true
@@ -51,6 +102,7 @@ final class Navigator {
     }
 
     func present(_ route: Route) {
+        if forwardsPresent, let forward { return forward(WishboneRoute(route, transition: "present")) }
         sheet = route
     }
 
@@ -63,7 +115,10 @@ final class Navigator {
 import UIKit
 
 /// The system bar is hidden (screens draw their own headers), which also disables UIKit's edge-swipe
-/// back; this re-enables it for the SDK's own navigation controller only (never at its root).
+/// back; this re-enables it while an SDK screen is on screen (never at the stack's root). The pop recognizers'
+/// delegates are borrowed, not taken: in host-stack mode they belong to the HOST's navigation controller, and
+/// their weak delegate would read nil once the screen is gone — the swipe could then begin at the host's root
+/// and freeze its navigation — so the previous delegates go back when the screen disappears.
 struct SwipeBackEnabler: UIViewControllerRepresentable {
     /// The iOS 26 full-width swipe would fight horizontal `drag` nodes; screens with drags keep the edge swipe only.
     let allowsContentPop: Bool
@@ -75,11 +130,47 @@ struct SwipeBackEnabler: UIViewControllerRepresentable {
 
     final class Controller: UIViewController, UIGestureRecognizerDelegate {
         var allowsContentPop = true
+        /// The recognizers this screen is the delegate of, each with the delegate it had before.
+        private var loans: [Loan] = []
+
+        private struct Loan {
+            weak var recognizer: UIGestureRecognizer?
+            weak var previous: (any UIGestureRecognizerDelegate)?
+        }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
-            navigationController?.interactivePopGestureRecognizer?.delegate = self
-            if #available(iOS 26, *) { navigationController?.interactiveContentPopGestureRecognizer?.delegate = self }
+            var recognizers = [navigationController?.interactivePopGestureRecognizer]
+            if #available(iOS 26, *) { recognizers.append(navigationController?.interactiveContentPopGestureRecognizer) }
+            loans = recognizers.compactMap { $0 }.map { r in
+                // Appearance callbacks of two SDK screens may interleave (the next one appears before this one
+                // disappeared): a delegate that is an SDK screen hands on what it borrowed, so the host's own
+                // delegate is what goes back in the end.
+                let previous = if let screen = r.delegate as? Controller { screen.lent(r) } else { r.delegate }
+                r.delegate = self
+                return Loan(recognizer: r, previous: previous)
+            }
+        }
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            // Not when another screen has taken the recognizer over meanwhile.
+            for loan in loans where loan.recognizer?.delegate === self { loan.recognizer?.delegate = loan.previous }
+            loans = []
+        }
+
+        deinit {
+            // Torn down without `viewDidDisappear`: a weak delegate that was this controller reads nil by now.
+            guard Thread.isMainThread else { return }
+            MainActor.assumeIsolated {
+                for loan in loans where loan.recognizer.map({ $0.delegate == nil }) ?? false {
+                    loan.recognizer?.delegate = loan.previous
+                }
+            }
+        }
+
+        private func lent(_ recognizer: UIGestureRecognizer) -> (any UIGestureRecognizerDelegate)? {
+            loans.first { $0.recognizer === recognizer }?.previous
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {

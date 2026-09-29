@@ -1,0 +1,33 @@
+{
+ "id": "raffle.invites",
+ "title": "Мои приглашения",
+ "script": "// My raffle invitations (raffles spec §3.3), pushed from raffle.main: how many friends signed up with my link and\n// the tickets each one brought (raffle.invites); empty and error states.\ndata inv = raffle.invites()\n// Russian plural whatever env.locale is: the raffle strings are ru-only, plural() would follow the device language\nfn ticketsText(n: number): string = formatNumber(n, 0) + \" \" + (n % 10 == 1 && n % 100 != 11 ? \"билет\" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? \"билета\" : \"билетов\")\nfn usersText(n: number): string = formatNumber(n, 0) + \" \" + (n % 10 == 1 && n % 100 != 11 ? \"пользователь\" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? \"пользователя\" : \"пользователей\")",
+ "root": {"type": "stack", "id": "root", "props": {"width": "fill", "height": "fill", "background": "@color.bg1"}, "children": [
+
+  {"type": "stack", "id": "header", "props": {"axis": "z", "width": "fill", "height": 52, "padding": "={h: @space.sm}"}, "children": [
+   {"type": "text", "id": "headerTitle", "props": {"text": "Мои приглашения", "style": "@type.headingSmall", "maxLines": 1}, "a11y": {"role": "header"}},
+   {"type": "stack", "id": "headerRow", "props": {"axis": "h", "align": "center", "width": "fill"}, "children": [
+    {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "size": "small", "style": "plain"}, "on": {"tap": "back()"}},
+    {"type": "spacer", "id": "headerGap"}
+   ]}
+  ]},
+
+  {"type": "stack", "id": "error", "when": "inv == null", "props": {"axis": "z", "width": "fill", "height": "fill"}, "children": [
+   {"type": "EmptyState", "id": "errorState", "props": {"icon": "@icon.warning", "title": "Не удалось загрузить историю начислений", "actionTitle": "Повторить"}, "on": {"action": "refresh(inv)"}}
+  ]},
+
+  {"type": "scroll", "id": "list", "when": "inv != null", "props": {"width": "fill", "height": "fill", "padding": "={h: @space.lg, top: @space.sm, bottom: @space.xl}"}, "children": [
+   {"type": "stack", "id": "card", "props": {"spacing": "@space.sm", "width": "fill", "padding": "@space.lg", "background": "@color.bg1Elevated", "corner": "@radius.lg"}, "children": [
+    {"type": "stack", "id": "cardHead", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill", "padding": "={bottom: @space.xs}"}, "children": [
+     {"type": "text", "id": "cardTitle", "props": {"text": "Мои приглашения", "style": "@type.headingSmall", "width": "fill", "maxLines": 1}, "a11y": {"role": "header"}},
+     {"type": "text", "id": "cardCount", "props": {"text": "=usersText(inv.total ?? 0)", "style": "@type.caption", "color": "@color.el9", "maxLines": 1}}
+    ]},
+    {"type": "stack", "id": "invite", "repeat": {"over": "inv.items", "key": "item.key"}, "props": {"axis": "h", "align": "start", "spacing": "@space.md", "width": "fill", "padding": "={h: @space.md, v: @space.sm}", "background": "@color.bg1", "corner": "@radius.sm"}, "children": [
+     {"type": "text", "id": "inviteName", "props": {"text": "=item.name", "style": "@type.bodySmall", "width": "fill"}},
+     {"type": "text", "id": "inviteTickets", "props": {"text": "=ticketsText(item.tickets)", "style": "@type.bodySmallStrong", "color": "=item.tickets > 0 ? @color.accentPrimary : @color.el9", "maxLines": 1}}
+    ]},
+    {"type": "text", "id": "empty", "when": "inv.items.isEmpty ?? true", "props": {"text": "Начислений пока нет", "style": "@type.bodySmall", "color": "@color.el9", "textAlign": "center", "width": "fill", "padding": "={v: @space.xl}"}}
+   ]}
+  ]}
+ ]}
+}

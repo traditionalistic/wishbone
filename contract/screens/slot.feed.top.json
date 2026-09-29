@@ -1,0 +1,30 @@
+{
+ "id": "slot.feed.top",
+ "title": "Слот ленты: розыгрыш",
+ "script": "// Feed banner slot (raffles spec §2, §3.3): the raffle promo card while the raffle runs. The root's `when` hides it\n// (the slot collapses to zero height) once endsAt passes — a cached banner goes out by itself, env.now ticks. Tap →\n// navigate(\"raffle.main\"), which the slot forwards to the host.\ndata promo = raffle.promo() required\nlet left = max((promo.endsAt ?? 0) - env.now, 0)\nlet leftText = str(floor(left / 86400000)) + \"д \" + str(floor(left % 86400000 / 3600000)) + \"ч \" + str(floor(left % 3600000 / 60000)) + \"м\"",
+ "root": {"type": "stack", "id": "root", "when": "promo.active && env.now < (promo.endsAt ?? 0)", "props": {"width": "fill", "padding": "={h: @space.lg}"},
+  "on": {"tap": "navigate(\"raffle.main\")"}, "a11y": {"label": "\"Розыгрыш\"", "role": "button"}, "children": [
+  {"type": "stack", "id": "card", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "width": "fill", "padding": "={start: @space.md, end: @space.lg, v: @space.md}",
+   "background": "=gradient([@color.accentPrimary, @color.accentSecondary], 120)", "corner": "@radius.lg"}, "children": [
+   {"type": "stack", "id": "art", "props": {"axis": "z", "width": 76, "height": 76, "corner": "@radius.md", "background": "=alpha(@color.onAccent, 0.9)"}, "children": [
+    {"type": "image", "id": "gift", "props": {"url": "/assets/raffle/gift.png", "fit": "fit", "width": 56, "height": 60, "placeholder": "=alpha(@color.onAccent, 0)"}, "a11y": {"hidden": true}}
+   ]},
+   {"type": "stack", "id": "text", "props": {"spacing": "@space.xs", "width": "fill"}, "children": [
+    {"type": "stack", "id": "titleRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill"}, "children": [
+     {"type": "text", "id": "title", "props": {"text": "Розыгрыш", "style": "@type.headingSmall", "color": "@color.onAccent", "width": "fill", "maxLines": 1}},
+     {"type": "stack", "id": "place", "when": "promo.place != null", "props": {"axis": "h", "height": 24, "padding": "={h: @space.sm}", "corner": "@radius.pill", "background": "=alpha(@color.onAccent, 0.22)"}, "children": [
+      {"type": "text", "id": "placeText", "props": {"text": "=\"#${promo.place ?? 0} место\"", "style": "@type.captionStrong", "color": "@color.onAccent", "maxLines": 1}}
+     ]}
+    ]},
+    {"type": "text", "id": "subtitle", "props": {"text": "Выполняй задания и выигрывай призы", "style": "@type.bodySmall", "color": "@color.onAccent", "maxLines": 2}},
+    {"type": "stack", "id": "meta", "props": {"axis": "h", "align": "center", "spacing": "@space.md", "padding": "={top: 2}"}, "children": [
+     {"type": "stack", "id": "timer", "props": {"axis": "h", "align": "center", "spacing": "@space.xs"}, "children": [
+      {"type": "icon", "id": "timerIcon", "props": {"name": "@icon.clock", "size": 14, "color": "@color.onAccent"}},
+      {"type": "text", "id": "timerText", "props": {"text": "=\"Осталось: \" + leftText", "style": "@type.captionStrong", "color": "@color.onAccent", "maxLines": 1}}
+     ]},
+     {"type": "text", "id": "tasks", "when": "promo.tasksTotal > 0", "props": {"text": "=\"Задания ${promo.tasksDone}/${promo.tasksTotal}\"", "style": "@type.captionStrong", "color": "@color.onAccent", "maxLines": 1}}
+    ]}
+   ]}
+  ]}
+ ]}
+}

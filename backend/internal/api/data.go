@@ -87,22 +87,29 @@ func (s *Server) meta(ctx context.Context, screen string, rev int) (*revMeta, er
 			return nil, store.ErrNoRevision
 		}
 	} else {
-		r, err := s.Store.Revision(ctx, screen, rev)
-		if err != nil {
+		var err error
+		if raw, err = s.Store.Meta(ctx, screen, rev); err != nil {
 			return nil, err
 		}
-		raw = r.Meta
 	}
 	m := &revMeta{}
 	return m, json.Unmarshal(raw, m)
 }
 
-// resolve runs data sources in parallel (500 ms each, 1200 ms in total). failed = a required source failed.
+// resolve runs data sources in parallel, each capped at its op's timeout (see timeout); the whole
+// call is capped at dataBudget, raised for a source whose own timeout + 200 ms would exceed it.
+// failed = a required source failed.
 func (s *Server) resolve(ctx context.Context, usr, base string, decls []compile.DataDecl, defaults, params map[string]any) (out map[string]ops.Result, failed bool) {
 	merged := map[string]any{}
 	maps.Copy(merged, defaults)
 	maps.Copy(merged, params)
-	ctx, cancel := context.WithTimeout(ctx, dataBudget)
+	budget := dataBudget
+	for _, d := range decls {
+		if t := s.timeout(d.Op) + 200*time.Millisecond; t > budget {
+			budget = t
+		}
+	}
+	ctx, cancel := context.WithTimeout(ctx, budget)
 	defer cancel()
 	res := make([]ops.Result, len(decls))
 	var wg sync.WaitGroup
@@ -132,7 +139,7 @@ func (s *Server) source(ctx context.Context, usr, base string, d compile.DataDec
 		return s.result(ops.Fail("ARGS_INVALID", err.Error()))
 	}
 	m, _ := args.(map[string]any)
-	ctx, cancel := context.WithTimeout(ctx, sourceTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.timeout(d.Op))
 	defer cancel()
 	ch := make(chan ops.Result, 1)
 	go func() {
@@ -148,6 +155,14 @@ func (s *Server) source(ctx context.Context, usr, base string, d compile.DataDec
 	case <-ctx.Done():
 		return s.sourceFailed(d, ctx.Err())
 	}
+}
+
+// timeout is the timeout of one data source: the op's timeoutMs, else sourceTimeout.
+func (s *Server) timeout(op string) time.Duration {
+	if o := s.Contract.Ops[op]; o != nil && o.Timeout > 0 {
+		return o.Timeout
+	}
+	return sourceTimeout
 }
 
 func (s *Server) sourceFailed(d compile.DataDecl, err error) ops.Result {

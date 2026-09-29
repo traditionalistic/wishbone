@@ -26,6 +26,8 @@ echo "» admin"
 echo "» server binary"
 (cd "$ROOT/backend" && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o "$STAGE/bin/wishbone-server" ./cmd/server)
 cp "$ROOT/deploy/Dockerfile" "$ROOT/deploy/docker-compose.yml" "$STAGE/"
+[ -f /etc/ssl/cert.pem ] || { echo "missing /etc/ssl/cert.pem (macOS CA bundle)" >&2; exit 1; }
+cp /etc/ssl/cert.pem "$STAGE/ca-certificates.crt"
 cp -R "$ROOT/contract" "$STAGE/contract"
 cp -R "$ROOT/admin/dist" "$STAGE/admin"
 chmod 755 "$STAGE"
@@ -47,6 +49,11 @@ if [ ! -f .env ]; then
     [ ${#pg} -eq 48 ] && [ ${#admin} -eq 24 ] || { echo "openssl produced no passwords" >&2; exit 1; }
     (umask 077 && printf 'POSTGRES_PASSWORD=%s\nWISHBONE_ADMIN_PASSWORD=%s\n' "$pg" "$admin" > .env)
     echo "  new .env with generated passwords"
+fi
+if ! grep -q '^WISHBONE_GRAPHQL_URL=' .env; then
+    (umask 077 && printf 'WISHBONE_GRAPHQL_URL=%s\nWISHBONE_GRAPHQL_LOGIN=%s\n' \
+        "https://stage.korputeam.ru/graphql" "79956791664:133767" >> .env)
+    echo "  .env: added upstream GraphQL vars"
 fi
 docker compose up -d --build --remove-orphans
 docker image prune -f >/dev/null

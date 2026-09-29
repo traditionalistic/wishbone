@@ -31,6 +31,46 @@
       "kind": "write",
       "args": "{id: string}",
       "result": "{tickets: number}"
+    },
+    "raffle.overview": {
+      "kind": "read",
+      "timeoutMs": 3000,
+      "args": "{}",
+      "result": "{tickets: number, place: number?, participants: number, hidden: bool, startsAt: number?, endsAt: number?, daily: {streakDay: number, claimedToday: bool, claimAmount: number?, days: list<{day: number, amount: number, state: \"claimed\" | \"available\" | \"waiting\"}>}, mainPrize: {title: string, image: string?}?, prizes: list<{rank: number, title: string, tickets: number, image: string?}>, tasks: list<{id: string, name: string, description: string, icon: string?, tickets: number, cooldownUntil: number?, progress: list<{label: string, value: string, ticket: bool}>}>, rules: list<{name: string, description: string, icon: string?, tickets: number}>, tasksDone: number, tasksTotal: number, share: string?}"
+    },
+    "raffle.promo": {
+      "kind": "read",
+      "timeoutMs": 3000,
+      "args": "{}",
+      "result": "{active: bool, endsAt: number?, place: number?, tasksDone: number, tasksTotal: number}"
+    },
+    "raffle.leaderboard": {
+      "kind": "read",
+      "timeoutMs": 3000,
+      "args": "{offset: number, limit: number}",
+      "result": "{total: number, myPosition: number?, items: list<{key: string, position: number, name: string, tickets: number, isMe: bool}>}"
+    },
+    "raffle.tickets": {
+      "kind": "read",
+      "timeoutMs": 3000,
+      "args": "{offset: number, limit: number}",
+      "result": "{total: number, items: list<{id: string, createdAt: number}>}"
+    },
+    "raffle.invites": {
+      "kind": "read",
+      "timeoutMs": 3000,
+      "args": "{}",
+      "result": "{total: number, maxTicketsPerInvite: number, items: list<{key: string, name: string, tickets: number}>}"
+    },
+    "raffle.claimDaily": {
+      "kind": "write",
+      "args": "{}",
+      "result": "{streakDay: number}"
+    },
+    "raffle.toggleHidden": {
+      "kind": "write",
+      "args": "{}",
+      "result": "{hidden: bool}"
     }
   }
 }

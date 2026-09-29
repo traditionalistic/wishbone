@@ -24,18 +24,18 @@ object WishboneRenderers {
     internal operator fun get(type: String): PrimitiveRenderer? = registry[type]
 }
 
-/** Evaluates every prop; any eval error → logged by the context, the node renders nothing. */
-private fun RenderContext.evalProps(node: Node): Map<String, Value>? {
+/** Evaluates every prop but the draw-phase ones ([layerProps]); any eval error → logged by the context, the node renders nothing. */
+internal fun RenderContext.evalProps(node: Node): Map<String, Value>? {
+    val layer = store.layerProps[node.id]
     val out = HashMap<String, Value>(node.props.size)
-    for ((k, e) in node.props) out[k] = evalOrNull(e) ?: return null
+    for ((k, e) in node.props) if (layer == null || k !in layer) out[k] = evalOrNull(e) ?: return null
     return out
 }
 
 /** [extra] wraps the whole node (shared bounds from an enclosing AnimatedVisibility). */
 @Composable
 internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Modifier) {
-    val inst = parentCtx.store.extras[node.id]?.inst
-    var ctx = if (inst != null) parentCtx.withInstance(node.id + parentCtx.keyPath, inst) else parentCtx
+    var ctx = parentCtx.scoped(node)
     // the instance's drag cells exist before its own props (e.g. `scale: 1 + abs(drag.knob.x) / 600`) read them
     if (ctx.store.extras[node.id]?.drag != null) {
         ctx.store.driverCell("drag", node.id + ctx.keyPath, "x")
@@ -45,7 +45,9 @@ internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Mo
     if (ctx.store.timelines.isTarget(node.id)) {
         val timelines = ctx.store.timelines
         val instance = node.id + ctx.keyPath
-        DisposableEffect(instance, ctx.index) {
+        // keyed on the registry too: a swapped store (SWR, hot reload) keeps ids and indices, and its new registry
+        // must learn the target is live, or an infinite timeline on it stops
+        DisposableEffect(timelines, instance, ctx.index) {
             timelines.register(node.id, instance, ctx.index)
             onDispose { timelines.unregister(node.id, instance) }
         }
@@ -53,15 +55,9 @@ internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Mo
     val source = if (node.on["tap"] != null || node.on["longPress"] != null) remember { MutableInteractionSource() } else null
     if (source != null) ctx = ctx.copy(pressed = source.collectIsPressedAsState())
     val evaluated = ctx.evalProps(node) ?: return
-    // the screen container already paints the root background (behind the system bars too)
-    val p = animateProps(node, if (node === ctx.store.doc.root) evaluated - "background" else evaluated, ctx)
-    val box = BoxProps.from(p).let {
-        when (node.type) {
-            "shape", "image", "scroll" -> it.greedy()
-            "grid", "textField" -> it.greedy(vertical = false)
-            else -> it
-        }
-    }
+    // the screen container already paints the root background (behind the system bars too); a slot's stays inside it
+    val p = animateProps(node, if (node === ctx.store.doc.root && !ctx.store.slot) evaluated - "background" else evaluated, ctx)
+    val box = BoxProps.from(p).flexible(node.type, p.str("axis"))
     // scroll padding pads the scrolled content, not the viewport (parity ruling)
     val m = extra.boxOuter(node, box, p, ctx).interactions(node, ctx, source).dragGesture(node, ctx).boxInner(box, p, ctx, padding = node.type != "scroll")
     when (node.type) {

@@ -151,6 +151,7 @@ func (s *Server) Handler() http.Handler {
 	admin("GET /admin/api/screens/{id}", s.getDraft)
 	admin("PUT /admin/api/screens/{id}", s.putDraft)
 	admin("POST /admin/api/screens/{id}/publish", s.publish)
+	admin("POST /admin/api/screens/{id}/unpublish", s.unpublish)
 	admin("GET /admin/api/screens/{id}/revisions", s.revisions)
 	admin("POST /admin/api/screens/{id}/rollback/{rev}", s.rollback)
 	admin("POST /admin/api/compile", s.compileSource)
@@ -286,15 +287,17 @@ func user(r *http.Request) string {
 	return "anon"
 }
 
-// etagMatch reports whether an If-None-Match header lists etag (quoted, weak or bare).
-func etagMatch(header, etag string) bool {
+// etagList splits an If-None-Match header into bare ETags (quotes and the weak prefix removed).
+func etagList(header string) []string {
+	var out []string
 	for _, part := range strings.Split(header, ",") {
-		if strings.Trim(strings.TrimPrefix(strings.TrimSpace(part), "W/"), `"`) == etag {
-			return true
-		}
+		out = append(out, strings.Trim(strings.TrimPrefix(strings.TrimSpace(part), "W/"), `"`))
 	}
-	return false
+	return out
 }
+
+// etagMatch reports whether an If-None-Match header lists etag (quoted, weak or bare).
+func etagMatch(header, etag string) bool { return slices.Contains(etagList(header), etag) }
 
 // sortedKeys never returns nil, so JSON gets [] rather than null.
 func sortedKeys[V any](m map[string]V) []string {

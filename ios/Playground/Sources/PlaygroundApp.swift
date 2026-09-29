@@ -33,14 +33,12 @@ enum SchemeChoice: String, CaseIterable, Identifiable {
     }
 }
 
-/// What the home screen opens full-screen.
+/// What the home screen opens full-screen (screens are pushed onto `PlaygroundModel.path` instead).
 enum Opened: Identifiable {
-    case screen(String)
     case preview(String)
 
     var id: String {
         switch self {
-        case let .screen(id): "screen:\(id)"
         case let .preview(code): "preview:\(code)"
         }
     }
@@ -64,6 +62,8 @@ final class PlaygroundModel {
     var sessions: [PreviewSession] = []
     var sessionsError: String?
     var opened: Opened?
+    /// The playground's navigation stack: `WishboneRoute`s and the `FeedDemo` page.
+    var path = NavigationPath()
 
     init() {
         let d = UserDefaults.standard
@@ -77,8 +77,12 @@ final class PlaygroundModel {
         applyOffline()
         // Launch shortcuts for automation: WB_OPEN=<screen id>, WB_PREVIEW=<session code>.
         let env = ProcessInfo.processInfo.environment
-        if let id = env["WB_OPEN"] { opened = .screen(id) } else if let code = env["WB_PREVIEW"] { opened = .preview(code) }
+        if let id = env["WB_OPEN"] { push(id) } else if let code = env["WB_PREVIEW"] { opened = .preview(code) }
     }
+
+    func push(_ screen: String) { path.append(WishboneRoute(screen: screen)) }
+
+    func pop() { if !path.isEmpty { path.removeLast() } }
 
     func applyServer() {
         if let url = URL(string: serverURL) { wishbone.baseURL = url }
@@ -117,7 +121,7 @@ final class PlaygroundHost: WishboneHost {
 
     func action(name: String, args: [String: Any]) async {
         print("[host] action \(name) \(args)")
-        banner = "\(name): \(args["message"] as? String ?? "\(args)")"
+        banner = "\(name): \((args["message"] ?? args["text"]) as? String ?? "\(args)")"
     }
 
     func nativeView(name: String, props: [String: Any]) -> AnyView? {
@@ -138,8 +142,10 @@ struct BannerView: View {
         if let text = host.banner {
             Text(text)
                 .font(.footnote.weight(.semibold))
+                .lineLimit(2) // a shared text can be long and multi-line
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(.thinMaterial, in: Capsule())
+                .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task(id: text) {

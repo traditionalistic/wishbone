@@ -1,14 +1,20 @@
 {
  "id": "Loader",
  "title": "Loader",
- "script": "// Spinner (ds-metrics §9 — Android Loader.kt; the iOS DS has none): a 25% ring of `color` with a head segment,\n// spinning 360° every 1100 ms (autoplay timeline, forever). Stroke = size / 6.4 (5pt at the default 32).\n// No partial-arc primitive, so the head is a short capsule riding the top of the ring.\nparam size: number = 32\nparam color: color = @color.accentPrimary\nlet stroke = size / 6.4",
+ "script": "// Spinner (ds-metrics §9 — Android most Loader.kt; the iOS DS has none): a static track of 7 dots (diameter 0.35 × stroke,\n// `color` at 25%, on the stroke's centre line every 360°/7 from 3 o'clock — the DS's dashed ring) and a head arc of\n// `color` with round caps that spins 360° every 1100 ms (autoplay timeline, forever). Stroke = size / 6.4 (5pt at the\n// default 32), inside the box like the DS (centre-line radius (size − stroke) / 2). The dots are written out, not a\n// repeat: a Loader may sit in a lazy list's footer, where the compiler rejects nested repeats.\n// ponytail: the DS head breathes between 30° and 240° every 900 ms and tapers to 0.55 × stroke at its ends; here it is a\n// fixed 135° arc (that sweep's mean) of even width — animating it needs a timeline-driven `trim`.\nparam size: number = 32\nparam color: color = @color.accentPrimary\nlet stroke = size / 6.4\nlet dot = stroke * 0.35\nlet r = (size - stroke) / 2",
  "timelines": [
   {"name": "spin", "repeat": -1, "autoplay": true, "tracks": [
-   {"target": "root", "prop": "rotation", "keys": [{"t": 0, "v": 0}, {"t": 1100, "v": 360}]}
+   {"target": "head", "prop": "rotation", "keys": [{"t": 0, "v": 0}, {"t": 1100, "v": 360}]}
   ]}
  ],
- "root": {"type": "stack", "id": "root", "props": {"axis": "z", "align": "top", "width": "=size", "height": "=size"}, "children": [
-  {"type": "shape", "id": "track", "props": {"kind": "circle", "width": "=size", "height": "=size", "stroke": "={color: alpha(color, 0.25), width: stroke}"}},
-  {"type": "shape", "id": "head", "props": {"kind": "capsule", "width": "=size * 0.45", "height": "=stroke", "fill": "=color"}}
+ "root": {"type": "stack", "id": "root", "props": {"axis": "z", "width": "=size", "height": "=size"}, "children": [
+  {"type": "shape", "id": "dot0", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r", "offsetY": 0}},
+  {"type": "shape", "id": "dot1", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r * 0.6235", "offsetY": "=r * 0.7818"}},
+  {"type": "shape", "id": "dot2", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r * -0.2225", "offsetY": "=r * 0.9749"}},
+  {"type": "shape", "id": "dot3", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r * -0.901", "offsetY": "=r * 0.4339"}},
+  {"type": "shape", "id": "dot4", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r * -0.901", "offsetY": "=r * -0.4339"}},
+  {"type": "shape", "id": "dot5", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r * -0.2225", "offsetY": "=r * -0.9749"}},
+  {"type": "shape", "id": "dot6", "props": {"kind": "circle", "width": "=dot", "height": "=dot", "fill": "=alpha(color, 0.25)", "offsetX": "=r * 0.6235", "offsetY": "=r * -0.7818"}},
+  {"type": "shape", "id": "head", "props": {"kind": "circle", "width": "=size", "height": "=size", "stroke": "={color: color, width: stroke}", "trim": {"from": 0, "to": 0.375}}}
  ]}
 }

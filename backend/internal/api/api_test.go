@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -125,7 +126,9 @@ func newEnv(t *testing.T) *env {
 	return newEnvWith(t, contractDir)
 }
 
-func newEnvWith(t *testing.T, dir string) *env {
+// extraOps, when given, adds (or overrides) handlers beyond the demo ops — for a test contract dir
+// with its own extra operations.json entries.
+func newEnvWith(t *testing.T, dir string, extraOps ...map[string]ops.Handler) *env {
 	t.Helper()
 	c, err := compile.LoadContract(dir)
 	if err != nil {
@@ -139,8 +142,13 @@ func newEnvWith(t *testing.T, dir string) *env {
 	admin := t.TempDir()
 	_ = write(admin, "index.html", "<!doctype html>admin")
 	_ = write(admin, "assets/app.js", "console.log(1)")
+	handlers := (&ops.Demo{NoLatency: true}).Handlers()
+	maps.Copy(handlers, (&ops.Raffle{G: &ops.GQL{}}).Handlers())
+	for _, extra := range extraOps {
+		maps.Copy(handlers, extra)
+	}
 	srv, err := New(Config{Contract: c, ContractDir: dir, AdminDir: admin, Store: st,
-		Ops: (&ops.Demo{NoLatency: true}).Handlers(), Hub: preview.New(), Password: password})
+		Ops: handlers, Hub: preview.New(), Password: password})
 	if err != nil {
 		t.Fatal(err)
 	}

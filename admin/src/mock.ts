@@ -32,8 +32,8 @@ const seed: Source = {
 }
 
 const now = () => new Date().toISOString()
-const screens = new Map<string, { title: string; draft: Source; updatedAt: string; revs: { revision: number; etag: string; publishedAt: string; runtimeMin: string; source: Source }[] }>([
-  [seed.id, { title: seed.title, draft: seed, updatedAt: now(), revs: [{ revision: 1, etag: '1-abc', publishedAt: now(), runtimeMin: '1.0.0', source: seed }] }],
+const screens = new Map<string, { title: string; draft: Source; updatedAt: string; unpublished: boolean; revs: { revision: number; etag: string; publishedAt: string; runtimeMin: string; source: Source }[] }>([
+  [seed.id, { title: seed.title, draft: seed, updatedAt: now(), unpublished: false, revs: [{ revision: 1, etag: '1-abc', publishedAt: now(), runtimeMin: '1.0.0', source: seed }] }],
 ])
 
 type Prim = { props: Record<string, { required?: boolean }> }
@@ -78,17 +78,18 @@ async function handle(method: string, path: string, body: unknown): Promise<Resp
       tokens: { color: Object.keys(korpu.colors), type: Object.keys(korpu.type), space: Object.keys(korpu.space), radius: Object.keys(korpu.radius), motion: Object.keys(korpu.motion) },
       ops: Object.entries(operations.operations).map(([id, o]) => ({ id, ...o })), brands: ['korpu', 'kz'],
     })
-  if (path === '/screens' && method === 'GET') return json(200, [...screens].map(([id, s]) => ({ id, title: s.title, updatedAt: s.updatedAt, publishedRev: s.revs[0]?.revision ?? null })))
+  if (path === '/screens' && method === 'GET')
+    return json(200, [...screens].map(([id, s]) => ({ id, title: s.title, updatedAt: s.updatedAt, publishedRev: s.revs[0]?.revision ?? null, unpublished: s.unpublished })))
   if (path === '/screens' && method === 'POST') {
     if (screens.has(b.id)) return json(409, { error: { code: 'CONFLICT', message: 'id taken', retryable: false } })
     const draft: Source = { id: b.id, title: b.title, script: '', timelines: [], root: { type: 'stack', id: 'root', children: [{ type: 'text', id: 'title', props: { text: b.title } }] } }
-    screens.set(b.id, { title: b.title, draft, updatedAt: now(), revs: [] })
+    screens.set(b.id, { title: b.title, draft, updatedAt: now(), unpublished: false, revs: [] })
     return json(201, { id: b.id, title: b.title, draft })
   }
-  if ((m = path.match(/^\/screens\/([^/]+)(?:\/(publish|revisions|rollback)(?:\/(\d+))?)?$/))) {
+  if ((m = path.match(/^\/screens\/([^/]+)(?:\/(publish|revisions|rollback|unpublish)(?:\/(\d+))?)?$/))) {
     const s = screens.get(decodeURIComponent(m[1]))
     if (!s) return json(404, { error: { code: 'SCREEN_NOT_FOUND', message: 'no such screen', retryable: false } })
-    if (!m[2] && method === 'GET') return json(200, { id: m[1], title: s.title, draft: s.draft, publishedRev: s.revs[0]?.revision ?? null, updatedAt: s.updatedAt })
+    if (!m[2] && method === 'GET') return json(200, { id: m[1], title: s.title, draft: s.draft, publishedRev: s.revs[0]?.revision ?? null, updatedAt: s.updatedAt, unpublished: s.unpublished })
     if (!m[2] && method === 'PUT') {
       Object.assign(s, { draft: b.draft, title: b.title ?? s.title, updatedAt: now() })
       return json(200, { updatedAt: s.updatedAt })
@@ -96,6 +97,7 @@ async function handle(method: string, path: string, body: unknown): Promise<Resp
     const publishSource = (source: Source) => {
       const revision = (s.revs[0]?.revision ?? 0) + 1
       s.revs.unshift({ revision, etag: `${revision}-mock`, publishedAt: now(), runtimeMin: '1.0.0', source })
+      s.unpublished = false
       return json(200, { revision, etag: `${revision}-mock` })
     }
     if (m[2] === 'publish') {
@@ -108,6 +110,10 @@ async function handle(method: string, path: string, body: unknown): Promise<Resp
       if (!rev) return json(409, { error: { code: 'REVISION_NOT_FOUND', message: 'no such revision', retryable: false } })
       s.draft = rev.source
       return publishSource(rev.source)
+    }
+    if (m[2] === 'unpublish') {
+      s.unpublished = true
+      return json(204)
     }
   }
   if (path === '/compile' || /^\/preview\/\w+\/document$/.test(path)) {

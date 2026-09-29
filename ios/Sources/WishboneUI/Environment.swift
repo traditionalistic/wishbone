@@ -74,6 +74,8 @@ struct EnvReader: ViewModifier {
 
     let env: EnvState
     let geometry: ScreenGeometry
+    /// A slot (spec 2026-09-28 §2.3): no safe insets, width = the slot's, height 0 (it follows the content).
+    var inline = false
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -86,6 +88,10 @@ struct EnvReader: ViewModifier {
                 Color.clear
                     .ignoresSafeArea(.keyboard)
                     .onGeometryChange(for: Geometry.self) { Geometry(size: $0.size, insets: $0.safeAreaInsets) } action: { g in
+                        if inline { // safeTop/safeBottom stay at their default 0
+                            geometry.screenSize = CGSize(width: g.size.width, height: 0)
+                            return
+                        }
                         geometry.safeTop = g.insets.top
                         geometry.safeBottom = g.insets.bottom
                         geometry.screenSize = CGSize(width: g.size.width, height: g.size.height + g.insets.top + g.insets.bottom)

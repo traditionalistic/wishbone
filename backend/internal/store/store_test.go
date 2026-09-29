@@ -192,6 +192,58 @@ func TestPublishAndRollback(t *testing.T) {
 	}
 }
 
+func TestUnpublish(t *testing.T) {
+	s := fresh(t)
+	d1 := json.RawMessage(`{"n":1}`)
+	if _, err := s.CreateScreen(ctx, "s.off", "Off", d1, "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Publish(ctx, "s.off", 0, false, "admin", build); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Live(ctx, "s.off"); err != nil {
+		t.Fatalf("live before unpublish: %v", err)
+	}
+	if err := s.Unpublish(ctx, "s.off", "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Live(ctx, "s.off"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("live after unpublish: %v", err)
+	}
+	sc, err := s.Screen(ctx, "s.off")
+	if err != nil || !sc.Unpublished || sc.PublishedRev == nil {
+		t.Fatalf("screen after unpublish: %+v %v", sc, err)
+	}
+	list, err := s.Screens(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, x := range list {
+		found = found || (x.ID == "s.off" && x.Unpublished)
+	}
+	if !found {
+		t.Fatalf("list after unpublish: %+v", list)
+	}
+	// unpublishing again is a no-op, not an error
+	if err := s.Unpublish(ctx, "s.off", "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Publish(ctx, "s.off", 0, false, "admin", build); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Live(ctx, "s.off"); err != nil {
+		t.Fatalf("publish clears unpublished_at: %v", err)
+	}
+	sc, _ = s.Screen(ctx, "s.off")
+	if sc.Unpublished {
+		t.Fatalf("publish must clear Unpublished: %+v", sc)
+	}
+	if err := s.Unpublish(ctx, "s.nope", "admin"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unknown screen: %v", err)
+	}
+}
+
 func TestIdempotency(t *testing.T) {
 	s := fresh(t)
 	h1, h2 := []byte{1}, []byte{2}
@@ -252,5 +304,58 @@ func TestPruneIdempotency(t *testing.T) {
 	}
 	if rows.Err() != nil || len(keys) != 1 || keys[0] != "new" {
 		t.Fatalf("after prune: %v %v", keys, rows.Err())
+	}
+}
+
+func TestMeta(t *testing.T) {
+	s := fresh(t)
+	if _, err := s.CreateScreen(ctx, "s.meta", "M", json.RawMessage(`{"n":1}`), "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Publish(ctx, "s.meta", 0, false, "admin", build); err != nil {
+		t.Fatal(err)
+	}
+	want, _ := s.Revision(ctx, "s.meta", 1)
+	got, err := s.Meta(ctx, "s.meta", 1)
+	if err != nil || string(got) != string(want.Meta) {
+		t.Fatalf("meta = %s (%v), want %s", got, err, want.Meta)
+	}
+	if _, err := s.Meta(ctx, "s.meta", 9); !errors.Is(err, ErrNoRevision) {
+		t.Fatalf("unknown rev: %v", err)
+	}
+	if _, err := s.Meta(ctx, "s.none", 1); !errors.Is(err, ErrNoRevision) {
+		t.Fatalf("unknown screen: %v", err)
+	}
+}
+
+func TestLiveSkipsDocumentOnETagMatch(t *testing.T) {
+	s := fresh(t)
+	if _, err := s.CreateScreen(ctx, "s.etag", "E", json.RawMessage(`{"n":1}`), "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Publish(ctx, "s.etag", 0, false, "admin", build); err != nil { // etag "1-x"
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name string
+		have []string
+		doc  bool
+	}{
+		{"none", nil, true},
+		{"stale", []string{"0-old"}, true},
+		{"match", []string{"1-x"}, false},
+		{"several", []string{"0-old", "1-x", "2-y"}, false},
+		{"several without match", []string{"0-old", "2-y"}, true},
+	} {
+		live, err := s.Live(ctx, "s.etag", c.have...)
+		if err != nil || live.Rev != 1 || live.ETag != "1-x" || string(live.Meta) != `{"ops": ["demo.claimOffer"]}` {
+			t.Fatalf("%s: %+v %v", c.name, live, err)
+		}
+		if c.doc && string(live.Document) != `{"rev":1,"src":{"n":1}}` || !c.doc && live.Document != nil {
+			t.Fatalf("%s: document = %s, present = %v", c.name, live.Document, c.doc)
+		}
+		if live.Source != nil {
+			t.Fatalf("%s: Live must not load the source", c.name)
+		}
 	}
 }

@@ -17,8 +17,11 @@ enum Motion {
 
         /// The prop's own spec, else `*`.
         subscript(_ prop: String) -> Animation? { specs[prop] ?? specs["*"] }
-        /// First spec found among props (a SwiftUI modifier can carry one animation).
-        func any(_ props: String...) -> Animation? { props.lazy.compactMap { specs[$0] }.first ?? specs["*"] }
+        /// First spec found among props (a SwiftUI modifier can carry one animation), else `*`.
+        func any(_ a: String, _ b: String, _ c: String? = nil) -> Animation? {
+            if specs.isEmpty { return nil }
+            return specs[a] ?? specs[b] ?? c.flatMap { specs[$0] } ?? specs["*"]
+        }
     }
 }
 

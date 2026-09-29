@@ -76,7 +76,7 @@ class MotionTest {
 
     private val ms = 1_000_000L
 
-    private fun registry() = TimelineRegistry(
+    private fun registry(previous: TimelineRegistry? = null) = TimelineRegistry(
         Document.parse(
             """{"screen":"t","root":{"t":"stack","id":"root"},"timelines":{
               "fade":{"duration":400,"repeat":1,"autoreverse":false,"autoplay":false,"tracks":[
@@ -90,6 +90,7 @@ class MotionTest {
                 {"target":"item","prop":"scale","stagger":100,"keys":[{"t":0,"v":0},{"t":200,"v":1}]}]}}}""",
         ).timelines,
         now = 0,
+        previous = previous,
     )
 
     @Test
@@ -119,9 +120,38 @@ class MotionTest {
     }
 
     @Test
+    fun infiniteTimelineRunsOnlyWhileATargetIsLive() {
+        val r = TimelineRegistry(
+            Document.parse(
+                """{"screen":"t","root":{"t":"stack","id":"root"},"timelines":{
+                  "pulse":{"duration":1000,"repeat":-1,"autoreverse":true,"autoplay":true,"tracks":[
+                    {"target":"dot","prop":"opacity","stagger":0,"keys":[{"t":0,"v":1},{"t":1000,"v":0.4}]}]},
+                  "dim":{"duration":100,"repeat":1,"autoreverse":false,"autoplay":true,"tracks":[
+                    {"target":"a","prop":"opacity","stagger":0,"keys":[{"t":0,"v":1},{"t":100,"v":0.5}]}]}}}""",
+            ).timelines,
+            now = 0,
+        )
+        r.firstFrame(0)
+        assertTrue(r.running(50 * ms)) // a finite timeline runs whether or not its target is composed
+        assertFalse(r.running(500 * ms)) // `pulse` is active, but no `dot` is on screen (another tab, a lazy row off screen)
+        val v = r.version
+        r.register("dot", "dot", 0) // the target appears later: the frame loop restarts
+        assertTrue(r.version > v)
+        assertTrue(r.running(500 * ms))
+        val again = r.version
+        r.register("dot", "dot.b", 1) // a second instance changes nothing
+        assertEquals(again, r.version)
+        r.unregister("dot", "dot")
+        assertTrue(r.running(600 * ms))
+        r.unregister("dot", "dot.b")
+        assertFalse(r.running(700 * ms))
+    }
+
+    @Test
     fun infiniteStaggerAndReduceMotion() {
         val r = registry()
         r.play("spin", 0)
+        r.register("s", "s", 0)
         assertTrue(r.running(100_000 * ms))
         assertFalse(r.running(100_000 * ms, reduceMotion = true)) // reduceMotion: end states, no frame loop
         assertEquals(Double.POSITIVE_INFINITY, r.duration("spin"))
@@ -134,6 +164,24 @@ class MotionTest {
         assertEquals(0.5, r.transform("item", 2, 300 * ms, false).scale, 1e-9) // u = 300 − 2·100
         assertEquals(0.0, r.transform("item", 3, 250 * ms, false).scale, 1e-9)
         assertEquals(1.0, r.transform("item", 3, 0, true).scale, 1e-9)
+    }
+
+    /**
+     * SWR swap / hot reload: the rebuilt store's registry keeps an infinite timeline playing, but it runs only once its
+     * composed target registers with the new registry — NodeView's effect is keyed on the registry for that.
+     */
+    @Test
+    fun aRebuiltRegistryRunsAnInfiniteTimelineOnceItsTargetRegistersAgain() {
+        val r = registry()
+        r.play("spin", 0)
+        r.register("s", "s", 0)
+        val rebuilt = registry(previous = r)
+        assertTrue(rebuilt.isActive("spin"))
+        assertFalse(rebuilt.running(500 * ms)) // the spinner is registered with the old registry only
+        val v = rebuilt.version
+        rebuilt.register("s", "s", 0)
+        assertTrue(rebuilt.version > v) // the frame loop restarts
+        assertTrue(rebuilt.running(500 * ms))
     }
 
     @Test

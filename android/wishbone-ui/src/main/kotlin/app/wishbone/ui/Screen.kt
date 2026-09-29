@@ -43,6 +43,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -71,12 +73,37 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.util.TimeZone
 
 /**
- * Renders server screen [id] with its own navigation stack (spec §6.3). [onExit] runs when the screen asks to leave
- * the SDK — `back()`/`dismiss()` at the root; system back at the root is the host's own.
+ * Renders server screen [id] with its own navigation stack (spec §6.3), unless [onNavigate] is given.
+ * [onExit] runs when the screen asks to leave the SDK — `back()`/`dismiss()` at the root; system back
+ * at the root is the host's own.
+ *
+ * [onNavigate] switches on host-stack mode (spec §1.2): top-level `navigate` calls it with a
+ * [WishboneRoute] instead of pushing the SDK's own stack, and the host is expected to push
+ * `WishboneScreen(wishbone, route = …)` onto its own back stack; `back()` at the root still calls
+ * [onExit] so the host can pop. A sheet opened by `present` keeps its own stack regardless.
  */
 @Composable
-fun WishboneScreen(wishbone: Wishbone, id: String, params: Map<String, Value> = emptyMap(), modifier: Modifier = Modifier, onExit: () -> Unit = {}) {
-    WishboneRoot(wishbone, id, params, null, modifier, onExit)
+fun WishboneScreen(
+    wishbone: Wishbone,
+    id: String,
+    params: Map<String, Value> = emptyMap(),
+    modifier: Modifier = Modifier,
+    onExit: () -> Unit = {},
+    onNavigate: ((WishboneRoute) -> Unit)? = null,
+) {
+    WishboneRoot(wishbone, id, params, null, modifier, onExit, onNavigate)
+}
+
+/** Renders [route] (as pushed by [onNavigate]) — same as the `id`/`params` overload. */
+@Composable
+fun WishboneScreen(
+    wishbone: Wishbone,
+    route: WishboneRoute,
+    modifier: Modifier = Modifier,
+    onExit: () -> Unit = {},
+    onNavigate: ((WishboneRoute) -> Unit)? = null,
+) {
+    WishboneRoot(wishbone, route.screen, route.params, null, modifier, onExit, onNavigate)
 }
 
 /** Renders a compiled document in place (fixtures, preview); a new [document] keeps the values of surviving state keys. */
@@ -125,34 +152,33 @@ internal class InlineDocument {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
-private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<String, Value>, inline: InlineDocument?, modifier: Modifier, onExit: () -> Unit = {}) {
+private fun WishboneRoot(
+    wishbone: Wishbone,
+    rootId: String,
+    rootParams: Map<String, Value>,
+    inline: InlineDocument?,
+    modifier: Modifier,
+    onExit: () -> Unit = {},
+    onNavigate: ((WishboneRoute) -> Unit)? = null,
+) {
     val navigator = remember(wishbone, rootId, rootParams) { Navigator(rootId, rootParams) }
     val exit by rememberUpdatedState(onExit)
     navigator.exit = { exit() }
+    val nav by rememberUpdatedState(onNavigate)
+    navigator.forward = onNavigate?.let { { r: WishboneRoute -> nav?.invoke(r) } }
     val holders = remember(navigator) { HashMap<Long, ScreenHolder>() }
     val saveable = rememberSaveableStateHolder() // scroll/pager positions survive a push on top, like NavigationStack
-    val dark = when (wishbone.colorScheme) {
-        "dark" -> true
-        "light" -> false
-        else -> isSystemInDarkTheme()
-    }
-    val env = rememberEnv(wishbone.brand, dark)
-    LaunchedEffect(wishbone) { wishbone.refreshTheme() }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                val t = System.currentTimeMillis()
-                Clock.now.longValue = t
-                delay(1000 - t % 1000)
-            }
-        }
-    }
+    // A host back stack (Compose Navigation, a SaveableStateHolder list) disposes a covered screen and keeps only its
+    // saveable state: the root screen's DSL state goes there and back into the store built on return (iOS keeps the view).
+    val saved = rememberSaveable(saver = SavedRoot.Saver) { SavedRoot(null) }
+    val env = rememberEnv(wishbone)
+    val dark = env["colorScheme"] == Value.Str("dark")
     DisposableEffect(navigator) { onDispose { holders.values.forEach { it.dispose() } } }
 
     fun holder(entry: Entry) = holders.getOrPut(entry.key) {
         ScreenHolder(wishbone, navigator, entry).also { h ->
             h.env = env
+            if (entry.mode == Mode.Root) saved.attach(h)
             val doc = inline?.document
             if (entry.mode != Mode.Root || inline == null) {
                 h.load()
@@ -216,11 +242,40 @@ private fun WishboneRoot(wishbone: Wishbone, rootId: String, rootParams: Map<Str
     }
 }
 
+/** The root screen's DSL state as saveable state: restored into the first root holder, saved from the current one. */
+private class SavedRoot(private var pending: StoreSnapshot?) {
+    private var holder: ScreenHolder? = null
+
+    fun attach(h: ScreenHolder) {
+        h.restored = pending
+        pending = null
+        holder = h
+    }
+
+    companion object {
+        // the saved-instance Bundle is capped by the binder (~1 MB, TransactionTooLargeException) and shared by the whole
+        // back stack (every entry's saved state goes into it): bigger state starts fresh
+        private const val MAX_CHARS = 16_000
+
+        val Saver = Saver<SavedRoot, String>(
+            save = { (it.holder?.snapshot() ?: it.pending)?.encode()?.takeIf { s -> s.length <= MAX_CHARS } },
+            restore = { SavedRoot(StoreSnapshot.decode(it)) },
+        )
+    }
+}
+
 private fun JsonObject.revision() = (this["revision"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
 
+/**
+ * The root's own scope ([RenderContext.scoped]), or null when its `when` is false: then nothing of it renders, its
+ * background included (as on iOS, where NodeBody reads the root's `when`). Screens and slots decide alike.
+ */
+internal fun shownRoot(store: Store): RenderContext? = store.root.scoped(store.doc.root).takeIf { it.shows(store.doc.root) }
+
 /** The root node's solid background, so a sheet's handle area matches its content. */
-private fun rootColor(store: Store): Color? =
-    (store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }?.let { store.theme.paint(it, store.dark) } as? Paint.Solid)?.color
+private fun rootColor(store: Store): Color? = shownRoot(store)?.let { root ->
+    (store.doc.root.props["background"]?.let { root.evalOrNull(it) }?.let { store.theme.paint(it, store.dark) } as? Paint.Solid)?.color
+}
 
 /** iOS-like push (new from the right, old shifts left by a third), fade, and their reverses on pop. */
 private fun navTransition(from: Entry, to: Entry): ContentTransform {
@@ -239,7 +294,6 @@ private fun navTransition(from: Entry, to: Entry): ContentTransform {
  * The screen lays out inside the safe area (like SwiftUI); the root node's `background` also paints
  * behind the system bars (like a SwiftUI ShapeStyle background). `env.safeTop/safeBottom` report the insets.
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: Theme, safeArea: Boolean) {
     holder.env = env
@@ -249,32 +303,40 @@ private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: 
         LoadState.Failed -> Fallback { holder.load() }
         is LoadState.Ready -> {
             val store = s.store
-            SideEffect {
-                store.env = env
-                store.theme = theme
-            }
-            // Timelines: advance the frame clock only while one is running (restarted by play/stop).
-            LaunchedEffect(store) {
-                store.timelines.firstFrame(withFrameNanos { it })
-                snapshotFlow { store.timelines.version }.collectLatest {
-                    do {
-                        val t = withFrameNanos { it }
-                        store.frameNanos.longValue = t
-                    } while (store.timelines.running(t, store.reduceMotion))
-                }
-            }
-            val rootBg = store.doc.root.props["background"]?.let { store.root.evalOrNull(it) }
+            val root = shownRoot(store)
+            val rootBg = root?.let { r -> store.doc.root.props["background"]?.let { r.evalOrNull(it) } }
             val bg = theme.brush(rootBg, store.dark)
             val ignore = (store.doc.root.props["ignoreSafeArea"]?.let { store.root.evalOrNull(it) } as? Value.Str)?.value
-            SharedTransitionLayout(Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)) {
-                CompositionLocalProvider(LocalSharedScope provides this) {
-                    Box(
-                        Modifier.fillMaxSize().then(if (safeArea) Modifier.windowInsetsPadding(safeInsets(ignore)) else Modifier),
-                        contentAlignment = Alignment.Center,
-                    ) { NodeView(store.doc.root, store.root) }
-                }
+            StoreContent(store, env, theme, Modifier.fillMaxSize().then(if (bg != null) Modifier.background(bg) else Modifier)) {
+                Box(
+                    Modifier.fillMaxSize().then(if (safeArea) Modifier.windowInsetsPadding(safeInsets(ignore)) else Modifier),
+                    contentAlignment = Alignment.Center,
+                ) { if (root != null) NodeView(store.doc.root, store.root) }
             }
         }
+    }
+}
+
+/** A loaded store's wiring (screen and slot): env/theme sync, the timeline frame clock, the shared-transition scope around [content]. */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+internal fun StoreContent(store: Store, env: Map<String, Value>, theme: Theme, modifier: Modifier, content: @Composable () -> Unit) {
+    SideEffect {
+        store.env = env
+        store.theme = theme
+    }
+    // Timelines: advance the frame clock only while one is running (restarted by play/stop).
+    LaunchedEffect(store) {
+        store.timelines.firstFrame(withFrameNanos { it })
+        snapshotFlow { store.timelines.version }.collectLatest {
+            do {
+                val t = withFrameNanos { it }
+                store.frameNanos.longValue = t
+            } while (store.timelines.running(t, store.reduceMotion))
+        }
+    }
+    SharedTransitionLayout(modifier) {
+        CompositionLocalProvider(LocalSharedScope provides this) { content() }
     }
 }
 
@@ -301,8 +363,28 @@ private fun Fallback(onRetry: () -> Unit) {
     }
 }
 
+/**
+ * What every Wishbone root (screen or slot) sets up: theme refresh, light/dark ([Wishbone.colorScheme], else the
+ * system), the shared 1 s clock behind `env.now` (ticks while started), and the env values.
+ */
 @Composable
-private fun rememberEnv(brand: String, dark: Boolean): Map<String, Value> {
+internal fun rememberEnv(wishbone: Wishbone): Map<String, Value> {
+    val dark = when (wishbone.colorScheme) {
+        "dark" -> true
+        "light" -> false
+        else -> isSystemInDarkTheme()
+    }
+    LaunchedEffect(wishbone) { wishbone.refreshTheme() }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                val t = System.currentTimeMillis()
+                Clock.now.longValue = t
+                delay(1000 - t % 1000)
+            }
+        }
+    }
     val density = LocalDensity.current
     val locale = LocalConfiguration.current.locales[0].language.lowercase()
     val window = LocalWindowInfo.current.containerSize
@@ -313,7 +395,7 @@ private fun rememberEnv(brand: String, dark: Boolean): Map<String, Value> {
     return mapOf(
         "platform" to Value.Str("android"),
         "locale" to Value.Str(locale),
-        "brand" to Value.Str(brand),
+        "brand" to Value.Str(wishbone.brand),
         "colorScheme" to Value.Str(if (dark) "dark" else "light"),
         "reduceMotion" to Value.of(reduceMotion),
         "screenWidth" to dp(window.width),

@@ -14,6 +14,7 @@ Fonts are **not** here: they live in `../fonts/` (outside the served directory) 
 | `lottie/sparkle.json` | a four-point star turns and breathes while two small stars twinkle (orange), 120 frames at 60 fps, loops | hand-authored Lottie 5.7; project-owned |
 | `lottie/check.json` | a green circle draws on, then the checkmark, then a soft disc fades in; 120 frames at 60 fps; play once | hand-authored Lottie 5.7; project-owned |
 | `rive/play_pause.riv` | play/pause button (Rive format 7.0, 3.3 KB) | see below |
+| `raffle/gift.png`, `coin.png`, `laurel-left.png`, `laurel-right.png`, `cup.png`, `car.png` | raffle artwork for `raffle.*` and `slot.feed.top`: gift box, ACoin, main-prize laurels, leaderboard cup, main-prize fallback car | Stratoapp asset catalogs (`raffle_super_gift`, `raffle_coin` in `Modules/Feed`; `raffle_ear_left/right`, `raffle_cup`, `raffle_car` in `Modules/Raffle`) — vector PDFs rendered to PNG at 3× (coin 8×, car downscaled to 600 px), transparent margins trimmed; same owner as Stratoapp |
 
 ## Rive: `play_pause.riv`
 

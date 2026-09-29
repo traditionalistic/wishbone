@@ -32,8 +32,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,17 +46,21 @@ import app.wishbone.ui.PreviewSession
 import app.wishbone.ui.Wishbone
 import app.wishbone.ui.WishboneDocument
 import app.wishbone.ui.WishbonePreview
+import app.wishbone.ui.WishboneRoute
 import app.wishbone.ui.WishboneScreen
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import java.util.UUID
 
 private const val DEFAULT_URL = "http://10.0.2.2:8080"
-private val SCREENS = listOf("showcase.onboarding", "showcase.promo", "showcase.form", "showcase.catalog")
+private val SCREENS = listOf("showcase.onboarding", "showcase.promo", "showcase.form", "showcase.catalog", "raffle.main")
 
-/** `screen:<id>` | `preview:<code>` | `fixture:<name>` | `home`. Also accepted as the `route` intent extra (adb). */
-@JvmInline
-value class Route(val value: String) {
+/**
+ * `screen:<id>` | `preview:<code>` | `fixture:<name>` | `feed` | `home`. Also accepted as the `route` intent extra (adb).
+ * `route` carries a [WishboneRoute] a screen or the feed slot asked to push (host-stack mode). [key] is unique per push.
+ */
+data class Route(val value: String, val route: WishboneRoute? = null, val key: String = UUID.randomUUID().toString()) {
     val kind get() = value.substringBefore(':')
     val arg get() = value.substringAfter(':')
 }
@@ -67,7 +73,8 @@ fun Playground(start: String? = null, startBrand: String? = null, startScheme: S
     var baseUrl by remember { mutableStateOf(prefs.getString("baseUrl", DEFAULT_URL)!!) }
     var brand by remember { mutableStateOf(startBrand ?: prefs.getString("brand", "korpu")!!) }
     var scheme by remember { mutableStateOf(startScheme ?: prefs.getString("scheme", "system")!!) }
-    var route by remember { mutableStateOf(Route(start ?: "home")) }
+    // The playground's own back stack; a launch route goes on top of home, like a push.
+    val stack = remember { mutableStateListOf(Route("home")).apply { if (start != null && start != "home") add(Route(start)) } }
     LaunchedEffect(baseUrl, brand, scheme) { prefs.edit { putString("baseUrl", baseUrl).putString("brand", brand).putString("scheme", scheme) } }
     val wishbone = remember(baseUrl, brand, scheme) {
         runCatching { Wishbone(context, baseUrl, brand, PlaygroundHost(context), scheme.takeIf { it != "system" }) }.getOrNull()
@@ -83,15 +90,25 @@ fun Playground(start: String? = null, startBrand: String? = null, startScheme: S
     }
     MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
         Surface {
-            BackHandler(enabled = route.kind != "home") { route = Route("home") }
+            // each stack entry is its own composition with its own saveable state, like a NavHost destination:
+            // a covered entry leaves the composition and gets its saveable state back on return
+            val saveable = rememberSaveableStateHolder()
+            val pop = { if (stack.size > 1) saveable.removeState(stack.removeAt(stack.lastIndex).key) }
+            val push = { r: WishboneRoute -> stack += Route("route", r) }
+            BackHandler(enabled = stack.size > 1) { pop() }
             val wb = wishbone
-            when {
-                wb == null || route.kind == "home" -> Home(
-                    wb, baseUrl, { baseUrl = it }, brand, { brand = it }, scheme, { scheme = it }, fixtures(context),
-                ) { route = it }
-                route.kind == "screen" -> WishboneScreen(wb, route.arg, onExit = { route = Route("home") })
-                route.kind == "preview" -> WishbonePreview(wb, route.arg)
-                route.kind == "fixture" -> WishboneDocument(wb, loadFixture(context, route.arg))
+            val top = stack.last()
+            saveable.SaveableStateProvider(top.key) {
+                when {
+                    wb == null || top.kind == "home" -> Home(
+                        wb, baseUrl, { baseUrl = it }, brand, { brand = it }, scheme, { scheme = it }, fixtures(context),
+                    ) { stack += it }
+                    top.kind == "screen" || top.kind == "route" ->
+                        WishboneScreen(wb, top.route ?: WishboneRoute(top.arg), onExit = pop, onNavigate = push)
+                    top.kind == "feed" -> FeedDemo(wb, push)
+                    top.kind == "preview" -> WishbonePreview(wb, top.arg)
+                    top.kind == "fixture" -> WishboneDocument(wb, loadFixture(context, top.arg))
+                }
             }
         }
     }
@@ -153,6 +170,7 @@ private fun Home(
             }
             item { Section("Screens") }
             items(SCREENS) { id -> ListItem(headlineContent = { Text(id) }, modifier = Modifier.clickable(enabled = wishbone != null) { open(Route("screen:$id")) }) }
+            item { ListItem(headlineContent = { Text("Feed demo (slot.feed.top)") }, modifier = Modifier.clickable(enabled = wishbone != null) { open(Route("feed")) }) }
             item {
                 Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(anyId, { anyId = it }, Modifier.weight(1f), label = { Text("Any screen id") }, singleLine = true)

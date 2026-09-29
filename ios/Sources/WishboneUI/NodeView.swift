@@ -9,12 +9,12 @@ struct NodeView: View {
 
     var body: some View {
         if let rep = node.rep {
-            let items = RepeatItem.items(rep, ctx: ctx)
-            let keys = items.map(\.id)
+            let items = RepeatItem.items(rep, id: node.id, ctx: ctx)
             let fallback = NodeBody.transitionFallback(node, ctx: ctx)
+            let keys = fallback == nil ? [] : items.map(\.id)
             ForEach(items) { item in
                 NodeBody(node: node, ctx: item.ctx)
-                    .modifier(WhenTransaction(visible: keys, fallback: fallback))
+                    .modifier(WhenTransaction(visible: keys, fallback: fallback), if: fallback != nil)
             }
         } else {
             NodeBody(node: node, ctx: ctx)
@@ -26,19 +26,31 @@ struct RepeatItem: Identifiable {
     let id: String
     let ctx: RenderContext
 
+    /// `id` — the repeat node's. An item whose value and index are unchanged under the same parent locals keeps its
+    /// previous `Locals` (by key, `Store.repeatLocals`): its row's inputs then compare equal and SwiftUI skips it.
     @MainActor
-    static func items(_ rep: RepeatBinding, ctx: RenderContext) -> [RepeatItem] {
+    static func items(_ rep: RepeatBinding, id: String, ctx: RenderContext) -> [RepeatItem] {
         guard case let .list(values)? = ctx.eval(rep.over) else { return [] }
+        let repeatID = id + ctx.idSuffix
+        let previous = ctx.store.repeatLocals[repeatID] ?? [:]
+        var kept: [String: Locals] = Dictionary(minimumCapacity: values.count)
         var seen = Set<String>()
-        return values.enumerated().map { i, v in
+        let items = values.enumerated().map { i, v in
             var c = ctx
-            c.locals = Locals(name: rep.asName, value: v, parent: Locals(name: rep.indexName, value: .number(Double(i)), parent: ctx.locals))
+            let index: Value = .number(Double(i))
+            c.locals = Locals(name: rep.asName, value: v, parent: Locals(name: rep.indexName, value: index, parent: ctx.locals))
             var key = rep.key.flatMap { c.eval($0) }.map(keyString) ?? String(i)
             if !seen.insert(key).inserted { key += "#\(i)" }
+            if let old = previous[key], old.value == v, let oldIndex = old.parent, oldIndex.value == index, oldIndex.parent === ctx.locals {
+                c.locals = old
+            }
+            kept[key] = c.locals
             c.idSuffix += "." + key
             c.repeatIndex = i
             return RepeatItem(id: key, ctx: c)
         }
+        ctx.store.repeatLocals[repeatID] = kept // keys no longer present drop out
+        return items
     }
 
     static func keyString(_ v: Value) -> String {
@@ -52,18 +64,18 @@ struct NodeBody: View {
     /// Pressed state of this node's tap button (`self.pressed`).
     @State private var pressed = false
 
-    static let builtins: Set<String> = ["stack", "scroll", "grid", "spacer", "text", "image", "icon", "shape", "textField", "native"]
+    nonisolated static let builtins: Set<String> = ["stack", "scroll", "grid", "spacer", "text", "image", "icon", "shape", "textField", "native"]
 
     var body: some View {
         let ctx = scoped()
-        let visible = visible(ctx)
+        let visible = ctx.shows(node)
         Group {
             if visible, let props = evaluate(ctx) {
                 rendered(props: props, ctx: ctx)
                     .transition(transition(ctx))
             }
         }
-        .modifier(WhenTransaction(visible: visible, fallback: whenFallback(ctx)))
+        .modifier(WhenTransaction(visible: visible, fallback: whenFallback(ctx)), if: node.when != nil)
     }
 
     @ViewBuilder
@@ -81,8 +93,12 @@ struct NodeBody: View {
         }
     }
 
+    /// A node without `transition` (the value it had when built per render).
+    private static let noTransition = AnyTransition.asymmetric(insertion: .identity, removal: .identity)
+
     /// Enter/exit of `when` nodes and repeat items; reduce motion keeps only fades.
     private func transition(_ ctx: RenderContext) -> AnyTransition {
+        guard node.transitionIn != nil || node.transitionOut != nil else { return Self.noTransition }
         let reduce = ctx.store.wishbone.env.reduceMotion
         func side(_ wire: Value?) -> AnyTransition {
             let parts = TransitionPart.parts(wire)
@@ -114,18 +130,9 @@ struct NodeBody: View {
     }
 
     private func scoped() -> RenderContext {
-        var c = ctx
-        c.nodeID = node.id
-        if !node.instanceState.isEmpty { c.instance = ctx.store.instance(node, ctx: ctx) }
+        var c = ctx.scoped(to: node)
         c.pressed = node.on["tap"] != nil && pressed
-        // the instance's drag cells exist before its own props (e.g. `scale: 1 + abs(drag.knob.x) / 600`) read them
-        if node.drag != nil { for axis in ["x", "y"] { _ = ctx.store.driver("drag:\(node.id)\(ctx.idSuffix):\(axis)") } }
         return c
-    }
-
-    private func visible(_ ctx: RenderContext) -> Bool {
-        guard let when = node.when else { return true }
-        return ctx.eval(when) == .bool(true)
     }
 
     private func evaluate(_ ctx: RenderContext) -> Props? {
@@ -146,13 +153,16 @@ struct NodeBody: View {
         let dark = wb.env.dark
         let anim = implicit(ctx)
         let match = node.match.flatMap { ctx.eval($0) }.map(RepeatItem.keyString)
+        let layers = BoxLayers(node, timelineTarget: ctx.store.timelines.isTarget(node.id))
         return content(props: props, ctx: ctx, scrollPadding: scrollPadding)
-            .modifier(ContentAnimation(animation: anim.any("color", "fill", "progress"), value: [props["color"], props["fill"], props["progress"]]))
+            .modifier(ContentAnimation(animation: anim.any("color", "fill", "progress"), value: [props["color"], props["fill"], props["progress"]]),
+                      if: !node.animate.isEmpty)
             .modifier(BoxModifier(box: box, alignment: Align.frame(type: node.type, props: props), theme: wb.theme, dark: dark,
-                                  extendsBackground: ctx.isRoot, anim: anim, match: match.flatMap { m in ctx.namespace.map { (m, $0) } }))
-            .modifier(EventModifier(node: node, ctx: ctx, corner: box.corner) { pressed = $0 })
+                                  extendsBackground: ctx.isRoot, anim: anim, match: match.flatMap { m in ctx.namespace.map { (m, $0) } },
+                                  layers: layers))
+            .modifier(EventModifier(node: node, ctx: ctx, corner: box.corner) { pressed = $0 }, if: !node.on.isEmpty)
             .modifier(A11yModifier(node: node, ctx: ctx))
-            .modifier(TransformModifier(node: node, ctx: ctx, box: box, anim: anim, theme: wb.theme, dark: dark))
+            .modifier(TransformModifier(node: node, ctx: ctx, box: box, anim: anim, theme: wb.theme, dark: dark, layers: layers))
     }
 
     /// `ignoreSafeArea` — honored on the screen root only.
