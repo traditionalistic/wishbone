@@ -60,7 +60,7 @@ wishbone/
 | `text` | текст | `text`: string, `style`: textStyle, `color`: color, `textAlign`: `"start"\|"center"\|"end"`, `maxLines`: number | — |
 | `image` | растровая картинка | `url`: string, `fit`: `"fill"\|"fit"`, `placeholder`: color | — |
 | `icon` | иконка реестра | `name`: icon, `size`: number (24), `color`: color | — |
-| `shape` | фигура | `kind`: `"rect"\|"circle"\|"capsule"`, `fill`: paint, `stroke`: `{color, width}` | — |
+| `shape` | фигура | `kind`: `"rect"\|"circle"\|"capsule"`, `fill`: paint, `stroke`: `{color, width}`, `trim`: `{from, to}` (только `circle`: рисуется лишь эта часть обводки — доли окружности 0…1 от 12 часов по часовой, скруглённые концы; `to ≤ from` — обводки нет; заливка не обрезается) | — |
 | `textField` | ввод | `value`: string, `placeholder`: string, `keyboard`: `"text"\|"email"\|"number"\|"phone"`, `secure`: bool, `style`, `color` | `change`, `submit` (`event.value`) |
 | `lottie` | Lottie по URL | `url`, `loop`: bool, `playing`: bool, `progress`: number? (0…1, если задан — управляет кадром), `speed`: number | `end` |
 | `rive` | Rive по URL | `url`, `stateMachine`: string, `inputs`: record | `event` (`event.name`) |

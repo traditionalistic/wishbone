@@ -301,6 +301,25 @@ func itoa(i int) string {
 	return string(b)
 }
 
+// shape.trim — the stroked part of a circle, as fractions of the circumference from 12 o'clock clockwise.
+func TestShapeTrim(t *testing.T) {
+	doc, _ := compileOK(t, src(`param to: number = 0.375`, `{"type": "stack", "id": "root", "children": [
+	  {"type": "shape", "id": "lit", "props": {"kind": "circle", "stroke": "={color: @color.el16, width: 4}", "trim": {"from": 0, "to": 0.25}}},
+	  {"type": "shape", "id": "expr", "props": {"kind": "circle", "trim": "={from: 0.1, to: to}"}}]}`, ""))
+	if got := js(at(doc, "root/c/0/p/trim")); got != `["v",{"from":0,"to":0.25}]` {
+		t.Errorf("literal trim: %s", got)
+	}
+	if got := js(at(doc, "root/c/1/p/trim")); got != `["rec",{"from":["v",0.1],"to":["p","to"]}]` {
+		t.Errorf("expression trim: %s", got)
+	}
+	for _, bad := range []string{`"trim": 0.5`, `"trim": {"from": 0}`, `"trim": "={from: 0, to: \"x\"}"`} {
+		_, _, diags := Screen(contract(t), src("", `{"type": "shape", "id": "root", "props": {`+bad+`}}`, ""), 1)
+		if len(diags) == 0 || diags[0].Path != "root/props/trim" {
+			t.Errorf("%s: diags %v, want one at root/props/trim", bad, diags)
+		}
+	}
+}
+
 func TestTransitionParse(t *testing.T) {
 	cases := map[string]string{
 		"fade":                         `[{"k":"fade"}]`,

@@ -216,8 +216,31 @@ struct ShapeNode: View {
         let wb = ctx.store.wishbone, dark = wb.env.dark
         let stroke: (Color, Double)? = if case let .record(s) = props["stroke"], let c = s["color"].flatMap({ wb.theme.color($0, dark: dark) }),
                                           case let .number(w)? = s["width"], w.isFinite, w > 0 { (c.color, w) } else { nil }
+        let trim = props.string("kind") == "circle" ? Self.trim(props["trim"]) : nil
         return PaintFill(paint: props.values["fill"].flatMap { wb.theme.paint($0, dark: dark) }, shape: shape)
-            .overlay { if let stroke { shape.strokeBorder(stroke.0, lineWidth: stroke.1) } }
+            .overlay {
+                if let stroke {
+                    if let trim {
+                        // Circle's trim starts at 3 o'clock: rotate so 0 is 12 o'clock. Inset keeps the stroke inside the bounds.
+                        if trim.to > trim.from {
+                            Circle().inset(by: stroke.1 / 2).trim(from: trim.from, to: trim.to)
+                                .stroke(stroke.0, style: StrokeStyle(lineWidth: stroke.1, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                        }
+                    } else {
+                        shape.strokeBorder(stroke.0, lineWidth: stroke.1)
+                    }
+                }
+            }
+    }
+
+    struct Trim: Equatable { let from, to: Double }
+
+    /// `shape.trim` clamped to 0…1; nil when absent or malformed (the whole stroke is drawn). to <= from draws nothing.
+    static func trim(_ v: Value?) -> Trim? {
+        guard case let .record(r)? = v, case let .number(from)? = r["from"], case let .number(to)? = r["to"],
+              from.isFinite, to.isFinite else { return nil }
+        return Trim(from: min(max(from, 0), 1), to: min(max(to, 0), 1))
     }
 }
 
