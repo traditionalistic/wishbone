@@ -47,4 +47,6 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // tests read the contract (tokens; raffle.main compiled by wbc): editing it re-runs them
+    inputs.dir("../../contract")
 }
