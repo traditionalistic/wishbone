@@ -19,6 +19,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import kotlin.coroutines.resumeWithException
@@ -74,7 +75,8 @@ class Client(
     baseUrl: String,
     private val brand: String,
     private val host: WishboneHost,
-    private val http: OkHttpClient = OkHttpClient(),
+    // screen / data / call share the host with /assets/* downloads: OkHttp's default 5 per host would queue a tap's call behind them
+    private val http: OkHttpClient = OkHttpClient.Builder().dispatcher(Dispatcher().apply { maxRequestsPerHost = 16 }).build(),
     private val locale: () -> String = { Locale.getDefault().language.lowercase() },
 ) {
     private val base = baseUrl.trimEnd('/').toHttpUrl()
