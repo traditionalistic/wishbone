@@ -2,8 +2,6 @@ package app.wishbone.ui
 
 import app.wishbone.core.Value
 import app.wishbone.core.toJson
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -23,7 +21,6 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Response
-import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -72,7 +69,7 @@ internal fun parseError(status: Int, body: String): WishboneException {
 
 internal class ThemeFetch(val body: String, val etag: String?)
 
-/** HTTP client for the public API (contract/api.md): OkHttp, blocking calls moved to the IO dispatcher. */
+/** HTTP client for the public API (contract/api.md): OkHttp; answers are read and parsed on its threads, a cancelled caller cancels the call. */
 class Client(
     baseUrl: String,
     private val brand: String,
@@ -124,21 +121,23 @@ class Client(
     suspend fun screen(id: String, params: Map<String, Value>, etag: String?): ScreenResponse {
         // the server's id rule: anything else (e.g. `..` from a deeplink) would resolve to another path
         if (!screenId.matches(id)) throw WishboneException("SCREEN_NOT_FOUND", "invalid screen id \"$id\"", 404, false)
-        val (code, body) = execute(screenRequest(id, params, etag, headers()))
-        if (code != 200) throw parseError(code, body)
-        return ScreenResponse.parse(body)
+        return execute(screenRequest(id, params, etag, headers())) { code, body ->
+            if (code != 200) throw parseError(code, body)
+            ScreenResponse.parse(body)
+        }
     }
 
-    suspend fun data(screen: String, revision: Int, params: Map<String, Value>, sources: List<String>): Map<String, Value> {
-        val (code, body) = execute(dataRequest(screen, revision, params, sources, headers()))
-        if (code != 200) throw parseError(code, body)
-        return dataValues(Json.parseToJsonElement(body).jsonObject)
-    }
+    suspend fun data(screen: String, revision: Int, params: Map<String, Value>, sources: List<String>): Map<String, Value> =
+        execute(dataRequest(screen, revision, params, sources, headers())) { code, body ->
+            if (code != 200) throw parseError(code, body)
+            dataValues(Json.parseToJsonElement(body).jsonObject)
+        }
 
     /** Never throws: transport failure → `{ok: false, error: {code: "NETWORK", message}}`, protocol errors likewise. */
     suspend fun call(screen: String, revision: Int, op: String, args: Value): Value = try {
-        val (code, body) = execute(callRequest(screen, revision, op, args, newKey(), headers()))
-        if (code == 200) Value.fromJsonString(body) else parseError(code, body).let { failure(it.code, it.message ?: "") }
+        execute(callRequest(screen, revision, op, args, newKey(), headers())) { code, body ->
+            if (code == 200) Value.fromJsonString(body) else parseError(code, body).let { failure(it.code, it.message ?: "") }
+        }
     } catch (e: IOException) {
         failure("NETWORK", e.message ?: "network error")
     } catch (e: IllegalArgumentException) {
@@ -148,35 +147,26 @@ class Client(
     internal suspend fun theme(etag: String?): ThemeFetch? {
         val url = base.newBuilder().addPathSegments("v1/theme").addQueryParameter("brand", brand).build()
         val req = Request.Builder().url(url).headers(headers().toHeaders()).apply { etag?.let { header("If-None-Match", it) } }.build()
-        return withContext(Dispatchers.IO) {
-            http.newCall(req).execute().use { r ->
-                when (r.code) {
-                    304 -> null
-                    200 -> ThemeFetch(r.body!!.string(), r.header("ETag"))
-                    else -> throw parseError(r.code, r.body?.string().orEmpty())
-                }
+        return send(req) { r ->
+            when (r.code) {
+                304 -> null
+                200 -> ThemeFetch(r.body!!.string(), r.header("ETag"))
+                else -> throw parseError(r.code, r.body?.string().orEmpty())
             }
         }
     }
 
-    suspend fun previewSessions(): List<PreviewSession> {
-        val (code, body) = execute(Request.Builder().url(url("v1/preview/sessions")).headers(headers().toHeaders()).build())
-        if (code != 200) throw parseError(code, body)
-        return parseSessions(body)
-    }
+    suspend fun previewSessions(): List<PreviewSession> =
+        execute(Request.Builder().url(url("v1/preview/sessions")).headers(headers().toHeaders()).build()) { code, body ->
+            if (code != 200) throw parseError(code, body)
+            parseSessions(body)
+        }
 
     /** GET an asset (e.g. a Rive file) with the SDK headers (+ host headers on the server's origin); cancelled with the caller. */
     suspend fun bytes(url: String): ByteArray {
         val u = url.toHttpUrl()
-        val call = http.newCall(Request.Builder().url(u).headers(assetHeaders(u).toHeaders()).build())
-        return suspendCancellableCoroutine { cont ->
-            cont.invokeOnCancellation { call.cancel() }
-            call.enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) = cont.resumeWithException(e)
-                override fun onResponse(call: Call, response: Response) = response.use {
-                    if (it.isSuccessful) cont.resume(it.body!!.bytes()) else cont.resumeWithException(IOException("HTTP ${it.code} $url"))
-                }
-            })
+        return send(Request.Builder().url(u).headers(assetHeaders(u).toHeaders()).build()) {
+            if (it.isSuccessful) it.body!!.bytes() else throw IOException("HTTP ${it.code} $url")
         }
     }
 
@@ -184,8 +174,18 @@ class Client(
     internal fun webSocket(request: Request, listener: okhttp3.WebSocketListener) =
         http.newBuilder().pingInterval(20, TimeUnit.SECONDS).build().newWebSocket(request, listener)
 
-    private suspend fun execute(r: Request): Pair<Int, String> = withContext(Dispatchers.IO) {
-        http.newCall(r).execute().use { it.code to it.body?.string().orEmpty() }
+    private suspend fun <T> execute(r: Request, read: (code: Int, body: String) -> T): T = send(r) { read(it.code, it.body?.string().orEmpty()) }
+
+    /** Runs [r] on OkHttp's threads, where [read] turns the response into the result; a cancelled caller cancels the call. */
+    private suspend fun <T> send(r: Request, read: (Response) -> T): T {
+        val call = http.newCall(r)
+        return suspendCancellableCoroutine { cont ->
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) = cont.resumeWithException(e)
+                override fun onResponse(call: Call, response: Response) = cont.resumeWith(runCatching { response.use(read) })
+            })
+        }
     }
 
     companion object {

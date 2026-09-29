@@ -13,9 +13,11 @@ import app.wishbone.core.EffectSink
 import app.wishbone.core.Value
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 
 internal sealed interface LoadState {
@@ -38,7 +40,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     var env: Map<String, Value> = emptyMap()
     var view: View? = null
     private val effects = ScreenEffects(this)
-    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope, slot)
+    private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope, wishbone.slotMemo.takeIf { slot })
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
 
@@ -47,18 +49,28 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
 
     fun snapshot(): StoreSnapshot? = store?.savedSnapshot() ?: restored
 
+    /** A screen: the disk cache (read off the main thread), then the network. */
     fun load() {
         if (store == null) state = LoadState.Loading
-        scope.launch {
-            val ok = loader.load(
-                hasContent = { store != null },
-                fetch = { etag -> wishbone.client.screen(entry.screen, entry.params, etag) },
-                show = ::apply,
-                refreshData = { data -> store?.putData(dataValues(data)) },
-                log = { wishbone.log("warn", it) },
-            )
-            if (!ok) state = LoadState.Failed
-        }
+        scope.launch { revalidate(loader.read()) }
+    }
+
+    /** A slot entering the composition: warm content in this frame (memory, else the disk cache), then the network unless the memory is fresh. */
+    fun appear() {
+        val cached = loader.warm(::show, ::apply)
+        scope.launch { revalidate(cached) }
+    }
+
+    private suspend fun revalidate(cached: CachedScreen?) {
+        val ok = loader.load(
+            cached,
+            current = { store?.doc },
+            fetch = { etag -> wishbone.client.screen(entry.screen, entry.params, etag) },
+            show = { document, data, revision -> show(withContext(Dispatchers.Default) { runCatching { Document.decode(document) } }, data, revision) },
+            refreshData = { data -> store?.putData(dataValues(data)) },
+            log = { wishbone.log("warn", it) },
+        )
+        if (!ok) state = LoadState.Failed
     }
 
     private var applied: Pair<JsonObject, JsonObject>? = null
@@ -68,15 +80,17 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     /** Rebuilds the store for a new document (keeping state); false when it doesn't decode (the current one stays). */
     fun apply(document: JsonObject, data: JsonObject, revision: Int): Boolean {
         applied = document to data
-        val doc = try {
-            Document.decode(document)
-        } catch (e: Exception) {
-            wishbone.log("error", "screen ${entry.screen}: bad document: ${e.message}")
-            return false
-        }
+        return show(runCatching { Document.decode(document) }, data, revision)
+    }
+
+    private fun show(doc: Result<Document>, data: JsonObject, revision: Int): Boolean {
+        show(doc.getOrElse { wishbone.log("error", "screen ${entry.screen}: bad document: ${it.message}"); return false }, data, revision)
+        return true
+    }
+
+    private fun show(doc: Document, data: JsonObject, revision: Int) {
         state = LoadState.Ready(Store(doc, entry.params, dataValues(data), wishbone.theme, env, effects, scope, revision, store, slot, restored))
         restored = null
-        return true
     }
 
     fun dispose() = scope.cancel()
