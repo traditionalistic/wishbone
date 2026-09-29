@@ -10,11 +10,11 @@ struct NodeView: View {
     var body: some View {
         if let rep = node.rep {
             let items = RepeatItem.items(rep, ctx: ctx)
-            let keys = items.map(\.id)
             let fallback = NodeBody.transitionFallback(node, ctx: ctx)
+            let keys = fallback == nil ? [] : items.map(\.id)
             ForEach(items) { item in
                 NodeBody(node: node, ctx: item.ctx)
-                    .modifier(WhenTransaction(visible: keys, fallback: fallback))
+                    .modifier(WhenTransaction(visible: keys, fallback: fallback), if: fallback != nil)
             }
         } else {
             NodeBody(node: node, ctx: ctx)
@@ -52,7 +52,7 @@ struct NodeBody: View {
     /// Pressed state of this node's tap button (`self.pressed`).
     @State private var pressed = false
 
-    static let builtins: Set<String> = ["stack", "scroll", "grid", "spacer", "text", "image", "icon", "shape", "textField", "native"]
+    nonisolated static let builtins: Set<String> = ["stack", "scroll", "grid", "spacer", "text", "image", "icon", "shape", "textField", "native"]
 
     var body: some View {
         let ctx = scoped()
@@ -63,7 +63,7 @@ struct NodeBody: View {
                     .transition(transition(ctx))
             }
         }
-        .modifier(WhenTransaction(visible: visible, fallback: whenFallback(ctx)))
+        .modifier(WhenTransaction(visible: visible, fallback: whenFallback(ctx)), if: node.when != nil)
     }
 
     @ViewBuilder
@@ -81,8 +81,12 @@ struct NodeBody: View {
         }
     }
 
+    /// A node without `transition` (the value it had when built per render).
+    private static let noTransition = AnyTransition.asymmetric(insertion: .identity, removal: .identity)
+
     /// Enter/exit of `when` nodes and repeat items; reduce motion keeps only fades.
     private func transition(_ ctx: RenderContext) -> AnyTransition {
+        guard node.transitionIn != nil || node.transitionOut != nil else { return Self.noTransition }
         let reduce = ctx.store.wishbone.env.reduceMotion
         func side(_ wire: Value?) -> AnyTransition {
             let parts = TransitionPart.parts(wire)
@@ -141,13 +145,16 @@ struct NodeBody: View {
         let dark = wb.env.dark
         let anim = implicit(ctx)
         let match = node.match.flatMap { ctx.eval($0) }.map(RepeatItem.keyString)
+        let layers = BoxLayers(node, timelineTarget: ctx.store.timelines.isTarget(node.id))
         return content(props: props, ctx: ctx, scrollPadding: scrollPadding)
-            .modifier(ContentAnimation(animation: anim.any("color", "fill", "progress"), value: [props["color"], props["fill"], props["progress"]]))
+            .modifier(ContentAnimation(animation: anim.any("color", "fill", "progress"), value: [props["color"], props["fill"], props["progress"]]),
+                      if: !node.animate.isEmpty)
             .modifier(BoxModifier(box: box, alignment: Align.frame(type: node.type, props: props), theme: wb.theme, dark: dark,
-                                  extendsBackground: ctx.isRoot, anim: anim, match: match.flatMap { m in ctx.namespace.map { (m, $0) } }))
-            .modifier(EventModifier(node: node, ctx: ctx, corner: box.corner) { pressed = $0 })
+                                  extendsBackground: ctx.isRoot, anim: anim, match: match.flatMap { m in ctx.namespace.map { (m, $0) } },
+                                  layers: layers))
+            .modifier(EventModifier(node: node, ctx: ctx, corner: box.corner) { pressed = $0 }, if: !node.on.isEmpty)
             .modifier(A11yModifier(node: node, ctx: ctx))
-            .modifier(TransformModifier(node: node, ctx: ctx, box: box, anim: anim, theme: wb.theme, dark: dark))
+            .modifier(TransformModifier(node: node, ctx: ctx, box: box, anim: anim, theme: wb.theme, dark: dark, layers: layers))
     }
 
     /// `ignoreSafeArea` — honored on the screen root only.

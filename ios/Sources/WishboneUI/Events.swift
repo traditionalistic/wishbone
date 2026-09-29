@@ -9,9 +9,13 @@ struct EventModifier: ViewModifier {
     let onPress: (Bool) -> Void
 
     func body(content: Content) -> some View {
-        events(content)
-            .onAppear { fire("appear") }
-            .onDisappear { fire("disappear") }
+        if node.on["appear"] != nil || node.on["disappear"] != nil {
+            events(content)
+                .onAppear { fire("appear") }
+                .onDisappear { fire("disappear") }
+        } else {
+            events(content)
+        }
     }
 
     @ViewBuilder
@@ -148,10 +152,11 @@ struct A11yModifier: ViewModifier {
         if hidden {
             content.accessibilityHidden(true).accessibilityIdentifier(id)
         } else {
+            let traits = Self.traits(node.a11y?.role)
             grouped(content, container: container, labelled: label != nil)
                 .accessibilityIdentifier(id)
                 .modifier(LabelModifier(label: label))
-                .accessibilityAddTraits(Self.traits(node.a11y?.role))
+                .modifier(TraitsModifier(traits: traits), if: !traits.isEmpty)
         }
     }
 
@@ -174,6 +179,11 @@ struct A11yModifier: ViewModifier {
         default: []
         }
     }
+}
+
+struct TraitsModifier: ViewModifier {
+    let traits: AccessibilityTraits
+    func body(content: Content) -> some View { content.accessibilityAddTraits(traits) }
 }
 
 struct LabelModifier: ViewModifier {
