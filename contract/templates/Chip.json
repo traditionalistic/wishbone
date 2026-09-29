@@ -1,10 +1,10 @@
 {
  "id": "Chip",
  "title": "Chip",
- "script": "// Chip (ds-metrics §4 — FilterChip .filled): capsule 35 high, padding h md, bodyMedium; selected = accentPrimary fill +\n// onAccent text, otherwise bg1Elevated (≈ solidChromeSurface) + el16. Selection is owned by the screen:\n//   {\"type\": \"Chip\", \"repeat\": {\"over\": \"plans\"}, \"props\": {\"title\": \"=item.title\", \"selected\": \"=plan == item.id\"},\n//    \"on\": {\"tap\": \"plan = item.id\"}}\nparam title: string\nparam selected: bool = false\nparam icon: icon? = null\nevent tap\nlet ink = selected ? @color.onAccent : @color.el16",
+ "script": "// Chip (ds-metrics §4 — FilterChip .filled): capsule 35 high, padding h md, bodyMedium; selected = accentPrimary fill +\n// onAccent text, otherwise solidChromeSurface + el16. Selection is owned by the screen:\n//   {\"type\": \"Chip\", \"repeat\": {\"over\": \"plans\"}, \"props\": {\"title\": \"=item.title\", \"selected\": \"=plan == item.id\"},\n//    \"on\": {\"tap\": \"plan = item.id\"}}\nparam title: string\nparam selected: bool = false\nparam icon: icon? = null\nevent tap\nlet ink = selected ? @color.onAccent : @color.el16",
  "root": {"type": "stack", "id": "root",
   "props": {"axis": "h", "align": "center", "spacing": "@space.xs", "height": 35, "padding": "={h: @space.md}", "corner": "@radius.pill",
-   "background": "=selected ? @color.accentPrimary : @color.bg1Elevated"},
+   "background": "=selected ? @color.accentPrimary : @color.solidChromeSurface"},
   "animate": {"background": "@motion.fast"},
   "on": {"tap": "haptic(\"selection\")\nemit tap"},
   "a11y": {"label": "selected ? title + \", выбрано\" : title", "role": "button"},

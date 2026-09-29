@@ -1,17 +1,17 @@
 {
  "id": "IconButton",
  "title": "IconButton",
- "script": "// Visuals come from style / size / enabled; instance background, corner, border, shadow and clip land on the\n// invisible 44pt hit-area root and do not restyle the circle.\n// IconButton (ds-metrics §2 — CircularIconButton): circle 44 (large) / 40 (small) with a 22 / 20 icon, tint el16,\n// disabled el6, inside a tappable root of at least 44 × 44. style: solid = bg1Elevated (≈ solidChromeSurface), glass =\n// 20% ink tint (≈ glassButtonBackground, no blur), outline = el3 hairline, plain = no surface. The DS has no press\n// visual here. `label` is the a11y label (the button has no text).\nparam icon: icon\nparam label: string = \"\"\nparam size: \"large\" | \"small\" = \"large\"\nparam style: \"solid\" | \"glass\" | \"outline\" | \"plain\" = \"solid\"\nparam enabled: bool = true\nevent tap\nlet box = size == \"small\" ? 40 : 44",
+ "script": "// Visuals come from style / size / enabled; instance background, corner, border, shadow and clip land on the\n// invisible 44pt hit-area root and do not restyle the circle.\n// IconButton (ds-metrics §2 — CircularIconButton): circle 44 (large) / 40 (small) with a 22 / 20 icon, tint el16,\n// disabled iconDisabled (DS global icons.disabled2), inside a tappable root of at least 44 × 44. style: solid =\n// solidChromeSurface, glass = glassButtonBackground (the DS also blurs behind it — not drawn here), outline = el3\n// hairline, plain = no surface. The DS has no press\n// visual here. `label` is the a11y label (the button has no text).\nparam icon: icon\nparam label: string = \"\"\nparam size: \"large\" | \"small\" = \"large\"\nparam style: \"solid\" | \"glass\" | \"outline\" | \"plain\" = \"solid\"\nparam enabled: bool = true\nevent tap\nlet box = size == \"small\" ? 40 : 44",
  "root": {"type": "stack", "id": "root", "props": {"axis": "z", "minWidth": 44, "minHeight": 44},
   "on": {"tap": "if enabled { emit tap }"},
   "a11y": {"label": "label", "role": "button"},
   "children": [
    {"type": "stack", "id": "circle",
     "props": {"axis": "z", "width": "=box", "height": "=box", "corner": "@radius.pill",
-     "background": "=style == \"solid\" ? @color.bg1Elevated : style == \"glass\" ? alpha(@color.el16, 0.2) : alpha(@color.bg1Elevated, 0)",
+     "background": "=style == \"solid\" ? @color.solidChromeSurface : style == \"glass\" ? @color.glassButtonBackground : alpha(@color.solidChromeSurface, 0)",
      "border": "={color: style == \"outline\" ? @color.el3 : alpha(@color.el3, 0), width: 1}"},
     "children": [
-     {"type": "icon", "id": "icon", "props": {"name": "=icon", "size": "=size == \"small\" ? 20 : 22", "color": "=enabled ? @color.el16 : @color.el6"}}
+     {"type": "icon", "id": "icon", "props": {"name": "=icon", "size": "=size == \"small\" ? 20 : 22", "color": "=enabled ? @color.el16 : @color.iconDisabled"}}
     ]}
   ]}
 }

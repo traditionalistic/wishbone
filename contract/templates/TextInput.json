@@ -1,13 +1,13 @@
 {
  "id": "TextInput",
  "title": "TextInput",
- "script": "// TextInput (ds-metrics §16 — LabeledInputField + OTP error border): label (bodyStrong, el9) → 52pt field box (padding\n// h 16, radius card, bg1Elevated, 1pt border el3 ≈ controlBorder, error → error) → hint / error text (caption), gaps 8 / 2.\n// `change` / `submit` carry the text.\n//  • controlled: bind `value` to screen state and assign it in on.change —\n//      {\"type\": \"TextInput\", \"props\": {\"label\": \"E-mail\", \"value\": \"=email\"}, \"on\": {\"change\": \"email = event.value\"}}\n//  • uncontrolled: leave `value` unset — the field keeps instance state `local`; the screen hears change / submit.\nparam label: string = \"\"\nparam value: string? = null\nparam placeholder: string = \"\"\nparam hint: string = \"\"\nparam error: string = \"\"\nparam keyboard: \"text\" | \"email\" | \"number\" | \"phone\" = \"text\"\nparam secure: bool = false\nevent change(value: string)\nevent submit(value: string)\nstate local = \"\"",
+ "script": "// TextInput (ds-metrics §16 — LabeledInputField + OTP error border): label (bodyStrong, el9) → 52pt field box (padding\n// h 16, radius card, bg1Elevated, 1pt controlBorder, error → error) → hint / error text (caption), gaps 8 / 2.\n// `change` / `submit` carry the text.\n//  • controlled: bind `value` to screen state and assign it in on.change —\n//      {\"type\": \"TextInput\", \"props\": {\"label\": \"E-mail\", \"value\": \"=email\"}, \"on\": {\"change\": \"email = event.value\"}}\n//  • uncontrolled: leave `value` unset — the field keeps instance state `local`; the screen hears change / submit.\nparam label: string = \"\"\nparam value: string? = null\nparam placeholder: string = \"\"\nparam hint: string = \"\"\nparam error: string = \"\"\nparam keyboard: \"text\" | \"email\" | \"number\" | \"phone\" = \"text\"\nparam secure: bool = false\nevent change(value: string)\nevent submit(value: string)\nstate local = \"\"",
  "root": {"type": "stack", "id": "root", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
   {"type": "text", "id": "label", "when": "label != \"\"", "props": {"text": "=label", "style": "@type.bodyStrong", "color": "@color.el9"}},
   {"type": "stack", "id": "field", "props": {"spacing": 2, "width": "fill"}, "children": [
    {"type": "stack", "id": "box",
     "props": {"axis": "h", "align": "center", "width": "fill", "height": 52, "padding": "={h: 16}", "background": "@color.bg1Elevated", "corner": "@radius.card",
-     "border": "={color: error != \"\" ? @color.error : @color.el3, width: 1}"},
+     "border": "={color: error != \"\" ? @color.error : @color.controlBorder, width: 1}"},
     "children": [
      {"type": "textField", "id": "input", "props": {"value": "=value ?? local", "placeholder": "=placeholder", "keyboard": "=keyboard", "secure": "=secure", "width": "fill"},
       "a11y": {"label": "label != \"\" ? label : placeholder"},
