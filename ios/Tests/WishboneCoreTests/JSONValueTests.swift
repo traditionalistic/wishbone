@@ -54,6 +54,13 @@ import Testing
         }
         #expect(throws: JSONParseError.self) { try JSONValue.parse(Data()) }
     }
+
+    /// Nesting is capped at `Parser.maxDepth` (500): a deeper document is a parse error, not a stack overflow.
+    @Test func nestingCap() throws {
+        func nested(_ n: Int) -> String { String(repeating: "[", count: n) + String(repeating: "]", count: n) }
+        #expect(try JSONValue.parse(nested(500)).asArray?.count == 1)
+        #expect(throws: JSONParseError.self) { try JSONValue.parse(nested(501)) }
+    }
 }
 
 /// Structural equality with a Foundation JSON tree (booleans told apart from numbers,
