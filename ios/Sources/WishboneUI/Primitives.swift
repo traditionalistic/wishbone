@@ -180,9 +180,13 @@ struct ImageNode: View {
         }
         .clipped()
         .task(id: url) {
-            // Runs on every appearance and is cancelled on disappear, so a load a lazy container cut off
-            // is retried when the cell comes back; a failed load leaves the placeholder.
+            // Runs on every appearance, so a load that failed (the placeholder stays) is retried when the cell comes
+            // back; one a lazy container cut off finishes into the cache meanwhile.
             guard let url, loaded?.url != url else { return }
+            if let hit = ImageLoader.cached(url) {
+                loaded = (url, hit) // drawn from the cache already: keep it, without a hop off the main actor
+                return
+            }
             if let image = try? await ImageLoader.load(url) { loaded = (url, image) }
         }
     }

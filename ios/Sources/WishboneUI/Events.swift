@@ -78,16 +78,19 @@ struct DragModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let key = "drag:\(node.id)\(ctx.idSuffix)"
-        let x = ctx.store.driver(key + ":x"), y = ctx.store.driver(key + ":y")
+        // The instance's cells, made by its first drag (never while a body runs): gesture callbacks only.
+        let store = ctx.store
+        func x() -> Cell { store.driver(key + ":x") }
+        func y() -> Cell { store.driver(key + ":y") }
         func current() -> CGSize {
-            func n(_ c: Cell) -> Double { if case let .number(v) = c.value { v } else { 0 } }
-            return CGSize(width: n(x), height: n(y))
+            func n(_ axis: String) -> Double { if case let .number(v)? = store.existingDriver(key + axis)?.value { v } else { 0 } }
+            return CGSize(width: n(":x"), height: n(":y"))
         }
         func settle(_ t: CGSize) {
-            let theme = ctx.store.wishbone.theme
+            let theme = store.wishbone.theme
             withAnimation(theme.animation(.record(["$motion": .string("interactive")])) ?? .spring) {
-                x.value = .number(spec.movesX ? spec.rest(t.width) : 0)
-                y.value = .number(spec.movesY ? spec.rest(t.height) : 0)
+                x().value = .number(spec.movesX ? spec.rest(t.width) : 0)
+                y().value = .number(spec.movesY ? spec.rest(t.height) : 0)
             }
         }
         return content
@@ -101,8 +104,8 @@ struct DragModifier: ViewModifier {
                         }
                         guard claimed == true else { return }
                         let t = spec.follow(v.translation, from: origin)
-                        x.value = .number(t.width)
-                        y.value = .number(t.height)
+                        x().value = .number(t.width)
+                        y().value = .number(t.height)
                     }
                     .onEnded { v in
                         defer { claimed = nil }
@@ -132,8 +135,7 @@ struct DragModifier: ViewModifier {
             }
             .onDisappear {
                 // An instance that leaves the tree comes back at rest.
-                x.value = .number(0)
-                y.value = .number(0)
+                for axis in [":x", ":y"] { store.existingDriver(key + axis)?.value = .number(0) }
             }
     }
 }

@@ -134,8 +134,6 @@ struct NodeBody: View {
         c.nodeID = node.id
         if !node.instanceState.isEmpty { c.instance = ctx.store.instance(node, ctx: ctx) }
         c.pressed = node.on["tap"] != nil && pressed
-        // the instance's drag cells exist before its own props (e.g. `scale: 1 + abs(drag.knob.x) / 600`) read them
-        if node.drag != nil { for axis in ["x", "y"] { _ = ctx.store.driver("drag:\(node.id)\(ctx.idSuffix):\(axis)") } }
         return c
     }
 

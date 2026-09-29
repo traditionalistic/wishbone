@@ -1,4 +1,5 @@
 import SwiftUI
+import Synchronization
 #if canImport(UIKit)
 import UIKit
 typealias PlatformImage = UIImage
@@ -45,13 +46,29 @@ enum ImageLoader {
         #endif
     }
 
-    /// Throws when cancelled or offline; nil when the response is not an image.
-    @concurrent static func load(_ url: URL) async throws -> PlatformImage? {
+    /// Downloads in flight by URL: cells showing the same picture share one.
+    /// ponytail: a started download always finishes into the cache, even when every cell that wanted it scrolled
+    /// away (a waiter's cancellation doesn't stop it); count waiters and cancel if bandwidth matters.
+    private static let loading = Mutex<[URL: Task<PlatformImage?, Error>]>([:])
+
+    /// Throws when offline; nil when the response is not an image. `fetch` — the download (tests pass a fake).
+    @concurrent static func load(_ url: URL, fetch: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 })
+        async throws -> PlatformImage? {
         if let hit = cached(url) { return hit }
-        let (data, _) = try await URLSession.shared.data(from: url)
-        guard let image = decode(data) else { return nil }
-        cache(image, for: url)
-        return image
+        let task = loading.withLock { loading in
+            if let running = loading[url] { return running }
+            // A download caches before it leaves `loading`: one that finished since the check above is a hit now.
+            if let hit = cached(url) { return Task { hit } }
+            let task = Task<PlatformImage?, Error> {
+                defer { _ = Self.loading.withLock { $0.removeValue(forKey: url) } }
+                guard let image = decode(try await fetch(url)) else { return nil }
+                cache(image, for: url)
+                return image
+            }
+            loading[url] = task
+            return task
+        }
+        return try await task.value
     }
 }
 

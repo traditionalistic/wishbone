@@ -238,10 +238,11 @@ struct TransformModifier: ViewModifier {
         }
     }
 
+    /// 0 until the first drag makes the cells (then their creation re-renders this).
     private var dragOffset: CGSize {
         let key = "drag:\(node.id)\(ctx.idSuffix)"
         func n(_ axis: String) -> Double {
-            if case let .number(v) = ctx.store.driver(key + ":" + axis).value { v } else { 0 }
+            if case let .number(v)? = ctx.store.existingDriver(key + ":" + axis)?.value { v } else { 0 }
         }
         return CGSize(width: n("x"), height: n("y"))
     }
