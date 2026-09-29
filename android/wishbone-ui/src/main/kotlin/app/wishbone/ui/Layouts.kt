@@ -119,11 +119,11 @@ internal fun ScrollView(node: Node, p: Map<String, Value>, ctx: RenderContext, m
             val parent = Parent.Scroll(horizontal)
             if (horizontal) {
                 LazyRow(modifier.then(bounded), state, contentPadding, horizontalArrangement = Arrangement.spacedBy(spacing), verticalAlignment = vAlign(p.str("align"))) {
-                    items(merged, key = { it.key }) { ItemView(it, parent, presence) }
+                    items(merged, key = { it.key }, contentType = { it.node.id }) { ItemView(it, parent, presence) }
                 }
             } else {
                 LazyColumn(modifier.then(bounded), state, contentPadding, verticalArrangement = Arrangement.spacedBy(spacing), horizontalAlignment = hAlign(p.str("align"))) {
-                    items(merged, key = { it.key }) { ItemView(it, parent, presence) }
+                    items(merged, key = { it.key }, contentType = { it.node.id }) { ItemView(it, parent, presence) }
                 }
             }
         }
