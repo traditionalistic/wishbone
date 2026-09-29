@@ -59,6 +59,8 @@ class DiskCacheTest {
         val cache = DiskCache(File(dir, "nested/deeper"))
         cache.write("theme-korpu", "{\"x\":1}")
         assertEquals("{\"x\":1}", cache.read("theme-korpu"))
+        // file name = the first 16 bytes of SHA-256(key) in lowercase hex: entries cached by earlier versions still read
+        assertEquals(listOf("353e2c837a327d74efc2d27e4f09d940.json"), File(dir, "nested/deeper").list()!!.toList())
     }
 
     @Test
@@ -68,5 +70,19 @@ class DiskCacheTest {
         cache.remove(DiskCache.screenKey("s", emptyMap(), "korpu"))
         assertNull(cache.readScreen("s", emptyMap(), "korpu"))
         cache.remove("absent") // no-op
+    }
+
+    @Test
+    fun keepsTheNewest64Entries() {
+        val cache = DiskCache(dir)
+        for (i in 0 until 64) {
+            cache.write("k$i", "$i")
+            dir.listFiles()!!.single { it.readText() == "$i" }.setLastModified(1_000_000L + i * 1000) // distinct, ordered times
+        }
+        cache.write("k64", "64")
+        assertEquals(64, dir.listFiles()!!.size)
+        assertNull(cache.read("k0")) // the oldest went
+        assertEquals("1", cache.read("k1"))
+        assertEquals("64", cache.read("k64"))
     }
 }
