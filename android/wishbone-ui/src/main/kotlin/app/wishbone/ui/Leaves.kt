@@ -17,8 +17,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -77,8 +82,34 @@ internal fun ShapeView(p: Map<String, Value>, box: BoxProps, ctx: RenderContext,
     val stroke = p.rec("stroke")
     val strokeWidth = (stroke?.get("width") as? Value.Num)?.value
     val strokeColor = stroke?.get("color")?.let { ctx.store.theme.color(it, ctx.store.dark) }
-    if (strokeWidth != null && strokeColor != null && strokeWidth > 0) m = m.border(strokeWidth.toFloat().dp, strokeColor, shape)
+    val arc = if (p.str("kind") == "circle") trimArc(p.rec("trim")) else null
+    if (strokeWidth != null && strokeColor != null && strokeWidth > 0) {
+        if (arc == null) {
+            m = m.border(strokeWidth.toFloat().dp, strokeColor, shape)
+        } else if (arc.second > 0f) {
+            // Stroke inside the bounds, on CenteredCircle's circle (diameter min(w, h)).
+            m = m.drawBehind {
+                val w = strokeWidth.toFloat().dp.toPx()
+                val d = size.minDimension - w
+                if (d > 0f) {
+                    drawArc(strokeColor, arc.first, arc.second, useCenter = false, topLeft = Offset((size.width - d) / 2, (size.height - d) / 2),
+                        size = Size(d, d), style = Stroke(w, cap = StrokeCap.Round))
+                }
+            }
+        }
+    }
     Box(m)
+}
+
+/**
+ * `shape.trim` (circle only) → drawArc (startAngle, sweepAngle) in degrees, 0° = 3 o'clock, clockwise: fractions are
+ * clamped to 0…1 and start at 12 o'clock; sweep 0 = no stroke. null when absent or malformed → the whole stroke.
+ */
+internal fun trimArc(trim: Map<String, Value>?): Pair<Float, Float>? {
+    val from = (trim?.get("from") as? Value.Num)?.value?.takeIf { it.isFinite() } ?: return null
+    val to = (trim["to"] as? Value.Num)?.value?.takeIf { it.isFinite() } ?: return null
+    val f = from.coerceIn(0.0, 1.0)
+    return (-90 + f * 360).toFloat() to ((to.coerceIn(0.0, 1.0) - f).coerceAtLeast(0.0) * 360).toFloat()
 }
 
 /**

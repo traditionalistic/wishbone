@@ -1,18 +1,20 @@
 {
  "id": "SegmentedTabs",
  "title": "SegmentedTabs",
- "script": "// SegmentedTabs (ds-metrics §17 — accentPill / flatPill): 48pt track, inset 4, gap 4, radius 24 (no token), bg2.\n// Segments share the width equally; the selected one is an accentPrimary pill (radius 20 = 24 − inset) with onAccent\n// text, the others el9; cross-fade with @motion.smooth (DS accentPill: spring 0.3 s). Controlled:\n//   {\"type\": \"SegmentedTabs\", \"props\": {\"items\": \"=tabs\", \"selected\": \"=tab\"}, \"on\": {\"change\": \"tab = event.index\"}}\n// `change` fires only for a segment that is not already selected.\nparam items: list<string>\nparam selected: number = 0\nevent change(index: number)",
+ "script": "// SegmentedTabs (ds-metrics §17 — GlassSegmentedTabs .accentPill): 48pt track, radius 24 (no token), padding h 4 / v 2,\n// gap 4; regular material under bg1Elevated at 96% light / 72% dark, 1pt el16 hairline at 8% / 12%, light-only shadow\n// cardShadow × 0.35 r8 y2. Segments share the width equally, bodyStrong; the selected one is a 44pt accentPrimary\n// capsule with onAccent text, the others el9; cross-fade with @motion.smooth (the DS slides the pill with a spring). Controlled:\n//   {\"type\": \"SegmentedTabs\", \"props\": {\"items\": \"=tabs\", \"selected\": \"=tab\"}, \"on\": {\"change\": \"tab = event.index\"}}\n// `change` fires only for a segment that is not already selected.\nparam items: list<string>\nparam selected: number = 0\nevent change(index: number)\nlet dark = env.colorScheme == \"dark\"",
  "root": {"type": "stack", "id": "root",
-  "props": {"axis": "h", "spacing": 4, "width": "fill", "height": 48, "padding": 4, "corner": 24, "background": "@color.bg2"},
+  "props": {"axis": "h", "spacing": 4, "width": "fill", "height": 48, "padding": "={h: 4, v: 2}", "corner": 24, "material": "regular",
+   "background": "=alpha(@color.bg1Elevated, dark ? 0.72 : 0.96)", "border": "={color: alpha(@color.el16, dark ? 0.12 : 0.08), width: 1}",
+   "shadow": "={color: alpha(@color.cardShadow, dark ? 0 : 0.35), radius: dark ? 0 : 8, y: dark ? 0 : 2}"},
   "children": [
    {"type": "stack", "id": "segment", "repeat": {"over": "items", "as": "title", "index": "i"},
-    "props": {"axis": "z", "width": "fill", "height": "fill", "padding": "={h: @space.md}", "corner": 20,
+    "props": {"axis": "z", "width": "fill", "height": "fill", "padding": "={h: @space.md}", "corner": "@radius.pill",
      "background": "=i == selected ? @color.accentPrimary : alpha(@color.accentPrimary, 0)"},
     "animate": {"background": "@motion.smooth"},
     "on": {"tap": "if i != selected {\n  haptic(\"selection\")\n  emit change({index: i})\n}"},
     "a11y": {"label": "i == selected ? title + \", выбрано\" : title", "role": "button"},
     "children": [
-     {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyMedium", "color": "=i == selected ? @color.onAccent : @color.el9", "maxLines": 1}, "animate": {"color": "@motion.smooth"}}
+     {"type": "text", "id": "title", "props": {"text": "=title", "style": "@type.bodyStrong", "color": "=i == selected ? @color.onAccent : @color.el9", "maxLines": 1}, "animate": {"color": "@motion.smooth"}}
     ]}
   ]}
 }
