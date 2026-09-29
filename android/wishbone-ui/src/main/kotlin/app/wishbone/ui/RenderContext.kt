@@ -83,6 +83,12 @@ internal class RenderContext(
     fun withParent(p: Parent) = if (p == parent) this else copy(parent = p)
     fun withInstance(key: String, decls: Map<String, Expr>) = copy(instance = store.instance(key, decls, this))
 
+    /**
+     * The node's own scope: on a template instance, its `inst` state (the store's, one per node id + key path). Its
+     * `when` reads this scope — in [materialize] and in a slot's visibility check alike, as NodeView renders it.
+     */
+    fun scoped(node: Node): RenderContext = store.extras[node.id]?.inst?.let { withInstance(node.id + keyPath, it) } ?: this
+
     fun eval(e: Expr, locals: Locals? = this.locals): Value = interpreter.eval(e, locals)
 
     /** Eval errors never crash: logged, and the caller renders nothing. */
@@ -107,7 +113,7 @@ internal class RenderContext(
 
     fun identifier(node: Node) = "wb.${store.doc.screen}.${node.id}$keyPath"
 
-    /** `when` absent or true (a slot decides on its root the same way). */
+    /** `when` absent or true, read in the node's own scope ([scoped]). */
     fun shows(node: Node) = node.whenExpr?.let { evalOrNull(it) == Value.TRUE } != false
 
     /** Expands `repeat` (identity = key value, else index) and drops `when`-false nodes. */
@@ -115,7 +121,7 @@ internal class RenderContext(
         val out = ArrayList<Item>()
         val seen = HashSet<String>()
         fun add(node: Node, c: RenderContext, local: String) {
-            val shown = c.shows(node)
+            val shown = node.whenExpr == null || c.scoped(node).shows(node)
             if (!shown && store.extras[node.id]?.animatedPresence != true) return
             var key = local
             // ponytail: duplicate repeat keys get an index suffix instead of an error

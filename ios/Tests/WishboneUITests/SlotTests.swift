@@ -61,6 +61,18 @@ final class TestClock: Sendable {
         #expect(slotVisible(Store(document: plain, params: [:], data: [:], wishbone: wb)))
     }
 
+    /// A template instance as the root (`state visible = true`, `when: visible`): its `when` reads the instance's own
+    /// state, from the instance `NodeView` renders with (flipping that one hides the slot).
+    @Test func aTemplateRootsWhenReadsItsInstanceState() throws {
+        let doc = try Document(json: #"""
+        {"format": 1, "screen": "slot.x", "root": {"t": "stack", "id": "promo", "inst": {"state": {"Promo.visible": ["v", true]}}, "when": ["i", "Promo.visible"]}}
+        """#)
+        let store = Store(document: doc, params: [:], data: [:], wishbone: testWishbone())
+        #expect(slotVisible(store))
+        store.instance(doc.root, ctx: RenderContext(store: store)).cell("Promo.visible")?.value = .bool(false)
+        #expect(!slotVisible(store))
+    }
+
     /// A cached slot is there in its first frame (no enter animation): the cache is read before any await.
     @Test func aCachedSlotIsShownSynchronously() {
         let wb = testWishbone()

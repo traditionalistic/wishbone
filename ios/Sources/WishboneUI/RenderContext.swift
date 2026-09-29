@@ -52,7 +52,16 @@ struct RenderContext: Scope {
         return 0
     }
     func selfPressed() -> Bool { pressed }
-    /// `when` absent or true (a slot decides on its root the same way).
+    /// The node's own scope: its id and, on a template instance, its `inst` state (the store's, one per node id +
+    /// repeat path). Its `when` reads this scope — in `NodeBody` and in a slot's visibility check alike.
+    func scoped(to node: Node) -> RenderContext {
+        var c = self
+        c.nodeID = node.id
+        if !node.instanceState.isEmpty { c.instance = store.instance(node, ctx: self) }
+        return c
+    }
+
+    /// `when` absent or true, read in the node's own scope (`scoped(to:)`).
     func shows(_ node: Node) -> Bool {
         guard let when = node.when else { return true }
         return eval(when) == .bool(true)

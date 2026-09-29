@@ -127,11 +127,13 @@ final class Once<Value: AnyObject>: ObservableObject {
     init(_ value: Value) { self.value = value }
 }
 
-/// The slot has content: a store whose root's `when` is absent or true.
+/// The slot has content: a store whose root's `when` is absent or true — read in the root's own scope, as `NodeBody`
+/// reads it (a template root's `when` may read its instance state; the same instance the root then renders with).
 @MainActor
 func slotVisible(_ store: Store?) -> Bool {
     guard let store else { return false }
-    return RenderContext(store: store).shows(store.document.root)
+    let root = store.document.root
+    return RenderContext(store: store).scoped(to: root).shows(root)
 }
 
 /// A slot is a row of the host's feed, often a lazy one, where a row taller than the screen can livelock SwiftUI's

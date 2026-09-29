@@ -35,8 +35,7 @@ internal fun RenderContext.evalProps(node: Node): Map<String, Value>? {
 /** [extra] wraps the whole node (shared bounds from an enclosing AnimatedVisibility). */
 @Composable
 internal fun NodeView(node: Node, parentCtx: RenderContext, extra: Modifier = Modifier) {
-    val inst = parentCtx.store.extras[node.id]?.inst
-    var ctx = if (inst != null) parentCtx.withInstance(node.id + parentCtx.keyPath, inst) else parentCtx
+    var ctx = parentCtx.scoped(node)
     // the instance's drag cells exist before its own props (e.g. `scale: 1 + abs(drag.knob.x) / 600`) read them
     if (ctx.store.extras[node.id]?.drag != null) {
         ctx.store.driverCell("drag", node.id + ctx.keyPath, "x")

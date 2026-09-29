@@ -40,8 +40,7 @@ class ShowcaseEvalTest {
             var nodes = 0
             fun walk(items: List<Item>) {
                 for (item in items.filter { it.visible }) {
-                    val inst = store.extras[item.node.id]?.inst
-                    val ctx = if (inst != null) item.ctx.withInstance(item.node.id + item.ctx.keyPath, inst) else item.ctx
+                    val ctx = item.ctx.scoped(item.node)
                     item.node.props.values.forEach { ctx.evalOrNull(it) }
                     nodes++
                     walk(ctx.materialize(item.node.children))

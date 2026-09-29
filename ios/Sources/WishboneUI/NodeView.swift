@@ -130,9 +130,7 @@ struct NodeBody: View {
     }
 
     private func scoped() -> RenderContext {
-        var c = ctx
-        c.nodeID = node.id
-        if !node.instanceState.isEmpty { c.instance = ctx.store.instance(node, ctx: ctx) }
+        var c = ctx.scoped(to: node)
         c.pressed = node.on["tap"] != nil && pressed
         return c
     }

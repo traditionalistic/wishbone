@@ -120,5 +120,8 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
  */
 internal const val SLOT_MAX_HEIGHT = 480
 
-/** The slot has content: a store whose root's `when` is absent or true. */
-internal fun slotVisible(store: Store?): Boolean = store != null && store.root.shows(store.doc.root)
+/**
+ * The slot has content: a store whose root's `when` is absent or true — read in the root's own scope, as NodeView
+ * renders it (a template root's `when` may read its instance state; the same instance the root then renders with).
+ */
+internal fun slotVisible(store: Store?): Boolean = store != null && store.root.scoped(store.doc.root).shows(store.doc.root)
