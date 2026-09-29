@@ -43,6 +43,11 @@ class DiskCache(private val dir: File) {
         others.map { it.lastModified() to it }.sortedByDescending { it.first }.drop(MAX_ENTRIES - 1).forEach { it.second.delete() }
     }
 
+    /** Marks the entry as just used (a revalidation that changed nothing), so the cap keeps it; a missing one is fine. */
+    fun touch(key: String) {
+        runCatching { file(key).setLastModified(System.currentTimeMillis()) }
+    }
+
     /** Deletes the entry; a missing one is fine. */
     fun remove(key: String) {
         runCatching { file(key).delete() }

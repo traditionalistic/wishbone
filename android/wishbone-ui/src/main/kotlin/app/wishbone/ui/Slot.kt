@@ -70,7 +70,7 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
             h.env = env
             // Warm content (the last network answer in memory, else the disk cache) goes on screen in the first frame
             // (as on iOS), so a warm slot doesn't animate in; the loader then revalidates it (ruling R1: after 30 s).
-            h.appear()
+            h.load()
         }
     }
     DisposableEffect(holder) { onDispose { holder.dispose() } }
