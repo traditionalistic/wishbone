@@ -87,11 +87,10 @@ func (s *Server) meta(ctx context.Context, screen string, rev int) (*revMeta, er
 			return nil, store.ErrNoRevision
 		}
 	} else {
-		r, err := s.Store.Revision(ctx, screen, rev)
-		if err != nil {
+		var err error
+		if raw, err = s.Store.Meta(ctx, screen, rev); err != nil {
 			return nil, err
 		}
-		raw = r.Meta
 	}
 	m := &revMeta{}
 	return m, json.Unmarshal(raw, m)

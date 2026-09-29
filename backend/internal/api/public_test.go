@@ -358,3 +358,40 @@ func TestServedDocumentMatchesETag(t *testing.T) {
 		t.Fatalf("served document bytes must be the hashed bytes: etag %s, hash of served %s\n%s", resp.ETag, want, resp.Document)
 	}
 }
+
+func TestScreenETagList(t *testing.T) {
+	e := newEnv(t)
+	e.publish(htmlScreen)
+	_, _, b := e.do("GET", "/v1/screens/t.html", nil)
+	var full struct {
+		ETag     string
+		Document json.RawMessage
+	}
+	if err := json.Unmarshal(b, &full); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		inm string
+		doc bool
+	}{
+		{`"0-stale"`, true},
+		{`"0-stale", "9-other"`, true},
+		{`"0-stale", W/"` + full.ETag + `", "9-other"`, false},
+	} {
+		_, _, b := e.do("GET", "/v1/screens/t.html", nil, "If-None-Match", c.inm)
+		var got struct {
+			ETag     string
+			Revision int
+			Document json.RawMessage
+		}
+		if err := json.Unmarshal(b, &got); err != nil {
+			t.Fatalf("%s: invalid JSON %v: %s", c.inm, err, b)
+		}
+		if got.ETag != full.ETag || got.Revision != 1 {
+			t.Fatalf("%s: %s", c.inm, b)
+		}
+		if c.doc && !bytes.Equal(got.Document, full.Document) || !c.doc && string(got.Document) != "null" {
+			t.Fatalf("%s: document %s, want present=%v", c.inm, got.Document, c.doc)
+		}
+	}
+}

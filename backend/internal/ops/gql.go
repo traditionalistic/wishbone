@@ -24,7 +24,7 @@ const (
 type GQL struct {
 	URL   string       // "" → every call fails with UPSTREAM_FAILED
 	Login string       // "phone:code" of a stage test account: the identity of reads without Authorization
-	HTTP  *http.Client // nil → a client with a 10 s timeout
+	HTTP  *http.Client // nil → upstreamClient (pooled, 10 s timeout)
 	Now   func() time.Time
 
 	mu    sync.Mutex
@@ -67,11 +67,39 @@ func (g *GQL) now() time.Time {
 	return time.Now()
 }
 
+// upstreamClient is shared by every GQL without its own client: DefaultTransport keeps 2 idle connections per
+// host, which under concurrent /v1/data calls means a new TLS handshake to the one upstream host most of the time.
+var upstreamClient = &http.Client{
+	Timeout: 10 * time.Second,
+	Transport: func() *http.Transport {
+		t := http.DefaultTransport.(*http.Transport).Clone()
+		t.MaxIdleConnsPerHost = 32
+		return t
+	}(),
+}
+
 func (g *GQL) client() *http.Client {
 	if g.HTTP != nil {
 		return g.HTTP
 	}
-	return &http.Client{Timeout: 10 * time.Second}
+	return upstreamClient
+}
+
+// sink decodes a GraphQL "data" member into out; present is false for a missing or null member.
+type sink struct {
+	out     any
+	present bool
+	err     error // out's decode error: reported after UNAUTHENTICATED, as when the body was parsed in two steps
+}
+
+func (s *sink) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" || s.out == nil {
+		s.present = string(b) != "null"
+		return nil
+	}
+	s.present = true
+	s.err = json.Unmarshal(b, s.out)
+	return nil
 }
 
 // post sends one GraphQL request and decodes its data into out. Accept-Language is not forwarded (ru only,
@@ -97,17 +125,16 @@ func (g *GQL) post(ctx context.Context, auth, name, query string, vars map[strin
 	if err != nil {
 		return &failure{"UPSTREAM_FAILED", msgUpstream}
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10)) // a drained body keeps the connection reusable
+		resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
-		return &failure{"UPSTREAM_FAILED", msgUpstream}
-	}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
 		return &failure{"UPSTREAM_FAILED", msgUpstream}
 	}
 
 	var wire struct {
-		Data   json.RawMessage `json:"data"`
+		Data   sink `json:"data"`
 		Errors []struct {
 			Message    string `json:"message"`
 			Extensions struct {
@@ -115,7 +142,8 @@ func (g *GQL) post(ctx context.Context, auth, name, query string, vars map[strin
 			} `json:"extensions"`
 		} `json:"errors"`
 	}
-	if err := json.Unmarshal(b, &wire); err != nil {
+	wire.Data.out = out // decoded straight from the response stream: no ReadAll copy, no intermediate RawMessage
+	if err := json.NewDecoder(resp.Body).Decode(&wire); err != nil {
 		return &failure{"UPSTREAM_FAILED", msgUpstream}
 	}
 	for _, e := range wire.Errors {
@@ -123,13 +151,7 @@ func (g *GQL) post(ctx context.Context, auth, name, query string, vars map[strin
 			return &failure{"UNAUTHENTICATED", msgAuth}
 		}
 	}
-	if len(wire.Data) == 0 || string(wire.Data) == "null" {
-		return &failure{"UPSTREAM_FAILED", msgUpstream}
-	}
-	if out == nil {
-		return nil
-	}
-	if err := json.Unmarshal(wire.Data, out); err != nil {
+	if !wire.Data.present || wire.Data.err != nil {
 		return &failure{"UPSTREAM_FAILED", msgUpstream}
 	}
 	return nil

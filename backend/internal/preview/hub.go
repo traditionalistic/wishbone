@@ -3,6 +3,7 @@
 package preview
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -325,7 +326,7 @@ func broadcastAdmins(s *session, msg []byte) {
 }
 
 func rebase(msg []byte, base string) []byte {
-	return []byte(strings.ReplaceAll(string(msg), Base, base))
+	return bytes.ReplaceAll(msg, []byte(Base), []byte(base)) // one copy; was string(msg) + ReplaceAll + []byte(...)
 }
 
 // send queues without blocking; a peer that cannot keep up is disconnected.
