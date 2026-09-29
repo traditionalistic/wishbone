@@ -52,6 +52,10 @@ public final class Wishbone {
     let env = EnvState()
     let clock = Clock()
     @ObservationIgnored let cache: DiskCache
+    /// Slots' last network answers (ruling R1).
+    @ObservationIgnored let slotMemo: SlotMemo
+    /// Sends screen requests (tests pass a fake server).
+    @ObservationIgnored let send: @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse)
     @ObservationIgnored private var themeTask: Task<Void, Never>?
 
     public convenience init(baseURL: URL, brand: String = "korpu", host: (any WishboneHost)? = nil) {
@@ -59,11 +63,16 @@ public final class Wishbone {
         loadTheme()
     }
 
-    init(baseURL: URL, brand: String, host: any WishboneHost, cache: DiskCache) {
+    /// `now` — the slot memo's monotonic clock; `send` — the screen requests' transport (tests pass their own).
+    init(baseURL: URL, brand: String, host: any WishboneHost, cache: DiskCache,
+         now: @escaping @Sendable () -> ContinuousClock.Instant = { .now },
+         send: @escaping @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse) = { try await API.send($0) }) {
         self.baseURL = baseURL
         self.brand = brand
         self.host = host
         self.cache = cache
+        slotMemo = SlotMemo(now: now)
+        self.send = send
         theme = Self.cachedTheme(cache, Self.cacheScope(baseURL, host, brand)) ?? .bundledKorpu
         _ = Fonts.register
     }

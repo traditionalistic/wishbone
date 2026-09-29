@@ -5,10 +5,10 @@ import WishboneCore
 /// is as tall as its content, and is nothing at all (zero height, no spinner, no fallback) while loading
 /// without a cache, when unpublished (its cache is dropped), failed without a cache, or when the root's
 /// `when` is false. DSL `navigate` and `present` go to `onNavigate` (`present` with transition "present");
-/// `back`/`dismiss` do nothing. Loads on appearance (cache at once, then network); the host forces a
-/// reload by changing the view's identity. Content that comes or goes after the first frame animates on
-/// `@motion.smooth` (fade + height from the top edge, so the host's rows below slide; reduce motion: fade only);
-/// a cached slot is there in its first frame. At most `slotMaxHeight` tall: content below is clipped.
+/// `back`/`dismiss` do nothing. On appearance it shows its last answer at once (from memory, else the disk cache) and
+/// asks the server again unless that answer is less than 30 s old (`SlotMemo`). Content that comes or goes after the
+/// first frame animates on `@motion.smooth` (fade + height from the top edge, so the host's rows below slide; reduce
+/// motion: fade only); a cached slot is there in its first frame. At most `slotMaxHeight` tall: content below is clipped.
 public struct WishboneSlot: View {
     let wishbone: Wishbone
     let route: Route
@@ -31,8 +31,8 @@ struct SlotHost: View {
     let wishbone: Wishbone
     let route: Route
     let onNavigate: (WishboneRoute) -> Void
-    @State private var navigator: Navigator
-    @State private var model: ScreenModel
+    /// Made once per slot (not on every re-render of the host's row).
+    @StateObject private var once: Once<ScreenModel>
     /// The store on screen (nil: nothing), kept while it leaves. Set at once on appearance (a cached slot is there
     /// in its first frame); later comings and goings animate (`present`).
     @State private var shown: Store?
@@ -46,14 +46,19 @@ struct SlotHost: View {
         self.wishbone = wishbone
         self.route = route
         self.onNavigate = onNavigate
+        _once = StateObject(wrappedValue: Once(Self.model(wishbone, route, onNavigate)))
+    }
+
+    private static func model(_ wishbone: Wishbone, _ route: Route, _ onNavigate: @escaping (WishboneRoute) -> Void) -> ScreenModel {
         let navigator = Navigator()
         // Wired before the first frame: a cached root's `appear` may navigate at once.
         navigator.forward = onNavigate
         navigator.forwardsPresent = true
         navigator.exit = {} // `back`/`dismiss` at the root: no-op
-        _navigator = State(initialValue: navigator)
-        _model = State(initialValue: ScreenModel(wishbone: wishbone, route: route, navigator: navigator, slot: true))
+        return ScreenModel(wishbone: wishbone, route: route, navigator: navigator, slot: true)
     }
+
+    private var model: ScreenModel { once.value }
 
     var body: some View {
         let visible = slotVisible(model.store) ? model.store : nil
@@ -66,7 +71,7 @@ struct SlotHost: View {
         .clipped()
         // `env.screenWidth` = the width the host offers; a content-sized root is centered in it (as on a screen).
         .frame(maxWidth: .infinity)
-        .modifier(EnvReader(env: wishbone.env, geometry: navigator.geometry, inline: true))
+        .modifier(EnvReader(env: wishbone.env, geometry: model.navigator.geometry, inline: true))
         .onChange(of: visible.map(ObjectIdentifier.init)) { old, new in present(visible, animated: (old == nil) != (new == nil)) }
         .onAppear {
             wishbone.clock.retain()
@@ -114,6 +119,14 @@ struct SlotHost: View {
     }
 }
 
+/// A reference made once per view identity: `@StateObject` builds it lazily, the first time SwiftUI installs the view,
+/// where `@State(initialValue:)` would build (and throw away) one on every re-render of the parent.
+@MainActor
+final class Once<Value: AnyObject>: ObservableObject {
+    let value: Value
+    init(_ value: Value) { self.value = value }
+}
+
 /// The slot has content: a store whose root's `when` is absent or true.
 @MainActor
 func slotVisible(_ store: Store?) -> Bool {
@@ -150,4 +163,30 @@ struct Reveal: Layout {
 
     /// The content is as tall as it wants (as in a lazy feed row, and as on Android); the cap clips it.
     private static func content(_ proposal: ProposedViewSize) -> ProposedViewSize { ProposedViewSize(width: proposal.width, height: nil) }
+}
+
+/// Ruling R1: a `Wishbone`'s last network answer per slot cache key (screen id + params) and when it came. A slot
+/// scrolling back into a host's feed renders it at once (no disk read or decode) and asks the server again only once
+/// it is `freshFor` old; `SCREEN_NOT_FOUND` removes it (with the disk cache).
+/// ponytail: unbounded — one entry per distinct slot id + params shown; cap it if a host varies params per row.
+@MainActor
+final class SlotMemo {
+    static let freshFor: Duration = .seconds(30)
+    private var entries: [String: (screen: LoadedScreen, loadedAt: ContinuousClock.Instant)] = [:]
+    private let now: @Sendable () -> ContinuousClock.Instant
+
+    init(now: @escaping @Sendable () -> ContinuousClock.Instant) {
+        self.now = now
+    }
+
+    subscript(key: String) -> LoadedScreen? { entries[key]?.screen }
+
+    /// The last network answer for `key` came less than `freshFor` ago.
+    func isFresh(_ key: String) -> Bool {
+        entries[key].map { now() - $0.loadedAt < Self.freshFor } ?? false
+    }
+
+    func put(_ key: String, _ screen: LoadedScreen) { entries[key] = (screen, now()) }
+
+    func remove(_ key: String) { entries[key] = nil }
 }

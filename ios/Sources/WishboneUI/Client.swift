@@ -149,11 +149,19 @@ enum API {
         return ScreenResponse(etag: obj["etag"] as? String ?? "", revision: obj["revision"] as? Int ?? 0, document: doc, data: try parseData(rawData), rawData: rawData)
     }
 
-    /// Cache form of a screen answer: the same JSON shape with a non-null document.
+    /// Cache form of a screen answer: the same JSON shape with a non-null document, put together from the JSON the
+    /// answer keeps (no parse of the document or data again).
     static func encodeScreen(_ r: ScreenResponse) throws -> Data {
-        var obj: [String: Any] = ["etag": r.etag, "revision": r.revision, "data": try JSONSerialization.jsonObject(with: r.rawData)]
-        if let doc = r.document { obj["document"] = try JSONSerialization.jsonObject(with: doc) }
-        return try JSONSerialization.data(withJSONObject: obj)
+        var out = Data(#"{"etag":"#.utf8)
+        out.append(try JSONSerialization.data(withJSONObject: r.etag, options: .fragmentsAllowed))
+        out.append(contentsOf: #","revision":\#(r.revision),"data":"#.utf8)
+        out.append(r.rawData)
+        if let doc = r.document {
+            out.append(contentsOf: #","document":"#.utf8)
+            out.append(doc)
+        }
+        out.append(UInt8(ascii: "}"))
+        return out
     }
 
     static func parseData(_ body: Data) throws -> [String: Value] {

@@ -72,6 +72,9 @@ import Testing
         let back = try API.parseScreen(try API.encodeScreen(r))
         #expect(back.etag == r.etag && back.revision == 4 && back.data == r.data)
         #expect(try Value(json: back.document!) == doc)
+        var weak = r
+        weak.etag = #"W/"4-a\b/c""#
+        #expect(try API.parseScreen(try API.encodeScreen(weak)).etag == weak.etag) // escaped as a JSON string
     }
 
     @Test func parseScreenNotModified() throws {
