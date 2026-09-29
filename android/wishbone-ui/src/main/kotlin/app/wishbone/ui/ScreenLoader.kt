@@ -51,13 +51,10 @@ internal class ScreenLoader(
 ) {
     private val key = DiskCache.screenKey(id, params, scope)
 
-    /** A screen's disk cache entry, read off the main thread. */
-    suspend fun read(): CachedScreen? = withContext(Dispatchers.IO) { cache.readScreen(id, params, scope) }
-
     /**
-     * A slot entering the composition, on the calling thread so warm content is there in its first frame: the memo's
-     * decoded document ([show]), else the disk cache ([apply]; ponytail: a main-thread read and decode of one small
-     * file, only when the memo has nothing). Returns the entry [load] revalidates with.
+     * A screen or slot entering the composition, on the calling thread so warm content is there in its first frame: a
+     * slot's memo entry, decoded already ([show]), else the disk cache ([apply]). Returns the entry [load] revalidates with.
+     * ponytail: a main-thread read and decode of one cache file (tens of KB) per screen opened / slot without memo.
      */
     fun warm(show: (Document, JsonObject, Int) -> Unit, apply: (JsonObject, JsonObject, Int) -> Boolean): CachedScreen? {
         memo?.get(key)?.let {
@@ -103,7 +100,10 @@ internal class ScreenLoader(
         }
         if (stored != null) {
             current()?.let { memo?.put(key, stored, it) }
-            if (cached == null || stored.etag != cached.etag || stored.data != cached.data) withContext(Dispatchers.IO) { cache.writeScreen(id, params, scope, stored) }
+            withContext(Dispatchers.IO) {
+                // unchanged: no rewrite, but marked as used, so the cap (oldest first) doesn't evict the entries revalidated most
+                if (cached == null || stored.etag != cached.etag || stored.data != cached.data) cache.writeScreen(id, params, scope, stored) else cache.touch(key)
+            }
         }
         return current() != null
     }

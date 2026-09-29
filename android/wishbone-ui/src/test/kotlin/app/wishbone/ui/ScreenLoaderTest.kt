@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -46,10 +47,19 @@ class ScreenLoaderTest {
     private var requests = 0
 
     /** A screen opening, or (with [slot]) a slot entering the composition: warm content on the calling thread, then the loader. */
-    private fun run(screen: Screen, slot: Boolean = false, params: Map<String, Value> = emptyMap(), response: () -> ScreenResponse) = runBlocking {
+    private fun run(screen: Screen, slot: Boolean = false, params: Map<String, Value> = emptyMap(), response: () -> ScreenResponse): Boolean {
         val loader = ScreenLoader(cache, "s", params, "korpu", memo.takeIf { slot })
-        val cached = if (slot) loader.warm({ d, _, _ -> screen.fromMemo = d }, screen::show) else loader.read()
-        loader.load(cached, screen::current, { etag -> requests++; screen.etags += etag; response() }, screen::show, { screen.refreshed = it }, {})
+        val cached = loader.warm({ d, _, _ -> screen.fromMemo = d }, screen::show)
+        return runBlocking { loader.load(cached, screen::current, { etag -> requests++; screen.etags += etag; response() }, screen::show, { screen.refreshed = it }, {}) }
+    }
+
+    @Test
+    fun aWarmScreenIsOnScreenBeforeTheLoaderRuns() {
+        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"1-a\"", 1, v1, data1))
+        val s = Screen()
+        val cached = ScreenLoader(cache, "s", emptyMap(), "korpu").warm({ _, _, _ -> error("no memo for a screen") }, s::show)
+        assertEquals(listOf(v1), s.shown) // synchronously, on the calling (main) thread: the first frame has it
+        assertEquals("\"1-a\"", cached?.etag)
     }
 
     @Test
@@ -123,11 +133,14 @@ class ScreenLoaderTest {
     }
 
     @Test
-    fun unchangedAnswerIsNotWrittenAgain() {
-        cache.writeScreen("s", emptyMap(), "korpu", CachedScreen("\"1-a\"", 1, v1, data1))
+    fun unchangedAnswerIsNotWrittenAgainButMarkedUsed() {
+        // spaced JSON: a rewrite would come out compact, so equal bytes afterwards mean no rewrite
+        cache.write(DiskCache.screenKey("s", emptyMap(), "korpu"), """{ "etag": "\"1-a\"", "revision": 1, "document": $v1, "data": $data1 }""")
         val file = dir.listFiles()!!.single().apply { setLastModified(1_000_000) }
+        val bytes = file.readBytes()
         assertTrue(run(Screen()) { ScreenResponse("\"1-a\"", 1, null, data1) })
-        assertEquals(1_000_000, file.lastModified())
+        assertArrayEquals(bytes, file.readBytes())
+        assertTrue(file.lastModified() > 1_000_000) // newest again for the cap: the entries revalidated most stay
     }
 
     private val key = DiskCache.screenKey("s", emptyMap(), "korpu")

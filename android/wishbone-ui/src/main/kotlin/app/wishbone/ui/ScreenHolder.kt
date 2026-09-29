@@ -49,14 +49,12 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
 
     fun snapshot(): StoreSnapshot? = store?.savedSnapshot() ?: restored
 
-    /** A screen: the disk cache (read off the main thread), then the network. */
+    /**
+     * Entering the composition (or a retry from the fallback, which has nothing on screen): warm content in this frame —
+     * a slot's memory, else the disk cache — then the network (a slot's fresh memory skips it).
+     */
     fun load() {
         if (store == null) state = LoadState.Loading
-        scope.launch { revalidate(loader.read()) }
-    }
-
-    /** A slot entering the composition: warm content in this frame (memory, else the disk cache), then the network unless the memory is fresh. */
-    fun appear() {
         val cached = loader.warm(::show, ::apply)
         scope.launch { revalidate(cached) }
     }
