@@ -62,37 +62,41 @@ private fun animateValue(v: Value, spec: MotionSpec?, ctx: RenderContext): Value
     if (v is Value.Num) {
         val target = v.value.toFloat()
         if (!target.isFinite()) return v
-        val shown = animated(target, spec) { AnimatedValue(Animatable(target), target) }
+        val shown = animated(target, spec) { Animatable(it) }
         return if (shown == target) v else Value.Num(shown.toDouble())
     }
     val color = ctx.store.theme.color(v, ctx.store.dark) ?: return v
-    val shown = animated(color, spec) { AnimatedValue(ColorAnimatable(color), color) }
+    val shown = animated(color, spec) { ColorAnimatable(it) }
     return if (shown == color) v else Value.rec("\$argb" to Value.Num(shown.toArgb().toDouble()))
 }
 
-private class AnimatedValue<T, V : AnimationVector>(val anim: Animatable<T, V>, var settled: T)
+/** The last settled value; the [Animatable] exists only once a motion spec has applied to the prop. */
+private class AnimatedValue<T, V : AnimationVector>(var settled: T) {
+    var anim: Animatable<T, V>? = null
+}
 
 /**
  * Shows [target] directly while nothing animates (no effect is launched per change, e.g. per scroll frame);
  * with a [spec] the change animates from the last settled value.
  */
 @Composable
-private fun <T, V : AnimationVector> animated(target: T, spec: MotionSpec?, create: () -> AnimatedValue<T, V>): T {
-    val h = remember(create)
-    if (spec == null && !h.anim.isRunning) {
+private fun <T, V : AnimationVector> animated(target: T, spec: MotionSpec?, create: (T) -> Animatable<T, V>): T {
+    val h = remember { AnimatedValue<T, V>(target) }
+    if (spec == null && h.anim?.isRunning != true) {
         h.settled = target
         return target
     }
+    val anim = h.anim ?: create(h.settled).also { h.anim = it }
     LaunchedEffect(target) {
         if (spec == null) {
-            h.anim.snapTo(target)
+            anim.snapTo(target)
         } else {
-            if (!h.anim.isRunning) h.anim.snapTo(h.settled)
-            h.anim.animateTo(target, spec.animationSpec())
+            if (!anim.isRunning) anim.snapTo(h.settled)
+            anim.animateTo(target, spec.animationSpec())
         }
         h.settled = target
     }
-    return if (h.anim.isRunning) h.anim.value else h.settled
+    return if (anim.isRunning) anim.value else h.settled
 }
 
 /**
@@ -116,6 +120,10 @@ internal class Presence {
 
     fun merge(items: List<Item>): List<Item> {
         removed // recompose when a ghost finishes
+        if (ghosts.isEmpty() && items.none(::animates) && previous.none(::animates)) {
+            entering = emptySet() // no child with a transition: nothing to track, no sets, no copy
+            return items
+        }
         val keys = items.mapTo(HashSet()) { it.key }
         entering = if (first) emptySet() else keys - previous.mapTo(HashSet()) { it.key }
         previous.forEachIndexed { i, it ->
@@ -126,6 +134,8 @@ internal class Presence {
         for ((i, g) in ghosts.values.sortedBy { it.first }) out.add(minOf(i, out.size), g)
         return out
     }
+
+    private fun animates(item: Item) = item.ctx.store.extras[item.node.id]?.animatedPresence == true
 
     fun committed(items: List<Item>) {
         previous = items

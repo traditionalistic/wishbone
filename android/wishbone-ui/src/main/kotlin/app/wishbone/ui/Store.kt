@@ -2,11 +2,13 @@ package app.wishbone.ui
 
 import androidx.compose.runtime.MutableDoubleState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -152,12 +154,21 @@ class Store internal constructor(
     var env: Map<String, Value>
         get() = envCells.mapValues { it.value.value }
         set(values) {
-            for ((k, v) in values) {
-                val cell = envCells[k]
-                if (cell == null) envCells[k] = mutableStateOf(v) else if (cell.value != v) cell.value = v
-            }
+            envCells.update(values)
         }
-    val data = mutableStateMapOf<String, Value>().apply { putAll(data) }
+
+    /** One cell per data source, likewise; a `refresh` re-renders only that source's readers. */
+    private val dataCells = HashMap<String, MutableState<Value>>().apply { update(data) }
+
+    /** Bumped when a source first arrives after the store was built, so a reader that found none re-reads. */
+    private val dataSources = mutableIntStateOf(0)
+
+    /** One derived state per computed name, made on first read: its readers share one evaluation per change of what it reads. */
+    private val computedStates = HashMap<String, State<Value>>()
+
+    /** Token values of [tokenTheme] by group and name; another theme starts a new memo. */
+    private var tokenTheme: Theme? = null
+    private val tokens = HashMap<String, HashMap<String, Value>>()
 
     internal val timelines: TimelineRegistry = TimelineRegistry(doc.timelines, System.nanoTime(), previous?.timelines)
 
@@ -182,6 +193,7 @@ class Store internal constructor(
     /** Bumped when a drag cell is created, so a reader that missed it (composed earlier) re-reads. */
     private val dragCellsVersion = mutableIntStateOf(0)
     internal val extras: Map<String, NodeExtras> = NodeExtras.index(doc.root) { effects.error(it) }
+    internal val layerProps: Map<String, Map<String, Expr>> = layerProps(doc.root, extras)
     internal val root = RenderContext(this, null, null, "", Parent.None)
 
     val dark: Boolean get() = env("colorScheme") == Value.Str("dark")
@@ -229,15 +241,37 @@ class Store internal constructor(
      */
     internal fun savedSnapshot(): StoreSnapshot? = if (runningHandlers > 0) null else snapshot()
 
-    fun computed(name: String): Value = doc.computed[name]?.let { root.eval(it) } ?: Value.Null
+    fun computed(name: String): Value {
+        val expr = doc.computed[name] ?: return Value.Null
+        return computedStates.getOrPut(name) { derivedStateOf(structuralEqualityPolicy()) { root.eval(expr) } }.value
+    }
+
     fun param(name: String): Value = params[name] ?: doc.params[name]?.let { root.eval(it) } ?: Value.Null
     fun env(name: String): Value = envCells[name]?.value ?: if (name == "now") Value.Num(Clock.now.longValue.toDouble()) else Value.Null
 
-    fun token(group: String, name: String): Value = when (group) {
-        "space" -> Value.Num(theme.space[name] ?: 0.0)
-        "radius" -> Value.Num(theme.radius[name] ?: 0.0)
-        "color", "type", "icon", "motion" -> Value.rec("\$$group" to Value.Str(name))
-        else -> Value.Null
+    fun data(name: String): Value = dataCells[name]?.value ?: run {
+        dataSources.intValue
+        Value.Null
+    }
+
+    internal fun putData(values: Map<String, Value>) {
+        if (dataCells.update(values)) dataSources.intValue++
+    }
+
+    fun token(group: String, name: String): Value {
+        val t = theme // read on every call: a theme change still re-renders the readers
+        if (t !== tokenTheme) {
+            tokens.clear()
+            tokenTheme = t
+        }
+        return tokens.getOrPut(group) { HashMap() }.getOrPut(name) {
+            when (group) {
+                "space" -> Value.Num(t.space[name] ?: 0.0)
+                "radius" -> Value.Num(t.radius[name] ?: 0.0)
+                "color", "type", "icon", "motion" -> Value.rec("\$$group" to Value.Str(name))
+                else -> Value.Null
+            }
+        }
     }
 
     fun driver(kind: String, id: String, axis: String): Double = driverCell(kind, id, axis).doubleValue
@@ -299,6 +333,21 @@ class Store internal constructor(
     internal fun warnOnce(key: String, message: String) {
         if (warned.add(key)) error(message)
     }
+}
+
+/** Writes each value into its cell only when it changed; true when a cell had to be created. */
+private fun HashMap<String, MutableState<Value>>.update(values: Map<String, Value>): Boolean {
+    var created = false
+    for ((k, v) in values) {
+        val cell = this[k]
+        if (cell == null) {
+            this[k] = mutableStateOf(v)
+            created = true
+        } else if (cell.value != v) {
+            cell.value = v
+        }
+    }
+    return created
 }
 
 /** Copy-on-write deep update; a missing field / out-of-range index / null on the path → null (no-op). */

@@ -119,9 +119,38 @@ class MotionTest {
     }
 
     @Test
+    fun infiniteTimelineRunsOnlyWhileATargetIsLive() {
+        val r = TimelineRegistry(
+            Document.parse(
+                """{"screen":"t","root":{"t":"stack","id":"root"},"timelines":{
+                  "pulse":{"duration":1000,"repeat":-1,"autoreverse":true,"autoplay":true,"tracks":[
+                    {"target":"dot","prop":"opacity","stagger":0,"keys":[{"t":0,"v":1},{"t":1000,"v":0.4}]}]},
+                  "dim":{"duration":100,"repeat":1,"autoreverse":false,"autoplay":true,"tracks":[
+                    {"target":"a","prop":"opacity","stagger":0,"keys":[{"t":0,"v":1},{"t":100,"v":0.5}]}]}}}""",
+            ).timelines,
+            now = 0,
+        )
+        r.firstFrame(0)
+        assertTrue(r.running(50 * ms)) // a finite timeline runs whether or not its target is composed
+        assertFalse(r.running(500 * ms)) // `pulse` is active, but no `dot` is on screen (another tab, a lazy row off screen)
+        val v = r.version
+        r.register("dot", "dot", 0) // the target appears later: the frame loop restarts
+        assertTrue(r.version > v)
+        assertTrue(r.running(500 * ms))
+        val again = r.version
+        r.register("dot", "dot.b", 1) // a second instance changes nothing
+        assertEquals(again, r.version)
+        r.unregister("dot", "dot")
+        assertTrue(r.running(600 * ms))
+        r.unregister("dot", "dot.b")
+        assertFalse(r.running(700 * ms))
+    }
+
+    @Test
     fun infiniteStaggerAndReduceMotion() {
         val r = registry()
         r.play("spin", 0)
+        r.register("s", "s", 0)
         assertTrue(r.running(100_000 * ms))
         assertFalse(r.running(100_000 * ms, reduceMotion = true)) // reduceMotion: end states, no frame loop
         assertEquals(Double.POSITIVE_INFINITY, r.duration("spin"))

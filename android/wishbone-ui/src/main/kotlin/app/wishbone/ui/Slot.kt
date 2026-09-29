@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +39,9 @@ import app.wishbone.core.Value
  * Inline server-driven content inside a host screen (spec 2026-09-28 §2): the width the host offers, the height of
  * its content, and nothing at all (zero height) while loading, unpublished (the cache is dropped), failed without a
  * cache, or when the root's `when` is false. `navigate` and `present` go to [onNavigate] (`present` with transition
- * "present"); `back`/`dismiss` do nothing. Loads when it enters the composition; a new [id]/[params] reloads.
+ * "present"); `back`/`dismiss` do nothing. Entering the composition shows the [wishbone]'s last network answer for
+ * this [id]/[params] from memory (else the disk cache) and asks the server again only once that answer is 30 s old;
+ * a new [id]/[params] loads that one.
  * Content that comes or goes after the first frame animates on `@motion.smooth` (fade + height from the top edge, so
  * the host's rows below slide; reduce motion: fade only); a cached slot is there in its first frame. At most
  * [SLOT_MAX_HEIGHT] dp tall: content below is clipped.
@@ -65,17 +68,17 @@ fun WishboneSlot(wishbone: Wishbone, id: String, params: Map<String, Value> = em
     val holder = remember(navigator) {
         ScreenHolder(wishbone, navigator, navigator.entries.first(), slot = true).also { h ->
             h.env = env
-            // The cache goes on screen in the first frame (as on iOS), so a cached slot doesn't animate in; the loader then
-            // only revalidates it. ponytail: a main-thread read of one small file per slot entering the composition.
-            wishbone.cache.readScreen(id, params, wishbone.cacheScope)?.let { h.apply(it.document, it.data, it.revision) }
-            h.load()
+            // Warm content (the last network answer in memory, else the disk cache) goes on screen in the first frame
+            // (as on iOS), so a warm slot doesn't animate in; the loader then revalidates it (ruling R1: after 30 s).
+            h.appear()
         }
     }
     DisposableEffect(holder) { onDispose { holder.dispose() } }
     holder.env = env
     holder.view = LocalView.current
     val store = holder.store
-    val visible = slotVisible(store)
+    // derived: the root's `when` may read `env.now`, whose 1 s tick then re-renders the slot only when the answer flips
+    val visible by remember(store) { derivedStateOf { slotVisible(store) } }
     // Shown in the first frame: no enter animation; later comings and goings animate.
     val presence = remember(holder) { MutableTransitionState(visible) }
     presence.targetState = visible

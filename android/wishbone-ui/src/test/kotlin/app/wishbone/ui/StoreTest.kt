@@ -2,6 +2,7 @@ package app.wishbone.ui
 
 import app.wishbone.core.Document
 import app.wishbone.core.EffectSink
+import app.wishbone.core.InterpreterException
 import app.wishbone.core.Value
 import app.wishbone.core.bind
 import androidx.compose.runtime.snapshots.Snapshot
@@ -10,6 +11,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -50,6 +53,73 @@ class StoreTest {
         assertEquals(n(2.0), s.computed("twice"))
         s.root.set("s", "a", emptyList(), n(5.0), null)
         assertEquals(n(10.0), s.computed("twice"))
+    }
+
+    @Test
+    fun computedIsEvaluatedOncePerStateChange() {
+        val s = store(Document.parse("""{"screen":"t","state":[["a",["v",1]]],"computed":{"pair":["rec",{"a":["s","a"]}],"bad":["op","-",["v","x"],["v",1]]},"root":{"t":"stack","id":"root"}}"""))
+        val first = s.computed("pair")
+        assertSame(first, s.computed("pair")) // a record literal builds a new value per evaluation: same instance = not evaluated again
+        s.root.set("s", "a", emptyList(), n(5.0), null)
+        val second = s.computed("pair")
+        assertEquals(Value.rec("a" to n(5.0)), second)
+        assertSame(second, s.computed("pair"))
+        s.root.set("s", "a", emptyList(), n(6.0), null) // a second write before any snapshot advance
+        assertEquals(Value.rec("a" to n(6.0)), s.computed("pair"))
+        assertEquals(Value.Null, s.computed("missing"))
+        repeat(2) { assertThrows(InterpreterException::class.java) { s.computed("bad") } } // an error reaches every reader
+    }
+
+    @Test
+    fun tokensReResolveAfterAThemeOrSchemeChange() {
+        val s = Store(doc, emptyMap(), emptyMap(), theme, mapOf("colorScheme" to Value.Str("light")), effects, CoroutineScope(Dispatchers.Unconfined))
+        val light = s.theme.color(s.token("color", "bg1"), s.dark)
+        assertEquals(n(theme.space.getValue("md")), s.token("space", "md"))
+        s.env = mapOf("colorScheme" to Value.Str("dark"))
+        assertNotEquals(light, s.theme.color(s.token("color", "bg1"), s.dark))
+        s.theme = Theme(theme.brand, theme.version, theme.colors, theme.type, theme.space + ("md" to 99.0), theme.radius, theme.motions)
+        assertEquals(n(99.0), s.token("space", "md"))
+    }
+
+    @Test
+    fun dataSourceWritesInvalidateOnlyTheirReaders() {
+        val s = Store(doc, emptyMap(), mapOf("me" to n(1.0), "offers" to n(2.0)), theme, emptyMap(), effects, CoroutineScope(Dispatchers.Unconfined))
+        val reads = HashSet<Any>()
+        Snapshot.observe(readObserver = { reads.add(it) }) { s.root.data("me"); s.root.data("later") }
+        val applied = HashSet<Any>()
+        val handle = Snapshot.registerApplyObserver { changed, _ -> applied.addAll(changed) }
+        try {
+            s.putData(mapOf("me" to n(1.0), "offers" to n(3.0))) // `me` unchanged
+            Snapshot.sendApplyNotifications()
+            assertTrue(applied.intersect(reads).isEmpty())
+            s.putData(mapOf("later" to n(4.0))) // a source first seen in a refresh reaches its early readers
+            Snapshot.sendApplyNotifications()
+            assertTrue(applied.intersect(reads).isNotEmpty())
+            assertEquals(n(4.0), s.root.data("later"))
+            assertEquals(n(3.0), s.root.data("offers"))
+        } finally {
+            handle.dispose()
+        }
+    }
+
+    @Test
+    fun onlyWriteFreeTransformsMoveToTheDrawPhase() {
+        val d = Document.parse(
+            """{"screen":"t","state":[["x",["v",0]]],"root":{"t":"stack","id":"root","c":[
+              {"t":"stack","id":"hero","p":{"opacity":["f","interpolate",[["dr","scroll","page","y"],["v",[0,160]],["v",[1,0]]]],"offsetY":["s","x"],"rotation":["p","tilt"],"width":["dr","scroll","page","y"]}},
+              {"t":"stack","id":"anim","p":{"scale":["dr","scroll","page","y"]},"anim":{"scale":["t","motion","smooth"]}},
+              {"t":"stack","id":"bar","p":{"opacity":["op","/",["get",["get",["d","offer"],"value"],"progress"],["v",100]]}}]}}""",
+        )
+        val s = Store(d, emptyMap(), mapOf("offer" to Value.Null), theme, emptyMap(), effects, CoroutineScope(Dispatchers.Unconfined))
+        val (hero, anim, bar) = d.root.children
+        // scroll-driven: draw phase; state-, param-driven and layout props stay composed
+        assertEquals(setOf("opacity"), s.layerProps[hero.id]?.keys)
+        assertEquals(setOf("offsetY", "rotation", "width"), s.root.evalProps(hero)?.keys)
+        assertEquals(null, s.layerProps[anim.id]) // an implicit animation needs the composed value
+        assertEquals(null, s.layerProps[bar.id])
+        // a failed source: the transform throws in composition and the node renders nothing (as on iOS)
+        assertEquals(null, s.root.evalProps(bar))
+        assertEquals(1, errors.size)
     }
 
     @Test

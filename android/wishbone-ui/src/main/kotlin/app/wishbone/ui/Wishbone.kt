@@ -51,6 +51,9 @@ class Wishbone(
     val client = Client(baseUrl, brand, host)
     internal val cache = DiskCache(File(context.cacheDir, "wishbone"))
 
+    /** Slots' last network answers (ruling R1). */
+    internal val slotMemo = SlotMemo()
+
     /** Cache partition of screen and theme answers: server, host scope, brand. */
     internal val cacheScope: String get() = DiskCache.scope(baseUrl, host.cacheScope, brand)
 

@@ -65,6 +65,49 @@ class FormatTest {
     }
 
     @Test
+    fun `whole numbers print exact digits through str and formatNumber (fast-path edges)`() {
+        val cases = listOf(
+            0.0 to "0", -0.0 to "0", 1.0 to "1", -1.0 to "-1", 42.0 to "42",
+            999999999999999.0 to "999999999999999", 1e15 to "1000000000000000", -1e15 to "-1000000000000000",
+            9.2e18 to "9200000000000000000", 1e19 to "10000000000000000000", -1e19 to "-10000000000000000000",
+            Double.NaN to "NaN", Double.POSITIVE_INFINITY to "Infinity", Double.NEGATIVE_INFINITY to "-Infinity",
+        )
+        for ((x, expected) in cases) {
+            assertEquals(expected, Format.str(Value.Num(x)), "str($x)")
+            assertEquals(expected, Format.numberToString(x), "numberToString($x)")
+        }
+        assertEquals("1 000 000 000 000 000".replace(' ', '\u00a0'), Format.formatNumber(1e15, 0.0))
+        assertEquals("-1 000 000 000 000 000.00".replace(' ', '\u00a0'), Format.formatNumber(-1e15, 2.0))
+        assertEquals("999 999 999 999 999".replace(' ', '\u00a0'), Format.formatNumber(999999999999999.0, 0.0))
+        assertEquals("9 200 000 000 000 000 000.0".replace(' ', '\u00a0'), Format.formatNumber(9.2e18, 1.0))
+        assertEquals("10 000 000 000 000 000 000".replace(' ', '\u00a0'), Format.formatNumber(1e19, 0.0))
+        assertEquals("-42|0|1 000".replace(' ', '\u00a0'), "${Format.formatNumber(-42.0, 0.0)}|${Format.formatNumber(-0.0, 0.0)}|${Format.formatNumber(1000.0, 0.0)}")
+        assertEquals("-9 007 199 254 740 992|NaN|-Infinity".replace(' ', '\u00a0'), "${Format.formatNumber(-9007199254740992.0, 0.0)}|${Format.formatNumber(Double.NaN, 2.0)}|${Format.formatNumber(Double.NEGATIVE_INFINITY, 0.0)}")
+        assertEquals("1 234 567 890 123.50".replace(' ', '\u00a0'), Format.formatNumber(1234567890123.5, 2.0))
+    }
+
+    @Test
+    fun `formatDate alternating zones and styles is stable`() {
+        repeat(3) {
+            assertEquals("03:00", Format.formatDate(0.0, "time", "Europe/Moscow"))
+            assertEquals("00:00", Format.formatDate(0.0, "time", "UTC"))
+            assertEquals("01.01.1970 09:00", Format.formatDate(0.0, "dateTime", "Asia/Tokyo"))
+            assertEquals("31.12.1969", Format.formatDate(0.0, "date", "America/New_York"))
+            assertEquals("01.01.1970", Format.formatDate(0.0, "date", "No/Such_Zone"))
+            assertEquals("01.01.1970 00:00", Format.formatDate(0.0, "other", ""))
+        }
+    }
+
+    @Test
+    fun `formatDuration edge widths`() {
+        assertEquals("00:00", Format.formatDuration(Double.NaN, "ms"))
+        assertEquals("1000:05", Format.formatDuration(60_005_000.0, "ms"))
+        assertEquals("0:00:00:00", Format.formatDuration(0.0, "dhms"))
+        assertEquals("12:23:59:59", Format.formatDuration(((12 * 24 + 23) * 3600 + 59 * 60 + 59) * 1000.0, "dhms"))
+        assertEquals("07:08:09", Format.formatDuration(((7 * 60 + 8) * 60 + 9) * 1000.0, "hms"))
+    }
+
+    @Test
     fun `plural CLDR subset`() {
         val ru = mapOf(
             "one" to Value.Str("# билет"), "few" to Value.Str("# билета"),

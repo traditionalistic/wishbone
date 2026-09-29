@@ -28,11 +28,15 @@ object Format {
     private fun magnitudeDigits(x: Double, d: Int): String {
         val ax = abs(x)
         return if (ax >= 1e15) {
-            BigDecimal(roundHalfAwayFromZero(ax)).toPlainString() + "0".repeat(d)
+            wholeToString(roundHalfAwayFromZero(ax)) + "0".repeat(d)
         } else {
-            BigDecimal(roundHalfAwayFromZero(ax * 10.0.pow(d))).toPlainString()
+            wholeToString(roundHalfAwayFromZero(ax * 10.0.pow(d)))
         }
     }
+
+    /** Exact digits of a whole, finite [r]: `Long` covers |r| < 9e18 without a BigDecimal allocation. */
+    private fun wholeToString(r: Double): String =
+        if (abs(r) < 9.0e18) r.toLong().toString() else BigDecimal(r).toPlainString()
 
     private fun hasNonZeroDigit(digits: String): Boolean = digits.any { it != '0' }
 
@@ -66,7 +70,7 @@ object Format {
         // fixed-point path (x * 10^6 in double) loses precision above 2^53 ≈ 9.007e15 — well below
         // 1e15 is safe, but even at ~1.79e12 the *scaled* value (×1e6 ⇒ ~1.79e18) already overflows
         // exact double precision, corrupting trailing digits (e.g. "1790000000123.000064").
-        if (abs(x) < 1e15 && x == truncate(x)) return BigDecimal(x).toPlainString()
+        if (abs(x) < 1e15 && x == truncate(x)) return wholeToString(x)
         val digits = magnitudeDigits(x, 6)
         val (intPart, fracRaw) = splitFraction(digits, 6)
         val fracPart = fracRaw.trimEnd('0')
@@ -98,28 +102,39 @@ object Format {
         val m = totalMinutes % 60
         val totalHours = totalMinutes / 60
         return when (style) {
-            "ms" -> String.format(Locale.ROOT, "%02d:%02d", totalMinutes, s)
-            "dhms" -> {
-                val days = totalHours / 24
-                val h = totalHours % 24
-                String.format(Locale.ROOT, "%d:%02d:%02d:%02d", days, h, m, s)
-            }
-            else -> String.format(Locale.ROOT, "%02d:%02d:%02d", totalHours, m, s)
+            "ms" -> "${pad2(totalMinutes)}:${pad2(s)}"
+            "dhms" -> "${totalHours / 24}:${pad2(totalHours % 24)}:${pad2(m)}:${pad2(s)}"
+            else -> "${pad2(totalHours)}:${pad2(m)}:${pad2(s)}"
         }
     }
+
+    /** `%02d` for a non-negative value: two digits minimum, wider values as-is. */
+    private fun pad2(n: Long): String = if (n < 10) "0$n" else n.toString()
+
+    private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ROOT)
+    private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+    private val DATE_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm", Locale.ROOT)
+
+    /** Zone-id string -> zone (unknown => UTC); a screen uses one or two zones, so this stays tiny. */
+    private val zoneCache = java.util.concurrent.ConcurrentHashMap<String, ZoneId>()
+
+    private fun zoneOf(id: String): ZoneId =
+        zoneCache[id] ?: (runCatching { ZoneId.of(id) }.getOrDefault(ZoneOffset.UTC)).also {
+            if (zoneCache.size < 32) zoneCache[id] = it // ponytail: bounded so a hostile env can't grow it; misses just re-parse
+        }
 
     /** epoch ms in env.timeZone (unknown zone => UTC); non-finite => ''. */
     fun formatDate(ms: Double, style: String, timeZone: String): String {
         if (!ms.isFinite()) return ""
-        val zone = runCatching { ZoneId.of(timeZone) }.getOrDefault(ZoneOffset.UTC)
+        val zone = zoneOf(timeZone)
         val instant = Instant.ofEpochMilli(roundHalfAwayFromZero(ms).toLong())
         val zdt = instant.atZone(zone)
-        val pattern = when (style) {
-            "date" -> "dd.MM.yyyy"
-            "time" -> "HH:mm"
-            else -> "dd.MM.yyyy HH:mm"
+        val formatter = when (style) {
+            "date" -> DATE_FORMAT
+            "time" -> TIME_FORMAT
+            else -> DATE_TIME_FORMAT
         }
-        return DateTimeFormatter.ofPattern(pattern, Locale.ROOT).format(zdt)
+        return formatter.format(zdt)
     }
 
     /**

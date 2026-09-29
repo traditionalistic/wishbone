@@ -135,4 +135,25 @@ class TimelineSamplerTest {
         // interpolation onward from t=5 uses the later key's value (9) as its left edge.
         assertEquals(14.5, TimelineSampler.sample(t, 7.5, 0)["a.opacity"]!!, TOL)
     }
+
+    @Test
+    fun `sampleTrack equals the matching sample entry (staggered, repeat, autoreverse)`() {
+        val tracks = listOf(
+            track("a", "opacity", 0.0, Key(0.0, 0.0, null), Key(100.0, 1.0, EASE_IN_OUT)),
+            track("b", "offsetX", 30.0, Key(0.0, 0.0, null), Key(50.0, 10.0, SPRING), Key(100.0, -4.0, null)),
+        )
+        val timelines = listOf(
+            tl(100.0, repeat = 1, tracks = tracks),
+            tl(100.0, repeat = 3, autoreverse = true, tracks = tracks),
+            tl(100.0, repeat = 2, autoreverse = true, tracks = tracks),
+            tl(100.0, repeat = -1, autoreverse = true, tracks = tracks),
+            tl(0.0, tracks = tracks.map { it.copy(keys = listOf(Key(0.0, 7.0, null))) }),
+        )
+        for (t in timelines) for (index in 0..3) for (ms in listOf(-10.0, 0.0, 25.0, 99.0, 100.0, 130.0, 250.0, 1000.0)) {
+            val all = TimelineSampler.sample(t, ms, index)
+            for (track in t.tracks) {
+                assertEquals(all["${track.target}.${track.prop}"]!!, TimelineSampler.sampleTrack(t, track, ms, index), 0.0)
+            }
+        }
+    }
 }
