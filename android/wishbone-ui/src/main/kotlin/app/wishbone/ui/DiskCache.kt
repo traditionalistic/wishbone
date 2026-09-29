@@ -17,9 +17,10 @@ import java.security.MessageDigest
 data class CachedScreen(val etag: String, val revision: Int, val document: JsonObject, val data: JsonObject)
 
 /**
- * File cache: one file per key, written atomically (tmp + rename), at most [MAX_ENTRIES] files (ruling R2: after a
- * write the oldest by modification time go — keys include params, so they'd grow without bound). Unreadable/corrupt
- * entries read as absent.
+ * File cache: one file per key, written atomically (tmp + rename). Unreadable/corrupt entries read as absent.
+ * Ruling R2: at most [MAX_ENTRIES] screen entries — after a write the oldest by modification time go (keys include
+ * params, so they'd grow without bound). Theme entries (keys starting with `theme-`) don't count and never go: a 304
+ * doesn't rewrite them, so they would age out and a cold start would show the bundled theme first.
  */
 class DiskCache(private val dir: File) {
     fun read(key: String): String? = runCatching { file(key).takeIf { it.exists() }?.readText() }.getOrNull()
@@ -31,11 +32,15 @@ class DiskCache(private val dir: File) {
             val tmp = File(dir, f.name + ".tmp")
             tmp.writeText(text)
             tmp.renameTo(f)
-            val entries = dir.listFiles { e -> e.name.endsWith(".json") } ?: return
-            if (entries.size > MAX_ENTRIES) {
-                entries.map { it.lastModified() to it }.sortedByDescending { it.first }.drop(MAX_ENTRIES).forEach { it.second.delete() }
-            }
+            if (!key.startsWith(THEME)) trim(f)
         }
+    }
+
+    /** Keeps [written] and the newest [MAX_ENTRIES] − 1 other screen entries. */
+    private fun trim(written: File) {
+        val others = dir.listFiles { e -> e.name.endsWith(".json") && !e.name.startsWith(THEME) && e != written } ?: return
+        if (others.size < MAX_ENTRIES) return
+        others.map { it.lastModified() to it }.sortedByDescending { it.first }.drop(MAX_ENTRIES - 1).forEach { it.second.delete() }
     }
 
     /** Deletes the entry; a missing one is fine. */
@@ -54,10 +59,13 @@ class DiskCache(private val dir: File) {
         write(screenKey(id, params, scope), o.toString())
     }
 
-    private fun file(key: String) = File(dir, MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).toHexString(0, 16) + ".json")
+    /** The first 16 bytes of SHA-256(key) in hex; theme entries carry the `theme-` prefix, which keeps them out of the cap. */
+    private fun file(key: String) =
+        File(dir, (if (key.startsWith(THEME)) THEME else "") + MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).toHexString(0, 16) + ".json")
 
     companion object {
         const val MAX_ENTRIES = 64
+        private const val THEME = "theme-"
 
         /** Server × host scope (e.g. the account) × brand: one cache partition. */
         fun scope(baseUrl: String, hostScope: String, brand: String) = "$baseUrl\n$hostScope\n$brand"

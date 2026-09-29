@@ -193,7 +193,7 @@ class Store internal constructor(
     /** Bumped when a drag cell is created, so a reader that missed it (composed earlier) re-reads. */
     private val dragCellsVersion = mutableIntStateOf(0)
     internal val extras: Map<String, NodeExtras> = NodeExtras.index(doc.root) { effects.error(it) }
-    internal val layerProps: Map<String, Map<String, Expr>> = layerProps(doc.root, extras, hasTransactions)
+    internal val layerProps: Map<String, Map<String, Expr>> = layerProps(doc.root, extras)
     internal val root = RenderContext(this, null, null, "", Parent.None)
 
     val dark: Boolean get() = env("colorScheme") == Value.Str("dark")

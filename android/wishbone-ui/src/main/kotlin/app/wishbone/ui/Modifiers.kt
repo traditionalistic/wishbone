@@ -44,15 +44,16 @@ private val TRANSFORM = listOf("opacity", "offsetX", "offsetY", "scale", "rotati
 
 /**
  * Per node id: the transform props the layer block evaluates (draw phase), so a change — every scroll frame for
- * `scroll.*`-driven ones — redraws the layer without recomposing the node. Not those that animate: an implicit
- * `anim` for the prop, or (in a screen with `animate(…)` blocks) an expression a handler's write can change.
+ * `scroll.*`-driven ones — redraws the layer without recomposing the node. Only write-free ones without an implicit
+ * `anim`: what a handler writes (state, data, …) may animate in an `animate(…)` transaction, and a prop reading it
+ * may fail on a missing value, which drops the node (as on iOS) — both need the composed value.
  */
-internal fun layerProps(root: Node, extras: Map<String, NodeExtras>, transactions: Boolean): Map<String, Map<String, Expr>> {
+internal fun layerProps(root: Node, extras: Map<String, NodeExtras>): Map<String, Map<String, Expr>> {
     val out = HashMap<String, Map<String, Expr>>()
     fun walk(n: Node) {
         val anim = extras[n.id]?.anim
         if (anim?.get("*") == null) {
-            val layer = TRANSFORM.mapNotNull { k -> n.props[k]?.takeIf { anim?.get(k) == null && (!transactions || it.writeFree()) }?.let { k to it } }
+            val layer = TRANSFORM.mapNotNull { k -> n.props[k]?.takeIf { anim?.get(k) == null && it.writeFree() }?.let { k to it } }
             if (layer.isNotEmpty()) out[n.id] = layer.toMap()
         }
         n.children.forEach(::walk)
@@ -61,9 +62,12 @@ internal fun layerProps(root: Node, extras: Map<String, NodeExtras>, transaction
     return out
 }
 
-/** Nothing a handler writes can change it: literals, env, tokens, params, drivers and pure operations on them (fns see only their params). */
+/**
+ * Nothing a handler writes, and no possibly-missing value, feeds it: literals, env, tokens, drivers and pure operations
+ * on them (fns see only their params). Params stay out: optional ones read null, and they never change anyway.
+ */
 private fun Expr.writeFree(): Boolean = when (this) {
-    is Expr.Lit, is Expr.EnvRef, is Expr.TokenRef, is Expr.ParamRef, is Expr.DriverRef -> true
+    is Expr.Lit, is Expr.EnvRef, is Expr.TokenRef, is Expr.DriverRef -> true
     is Expr.Get -> obj.writeFree()
     is Expr.At -> obj.writeFree() && key.writeFree()
     is Expr.BinOp -> a.writeFree() && b.writeFree()
@@ -74,7 +78,7 @@ private fun Expr.writeFree(): Boolean = when (this) {
     is Expr.ListLit -> items.all { it.writeFree() }
     is Expr.RecLit -> fields.values.all { it.writeFree() }
     is Expr.StrInterp -> parts.all { it.writeFree() }
-    else -> false // state, instance state, computed, data, locals, self.pressed, lambdas
+    else -> false // state, instance state, computed, data, params, locals, self.pressed, lambdas
 }
 
 /**

@@ -25,7 +25,7 @@ object WishboneRenderers {
 }
 
 /** Evaluates every prop but the draw-phase ones ([layerProps]); any eval error → logged by the context, the node renders nothing. */
-private fun RenderContext.evalProps(node: Node): Map<String, Value>? {
+internal fun RenderContext.evalProps(node: Node): Map<String, Value>? {
     val layer = store.layerProps[node.id]
     val out = HashMap<String, Value>(node.props.size)
     for ((k, e) in node.props) if (layer == null || k !in layer) out[k] = evalOrNull(e) ?: return null

@@ -103,19 +103,23 @@ class StoreTest {
     }
 
     @Test
-    fun transformsThatCanNotAnimateMoveToTheDrawPhase() {
-        fun screen(handlers: String) = store(
-            Document.parse(
-                """{"screen":"t","state":[["x",["v",0]]],"handlers":{$handlers},"root":{"t":"stack","id":"root","c":[
-                  {"t":"stack","id":"hero","p":{"opacity":["f","interpolate",[["dr","scroll","page","y"],["v",[0,160]],["v",[1,0]]]],"offsetY":["s","x"],"width":["dr","scroll","page","y"]}},
-                  {"t":"stack","id":"anim","p":{"scale":["dr","scroll","page","y"]},"anim":{"scale":["t","motion","smooth"]}}]}}""",
-            ),
+    fun onlyWriteFreeTransformsMoveToTheDrawPhase() {
+        val d = Document.parse(
+            """{"screen":"t","state":[["x",["v",0]]],"root":{"t":"stack","id":"root","c":[
+              {"t":"stack","id":"hero","p":{"opacity":["f","interpolate",[["dr","scroll","page","y"],["v",[0,160]],["v",[1,0]]]],"offsetY":["s","x"],"rotation":["p","tilt"],"width":["dr","scroll","page","y"]}},
+              {"t":"stack","id":"anim","p":{"scale":["dr","scroll","page","y"]},"anim":{"scale":["t","motion","smooth"]}},
+              {"t":"stack","id":"bar","p":{"opacity":["op","/",["get",["get",["d","offer"],"value"],"progress"],["v",100]]}}]}}""",
         )
-        // `animate(…)` writes state: the scroll-driven opacity can't take part, the state-driven offset can (stays composed)
-        val animating = screen(""""go":{"params":[],"body":[["anim",["t","motion","snappy"],[["set","s","x",[],["v",1]]]]]}""")
-        assertEquals(setOf("opacity"), animating.layerProps["hero"]?.keys) // width is layout: never
-        assertEquals(null, animating.layerProps["anim"]) // an implicit animation needs the composed value
-        assertEquals(setOf("opacity", "offsetY"), screen("").layerProps["hero"]?.keys) // no transactions: any transform
+        val s = Store(d, emptyMap(), mapOf("offer" to Value.Null), theme, emptyMap(), effects, CoroutineScope(Dispatchers.Unconfined))
+        val (hero, anim, bar) = d.root.children
+        // scroll-driven: draw phase; state-, param-driven and layout props stay composed
+        assertEquals(setOf("opacity"), s.layerProps[hero.id]?.keys)
+        assertEquals(setOf("offsetY", "rotation", "width"), s.root.evalProps(hero)?.keys)
+        assertEquals(null, s.layerProps[anim.id]) // an implicit animation needs the composed value
+        assertEquals(null, s.layerProps[bar.id])
+        // a failed source: the transform throws in composition and the node renders nothing (as on iOS)
+        assertEquals(null, s.root.evalProps(bar))
+        assertEquals(1, errors.size)
     }
 
     @Test

@@ -59,8 +59,13 @@ class DiskCacheTest {
         val cache = DiskCache(File(dir, "nested/deeper"))
         cache.write("theme-korpu", "{\"x\":1}")
         assertEquals("{\"x\":1}", cache.read("theme-korpu"))
-        // file name = the first 16 bytes of SHA-256(key) in lowercase hex: entries cached by earlier versions still read
-        assertEquals(listOf("353e2c837a327d74efc2d27e4f09d940.json"), File(dir, "nested/deeper").list()!!.toList())
+        cache.write("plain", "x")
+        // file name = the first 16 bytes of SHA-256(key) in lowercase hex (screen entries cached by earlier versions still
+        // read); theme entries carry a prefix that keeps them out of the cap
+        assertEquals(
+            setOf("theme-353e2c837a327d74efc2d27e4f09d940.json", "a116c9ed46d6207734a43317d30fd88f.json"),
+            File(dir, "nested/deeper").list()!!.toSet(),
+        )
     }
 
     @Test
@@ -84,5 +89,22 @@ class DiskCacheTest {
         assertNull(cache.read("k0")) // the oldest went
         assertEquals("1", cache.read("k1"))
         assertEquals("64", cache.read("k64"))
+        // the entry just written is never the one to go, even when the others look newer (clock change, mtime ties)
+        dir.listFiles()!!.forEach { it.setLastModified(System.currentTimeMillis() + 3_600_000) }
+        cache.write("k65", "65")
+        assertEquals("65", cache.read("k65"))
+        assertEquals(64, dir.listFiles()!!.size)
+    }
+
+    @Test
+    fun themeEntriesAreOutsideTheCap() {
+        val cache = DiskCache(dir)
+        cache.write("theme-scope", "{}")
+        cache.write("theme-etag-scope", "\"1\"")
+        dir.listFiles()!!.forEach { it.setLastModified(1_000) } // older than every screen entry (a 304 never rewrites them)
+        for (i in 0..64) cache.writeScreen("s$i", emptyMap(), "korpu", CachedScreen("\"1\"", 1, doc, data))
+        assertEquals("{}", cache.read("theme-scope"))
+        assertEquals("\"1\"", cache.read("theme-etag-scope"))
+        assertEquals(64, dir.listFiles()!!.count { !it.name.startsWith("theme-") })
     }
 }
