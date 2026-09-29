@@ -147,7 +147,7 @@ public final class Interpreter: Sendable {
         case let .list(items):
             return .list(try items.map { try evalStep($0, scope: scope, locals: locals, budget: budget) })
         case let .record(fields):
-            var result: [String: Value] = [:]
+            var result = [String: Value](minimumCapacity: fields.count)
             for (k, e) in fields { result[k] = try evalStep(e, scope: scope, locals: locals, budget: budget) }
             return .record(result)
         case let .interpolate(parts):
@@ -262,16 +262,21 @@ public final class Interpreter: Sendable {
 
     // MARK: - stdlib dispatch
 
-    private func callLambda<S: Scope>(_ lambda: Lambda, args: [Value], scope: S, budget: StepBudget) throws -> Value {
+    /// HOF callbacks pass at most two arguments; taking them directly (params past the given
+    /// ones bind `.null`, as `bind` does) saves an array per element.
+    private func callLambda<S: Scope>(_ lambda: Lambda, _ a: Value, _ b: Value = .null, scope: S, budget: StepBudget) throws -> Value {
         try budget.tick()
-        let locals = bind(lambda.params, args, parent: lambda.captured)
+        var locals = lambda.captured
+        for (i, p) in lambda.params.enumerated() {
+            locals = Locals(name: p, value: i == 0 ? a : i == 1 ? b : .null, parent: locals)
+        }
         return try evalStep(lambda.body, scope: scope, locals: locals, budget: budget)
     }
 
     private func callStdlib<S: Scope>(_ name: String, _ argExprs: [Expr], scope: S, locals: Locals?, budget: StepBudget) throws -> Value {
         let args = try argExprs.map { try evalStep($0, scope: scope, locals: locals, budget: budget) }
 
-        if Stdlib.nullPropagatingReceiver.contains(name), let first = args.first, first == .null {
+        if case .null? = args.first, Stdlib.nullPropagatingReceiver.contains(name) {
             return .null
         }
 
@@ -308,9 +313,19 @@ public final class Interpreter: Sendable {
             return f
         }
 
+        // A `switch` on String compares case by case: the names render paths hit most come first.
         switch name {
+        case "alpha": return Stdlib.alpha(try arg(0), try num(1))
         case "min": return .number(Stdlib.min(try num(0), try num(1)))
         case "max": return .number(Stdlib.max(try num(0), try num(1)))
+        case "str": return .string(Stdlib.str(try arg(0)))
+        case "formatNumber": return .string(Stdlib.formatNumber(try num(0), try num(1)))
+        case "plural":
+            guard case let .record(forms) = try arg(1) else { throw InterpreterError.typeMismatch("plural: forms not a record") }
+            let locale: String = { if case let .string(s) = scope.env("locale") { return s } else { return "ru" } }()
+            return .string(Stdlib.plural(try num(0), forms, locale: locale))
+        case "count": return .number(Stdlib.count(try list(0)))
+
         case "abs": return .number(Stdlib.abs(try num(0)))
         case "round": return .number(Stdlib.round(try num(0)))
         case "floor": return .number(Stdlib.floor(try num(0)))
@@ -351,9 +366,7 @@ public final class Interpreter: Sendable {
         case "matches": return .bool(Stdlib.matches(try str(0), try str(1)))
         case "substring": return .string(Stdlib.substring(try str(0), try num(1), optNum(2)))
         case "num": return Stdlib.num(try str(0)).map(Value.number) ?? .null
-        case "str": return .string(Stdlib.str(try arg(0)))
 
-        case "count": return .number(Stdlib.count(try list(0)))
         case "first": return Stdlib.first(try list(0))
         case "last": return Stdlib.last(try list(0))
         case "sum": return .number(Stdlib.sum(try list(0)))
@@ -367,18 +380,12 @@ public final class Interpreter: Sendable {
         case "range": return .list(Stdlib.range(try num(0)))
         case "with": return Stdlib.with(try arg(0), try arg(1))
 
-        case "formatNumber": return .string(Stdlib.formatNumber(try num(0), try num(1)))
         case "formatDuration": return .string(Stdlib.formatDuration(try num(0), try str(1)))
         case "formatDate":
             let tz: String = { if case let .string(s) = scope.env("timeZone") { return s } else { return "UTC" } }()
             return .string(Stdlib.formatDate(try num(0), try str(1), timeZone: tz))
-        case "plural":
-            guard case let .record(forms) = try arg(1) else { throw InterpreterError.typeMismatch("plural: forms not a record") }
-            let locale: String = { if case let .string(s) = scope.env("locale") { return s } else { return "ru" } }()
-            return .string(Stdlib.plural(try num(0), forms, locale: locale))
 
         case "gradient": return Stdlib.gradient(try list(0), try num(1))
-        case "alpha": return Stdlib.alpha(try arg(0), try num(1))
         case "spring": return Stdlib.spring(try num(0), try num(1))
         case "ease": return Stdlib.ease(try num(0))
         case "linear": return Stdlib.linear(try num(0))
@@ -388,14 +395,14 @@ public final class Interpreter: Sendable {
             let xs = try list(0)
             let f = try lambdaArg(1)
             return .list(try xs.enumerated().map { i, item in
-                try callLambda(f, args: [item, .number(Double(i))], scope: scope, budget: budget)
+                try callLambda(f, item, .number(Double(i)), scope: scope, budget: budget)
             })
         case "filter":
             let xs = try list(0)
             let f = try lambdaArg(1)
             var result: [Value] = []
             for (i, item) in xs.enumerated() {
-                if case .bool(true) = try callLambda(f, args: [item, .number(Double(i))], scope: scope, budget: budget) {
+                if case .bool(true) = try callLambda(f, item, .number(Double(i)), scope: scope, budget: budget) {
                     result.append(item)
                 }
             }
@@ -404,7 +411,7 @@ public final class Interpreter: Sendable {
             let xs = try list(0)
             let f = try lambdaArg(1)
             for (i, item) in xs.enumerated() {
-                if case .bool(true) = try callLambda(f, args: [item, .number(Double(i))], scope: scope, budget: budget) {
+                if case .bool(true) = try callLambda(f, item, .number(Double(i)), scope: scope, budget: budget) {
                     return item
                 }
             }
@@ -413,7 +420,7 @@ public final class Interpreter: Sendable {
             let xs = try list(0)
             let f = try lambdaArg(1)
             for (i, item) in xs.enumerated() {
-                if case .bool(true) = try callLambda(f, args: [item, .number(Double(i))], scope: scope, budget: budget) {
+                if case .bool(true) = try callLambda(f, item, .number(Double(i)), scope: scope, budget: budget) {
                     return .bool(true)
                 }
             }
@@ -422,7 +429,7 @@ public final class Interpreter: Sendable {
             let xs = try list(0)
             let f = try lambdaArg(1)
             for (i, item) in xs.enumerated() {
-                guard case .bool(true) = try callLambda(f, args: [item, .number(Double(i))], scope: scope, budget: budget) else {
+                guard case .bool(true) = try callLambda(f, item, .number(Double(i)), scope: scope, budget: budget) else {
                     return .bool(false)
                 }
             }
@@ -431,12 +438,12 @@ public final class Interpreter: Sendable {
             let xs = try list(0)
             let f = try lambdaArg(2)
             var acc = try arg(1)
-            for item in xs { acc = try callLambda(f, args: [acc, item], scope: scope, budget: budget) }
+            for item in xs { acc = try callLambda(f, acc, item, scope: scope, budget: budget) }
             return acc
         case "sortBy":
             let xs = try list(0)
             let f = try lambdaArg(1)
-            let decorated = try xs.map { item in (item, try callLambda(f, args: [item], scope: scope, budget: budget)) }
+            let decorated = try xs.map { item in (item, try callLambda(f, item, scope: scope, budget: budget)) }
             let sorted = decorated.sorted { a, b in
                 switch (a.1, b.1) {
                 case let (.number(x), .number(y)):

@@ -124,6 +124,18 @@ import Testing
         #expect(try eval(#"["c", "b"]"#, scope: scope) == .number(3))
     }
 
+    /// HOF callbacks bind (item, index) — reduce (acc, item), sortBy (item) — and any further
+    /// lambda params to null; a lambda may also take fewer.
+    @Test func lambdaParamsBeyondTheCallbackArgumentsAreNull() throws {
+        #expect(try eval(#"["f","map",[["v",[5,6]],["lam",["x","i","z"],["list",[["l","x"],["l","i"],["l","z"]]]]]]"#)
+            == .list([.list([.number(5), .number(0), .null]), .list([.number(6), .number(1), .null])]))
+        #expect(try eval(#"["f","map",[["v",[5]],["lam",[],["v",7]]]]"#) == .list([.number(7)]))
+        #expect(try eval(#"["f","reduce",[["v",[1,2]],["v",0],["lam",["acc","x","z"],["op","??",["l","z"],["op","+",["l","acc"],["l","x"]]]]]]"#)
+            == .number(3))
+        #expect(try eval(#"["f","sortBy",[["v",[3,1,2]],["lam",["x","i"],["op","??",["l","i"],["l","x"]]]]]"#)
+            == .list([.number(1), .number(2), .number(3)]))
+    }
+
     @Test func stepBudgetExceededThrows() throws {
         // A *wide* list (not deeply nested — nesting depth would blow the call stack well
         // before hitting the step budget) with more elements than the 10 000-step budget.

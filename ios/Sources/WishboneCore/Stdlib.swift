@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Errors surfaced by stdlib function calls (bad arity/types on a malformed wire AST — the
 /// compiler is expected to prevent these for well-formed documents).
@@ -73,15 +74,24 @@ enum Stdlib {
     /// context-sensitive, e.g. Greek final sigma) mapping. `Unicode.Scalar.Properties`
     /// exposes the same per-scalar full case mapping tables with no such context rules.
     static func upper(_ s: String) -> String {
+        if let ascii = asciiCaseFlipped(s, UInt8(ascii: "a")...UInt8(ascii: "z")) { return ascii }
         var result = String.UnicodeScalarView()
         for scalar in s.unicodeScalars { result.append(contentsOf: scalar.properties.uppercaseMapping.unicodeScalars) }
         return String(result)
     }
 
     static func lower(_ s: String) -> String {
+        if let ascii = asciiCaseFlipped(s, UInt8(ascii: "A")...UInt8(ascii: "Z")) { return ascii }
         var result = String.UnicodeScalarView()
         for scalar in s.unicodeScalars { result.append(contentsOf: scalar.properties.lowercaseMapping.unicodeScalars) }
         return String(result)
+    }
+
+    /// All-ASCII `s` with the case of `letters` flipped (ASCII case mapping is exactly that),
+    /// skipping the per-scalar table lookups; nil when `s` has any non-ASCII byte.
+    private static func asciiCaseFlipped(_ s: String, _ letters: ClosedRange<UInt8>) -> String? {
+        guard s.utf8.allSatisfy({ $0 < 0x80 }) else { return nil }
+        return String(decoding: s.utf8.map { letters.contains($0) ? $0 ^ 0x20 : $0 }, as: UTF8.self)
     }
 
     static func trim(_ s: String) -> String { CodePoints.trim(s) }
@@ -120,11 +130,26 @@ enum Stdlib {
     }
 
     static func matches(_ s: String, _ pattern: String) -> Bool {
-        // `\A…\z` (absolute start/end), not `^…$` (line start/end — `$` matches before a
-        // trailing newline, so "abc\n" would wrongly match the pattern "abc").
-        guard let re = try? NSRegularExpression(pattern: "\\A(?:\(pattern))\\z") else { return false }
+        guard let re = wholeMatchRegex(pattern) else { return false }
         let range = NSRange(s.startIndex..., in: s)
         return re.firstMatch(in: s, range: range) != nil
+    }
+
+    /// `matches` patterns compiled once per source — a `matches` inside `map` would otherwise
+    /// recompile per item (Android caches them too). Invalid patterns aren't cached.
+    /// ponytail: cleared wholesale past 64 entries; documents carry a handful of literal patterns.
+    private static let wholeMatchRegexes = Mutex<[String: NSRegularExpression]>([:])
+
+    private static func wholeMatchRegex(_ pattern: String) -> NSRegularExpression? {
+        if let re = wholeMatchRegexes.withLock({ $0[pattern] }) { return re }
+        // `\A…\z` (absolute start/end), not `^…$` (line start/end — `$` matches before a
+        // trailing newline, so "abc\n" would wrongly match the pattern "abc").
+        guard let re = try? NSRegularExpression(pattern: "\\A(?:\(pattern))\\z") else { return nil }
+        wholeMatchRegexes.withLock { cache in
+            if cache.count >= 64 { cache.removeAll() }
+            cache[pattern] = re
+        }
+        return re
     }
 
     static func substring(_ s: String, _ start: Double, _ end: Double?) -> String {
@@ -135,10 +160,12 @@ enum Stdlib {
     }
 
     static let numPattern = "^[+-]?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d+)?$"
+    /// Compiled once — what `range(of:options: .regularExpression)` rebuilt on every call.
+    private static let numRegex = try! NSRegularExpression(pattern: numPattern)
 
     static func num(_ s: String) -> Double? {
         let t = CodePoints.trim(s)
-        guard !t.isEmpty, t.range(of: numPattern, options: .regularExpression) != nil else { return nil }
+        guard !t.isEmpty, numRegex.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil else { return nil }
         guard let d = Double(t), d.isFinite else { return nil }
         return d
     }

@@ -52,6 +52,13 @@ import Testing
         #expect(Stdlib.upper("Straße") == "STRASSE")
     }
 
+    @Test func upperLowerOnASCIIChangeOnlyLetters() {
+        // The characters right outside A–Z / a–z: @ [ ` {
+        #expect(Stdlib.upper("abc-XYZ_09 @[`{") == "ABC-XYZ_09 @[`{")
+        #expect(Stdlib.lower("ABC-xyz_09 @[`{") == "abc-xyz_09 @[`{")
+        #expect(Stdlib.upper("") == "")
+    }
+
     @Test func sortByTreatsNegativeAndPositiveZeroAsEqualStable() {
         // list.sortBy.negzero: round(-0.4) == -0.0, and -0.0 < 0.0 is false either way, so a
         // stable sort must preserve the original [a, b] order rather than reordering on sign.
@@ -96,6 +103,7 @@ import Testing
         #expect(Stdlib.matches("test@example.com", "[^@]+@[^@]+\\.[a-z]+"))
         #expect(!Stdlib.matches("test@", "[^@]+@[^@]+\\.[a-z]+"))
         #expect(!Stdlib.matches("abc", "b"))
+        for _ in 0..<2 { #expect(!Stdlib.matches("(", "(")) } // an invalid pattern never matches
     }
 
     @Test func matchesUsesAbsoluteAnchorsNotLineAnchors() {
