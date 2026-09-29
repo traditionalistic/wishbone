@@ -10,7 +10,7 @@
 
 | Репозиторий | Локально | Remote | Роль в BDUI |
 |---|---|---|---|
-| **wishbone** | `~/projects/wishbone` | — | этот проект: доки BDUI + `ios/`, `android/`, `backend/` |
+| **wishbone** | `~/projects/wishbone` | `https://github.com/traditionalistic/wishbone` (приватный) | этот проект: доки BDUI + `ios/`, `android/`, `backend/` |
 | **bdui-contracts** | `~/projects/bdui-contracts` (`main`, скелет 0.1.0); `~/projects/bdui-contracts-wave1` (ветка `wave1/contract`, контракт 0.2.0) | `ssh://git@git.korputeam.ru/shared/bdui-contracts.git` | контракт: JSON Schema, каталог токенов/узлов/иконок, профили, реестр операций, фикстуры, CI-гейт `tools/validate.py` |
 | **Stratoapp** | `~/projects/Stratoapp` (ветка `dev`) | `git@git.korputeam.ru:ios/stratoapp.git` | iOS-потребитель: Tuist-модули, `DesignSystem`/`ThemeKit`, Postbox, Apollo-codegen. Архитектурные правила — `docs/Architecture/*.md`, `CLAUDE.md` |
 | **most** | `~/projects/most` (ветка `develop`) | `ssh://git@git.korputeam.ru/android/most.git` | Android-потребитель: `:core:ui`, `feature/giveaway`, `graphql/`, `MviViewModel` |
