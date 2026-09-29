@@ -3,7 +3,12 @@ package ops
 import (
 	"context"
 	"errors"
+	"io"
+	"net"
+	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -121,6 +126,19 @@ func TestGQLErrors(t *testing.T) {
 		}
 	})
 
+	t.Run("missing data", func(t *testing.T) {
+		u := &upstream{t: t, bodies: map[string]string{"Q": `{}`}}
+		srv := httptest.NewServer(u)
+		defer srv.Close()
+		g := &GQL{URL: srv.URL}
+		var out struct{}
+		err := g.Do(context.Background(), "Bearer x", false, "Q", "query Q { x }", nil, &out)
+		var f *failure
+		if !errors.As(err, &f) || f.code != "UPSTREAM_FAILED" {
+			t.Fatalf("err = %v, want *failure{UPSTREAM_FAILED}", err)
+		}
+	})
+
 	t.Run("empty URL", func(t *testing.T) {
 		g := &GQL{}
 		var out struct{}
@@ -177,5 +195,32 @@ func TestFailResult(t *testing.T) {
 	r2 := fail(errors.New("x"))
 	if r2.OK || r2.Error == nil || r2.Error.Code != "UPSTREAM_FAILED" {
 		t.Fatalf("fail(error) = %+v", r2)
+	}
+}
+
+// A non-200 answer with a body must not burn the keep-alive connection.
+func TestGQLReusesConnectionAfterErrorStatus(t *testing.T) {
+	var conns atomic.Int32
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(502)
+		io.WriteString(w, strings.Repeat("bad gateway ", 100))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, s http.ConnState) {
+		if s == http.StateNew {
+			conns.Add(1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+	g := &GQL{URL: srv.URL}
+	for i := 0; i < 3; i++ {
+		err := g.Do(context.Background(), "Bearer x", false, "Q", "query Q { x }", nil, nil)
+		var f *failure
+		if !errors.As(err, &f) || f.code != "UPSTREAM_FAILED" {
+			t.Fatalf("err = %v, want *failure{UPSTREAM_FAILED}", err)
+		}
+	}
+	if n := conns.Load(); n != 1 {
+		t.Fatalf("connections = %d, want 1", n)
 	}
 }
