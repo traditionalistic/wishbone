@@ -40,7 +40,9 @@ public final class Wishbone {
     public var brand: String {
         didSet { if brand != oldValue { loadTheme() } }
     }
-    public private(set) var theme: Theme
+    public private(set) var theme: Theme {
+        didSet { tokens = [:] }
+    }
     @ObservationIgnored public let host: any WishboneHost
     /// Compiled screen answers served without the network (playground fixtures), by screen id.
     @ObservationIgnored public var localScreens: [String: Data] = [:]
@@ -57,6 +59,12 @@ public final class Wishbone {
     /// Sends screen requests (tests pass a fake server).
     @ObservationIgnored let send: @Sendable (URLRequest) async throws -> (Data?, HTTPURLResponse)
     @ObservationIgnored private var themeTask: Task<Void, Never>?
+    /// Token values of the current theme by group and name.
+    @ObservationIgnored private var tokens: [TokenKey: Value] = [:]
+
+    struct TokenKey: Hashable {
+        let group: String, name: String
+    }
 
     public convenience init(baseURL: URL, brand: String = "korpu", host: (any WishboneHost)? = nil) {
         self.init(baseURL: baseURL, brand: brand, host: host ?? DefaultHost(), cache: .standard)
@@ -93,6 +101,21 @@ public final class Wishbone {
         #endif
         onLog?(level, message)
         previewLog?(level, message)
+    }
+
+    /// A token's value: a number for `@space`/`@radius`, else the `{"$group": name}` record renderers resolve (a colour
+    /// with the scheme). Memoised until the theme changes; its readers depend on the theme even when served from memo.
+    func token(_ group: String, _ name: String) -> Value {
+        access(keyPath: \.theme)
+        let key = TokenKey(group: group, name: name)
+        if let value = tokens[key] { return value }
+        let value: Value = switch group {
+        case "space": .number(theme.space[name] ?? 0)
+        case "radius": .number(theme.radius[name] ?? 0)
+        default: .record(["$\(group)": .string(name)])
+        }
+        tokens[key] = value
+        return value
     }
 
     // MARK: theme (cached per brand, revalidated with ETag)

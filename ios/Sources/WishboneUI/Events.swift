@@ -145,7 +145,7 @@ struct A11yModifier: ViewModifier {
     let ctx: RenderContext
 
     func body(content: Content) -> some View {
-        let id = "wb.\(ctx.store.document.screen).\(node.id)\(ctx.idSuffix)"
+        let id = ctx.store.a11yID(node.id, idSuffix: ctx.idSuffix)
         let label: String? = if case let .string(s)? = node.a11y?.label.flatMap({ ctx.eval($0) }) { s } else { nil }
         let hidden = node.a11y?.hidden.flatMap { ctx.eval($0) } == .bool(true)
         let container = !node.children.isEmpty && node.on["tap"] == nil && node.on["longPress"] == nil

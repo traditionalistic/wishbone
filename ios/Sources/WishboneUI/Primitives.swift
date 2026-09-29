@@ -11,10 +11,18 @@ struct Children: View {
     let axis: String?
 
     var body: some View {
-        ForEach(Array(node.children.enumerated()), id: \.element.id) { i, child in
+        ForEach(Positioned(nodes: node.children), id: \.element.id) { i, child in
             NodeView(node: child, ctx: ctx.child(axis: axis, sibling: i))
         }
     }
+}
+
+/// Nodes with their positions, without copying them into an array on every render.
+struct Positioned: RandomAccessCollection {
+    let nodes: [Node]
+    var startIndex: Int { 0 }
+    var endIndex: Int { nodes.count }
+    subscript(i: Int) -> (offset: Int, element: Node) { (i, nodes[i]) }
 }
 
 struct StackNode: View {
@@ -131,11 +139,12 @@ struct TextNode: View {
     var body: some View {
         let wb = ctx.store.wishbone
         let style = wb.theme.textStyle(props["style"])
+        let font = style.map(Fonts.resolved)
         let maxLines = props.count("maxLines", in: 0...10_000) ?? 0
         Text(verbatim: props.string("text") ?? "")
-            .font(style.map(Fonts.font) ?? .body)
+            .font(font?.font ?? .body)
             .tracking(style?.tracking ?? 0)
-            .lineSpacing(style.map(Fonts.extraLineSpacing) ?? 0)
+            .lineSpacing(font?.lineSpacing ?? 0)
             .foregroundStyle(wb.theme.color(props["color"], dark: wb.env.dark)?.color ?? .primary)
             .multilineTextAlignment(Self.textAlignment(props.string("textAlign")))
             .lineLimit(maxLines > 0 ? maxLines : nil)
@@ -234,6 +243,16 @@ struct NativeNode: View {
 }
 
 extension Fonts {
+    @MainActor private static var memo: [TypeStyle: (font: Font, lineSpacing: CGFloat)] = [:]
+
+    /// A text style's font and extra line spacing, made once per style (a theme has a handful).
+    @MainActor static func resolved(_ style: TypeStyle) -> (font: Font, lineSpacing: CGFloat) {
+        if let known = memo[style] { return known }
+        let made = (font(style), extraLineSpacing(style))
+        memo[style] = made
+        return made
+    }
+
     /// Extra spacing between lines so a line box is `lineHeight` tall (0 when unset or smaller).
     static func extraLineSpacing(_ style: TypeStyle) -> CGFloat {
         guard let lh = style.lineHeight else { return 0 }
