@@ -120,6 +120,18 @@ class MotionTest {
     }
 
     @Test
+    fun aCaptureWaitsForFiniteTimelinesOnly() {
+        val r = registry() // dim: autoplay, 100 ms; spin: infinite
+        r.firstFrame(0)
+        r.register("s", "s", 0)
+        r.play("spin", 0)
+        assertTrue(r.finiteRunning(50 * ms, false))
+        assertFalse(r.finiteRunning(150 * ms, false)) // dim is over; the spinner keeps the frame loop, not the shot
+        assertTrue(r.running(150 * ms))
+        assertFalse(r.finiteRunning(50 * ms, true)) // reduce motion shows the end state at once
+    }
+
+    @Test
     fun infiniteTimelineRunsOnlyWhileATargetIsLive() {
         val r = TimelineRegistry(
             Document.parse(
