@@ -1,15 +1,18 @@
-// Preview session for the open screen: create it, follow its devices/logs over WS, and push every
-// source change (debounced 300 ms). The push response's diagnostics drive the editor. A lost session
-// (404 on push, or a dropped socket whose code is no longer listed) is recreated; until then pushes go
-// through /compile so diagnostics keep updating.
+// The tab's preview session: open it once (the code survives reloads in sessionStorage while the server
+// still lists it), follow its devices, logs, board and frames over WS, and push every source change
+// (debounced 300 ms); opening another screen is just a push of its source. The push response's
+// diagnostics drive the editor. A lost session (404 on push, or a dropped socket whose code is no longer
+// listed) is recreated; until then pushes go through /compile so diagnostics keep updating.
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, api, type CompileResult, type Device } from '../api'
+import { ApiError, api, type Board, type CompileResult, type Device } from '../api'
+import { applyFrame, frameKey, type Frames } from '../model/board'
 import type { Diag, Source } from '../model/types'
 import type { LogEntry } from './Console'
 
 export type CompileStatus = 'pending' | 'ok' | 'error' | 'offline'
 
 const RETRY_MS = 3000
+const SESSION_KEY = 'wishbone.admin.preview'
 
 /** Push to the session, or compile when there is none / it is gone (`lost`). Other errors propagate. */
 export async function pushSource(
@@ -28,21 +31,34 @@ export async function pushSource(
   return { result: await client.compile(source), lost: false }
 }
 
-export function usePreview(screenId: string | null, source: Source | null) {
+/** The stored code while the server lists it, else a new session. */
+export async function openSession(
+  stored: string | null,
+  client: { previewSessions: () => Promise<{ code: string }[]>; createPreview: () => Promise<{ code: string }> } = api,
+): Promise<string> {
+  if (stored && (await client.previewSessions().then((l) => l.some((s) => s.code === stored), () => false))) return stored
+  return (await client.createPreview()).code
+}
+
+export function usePreview(source: Source | null) {
   const [code, setCode] = useState<string | null>(null)
-  /** bumped to (re)create the session */
+  /** bumped to (re)open the session */
   const [epoch, setEpoch] = useState(0)
   const [devices, setDevices] = useState<Device[]>([])
+  const [board, setBoard] = useState<Board | null>(null)
+  const [frames, setFrames] = useState<Frames>(() => new Map())
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [diags, setDiags] = useState<Diag[]>([])
   const [status, setStatus] = useState<CompileStatus>('pending')
 
-  useEffect(() => setLogs([]), [screenId])
+  const screen = source?.id
+  useEffect(() => setLogs([]), [screen])
 
   useEffect(() => {
     setCode(null)
     setDevices([])
-    if (!screenId) return
+    setBoard(null)
+    setFrames(new Map())
     let dead = false
     let stop: (() => void) | undefined
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -51,8 +67,10 @@ export function usePreview(screenId: string | null, source: Source | null) {
       stop = api.previewSocket(
         c,
         (m) => {
-          if (m.type === 'devices') setDevices(m.list ?? [])
-          else if (m.type === 'log') setLogs((l) => [...l.slice(-499), { at: Date.now(), device: m.device, level: m.level, message: m.message }])
+          if (m.type === 'log') setLogs((l) => [...l.slice(-499), { at: Date.now(), device: m.device, level: m.level, message: m.message }])
+          else if (m.type === 'devices') setDevices(m.list)
+          else if (m.type === 'board') setBoard(m.board)
+          setFrames((f) => applyFrame(f, m))
         },
         async () => {
           // dropped: reconnect if the session still lives (or the server is unreachable), else recreate it
@@ -63,9 +81,10 @@ export function usePreview(screenId: string | null, source: Source | null) {
         },
       )
     }
-    api.createPreview().then(
-      ({ code: c }) => {
+    openSession(sessionStorage.getItem(SESSION_KEY)).then(
+      (c) => {
         if (dead) return
+        sessionStorage.setItem(SESSION_KEY, c)
         setCode(c)
         connect(c)
       },
@@ -78,7 +97,7 @@ export function usePreview(screenId: string | null, source: Source | null) {
       clearTimeout(timer)
       stop?.()
     }
-  }, [screenId, epoch])
+  }, [epoch])
 
   const seq = useRef(0)
   useEffect(() => {
@@ -102,6 +121,9 @@ export function usePreview(screenId: string | null, source: Source | null) {
   return {
     code,
     devices,
+    board,
+    frames,
+    frame: (screen: string, device: string) => frames.get(frameKey(screen, device)),
     logs,
     clearLogs: () => setLogs([]),
     diags,
@@ -109,5 +131,6 @@ export function usePreview(screenId: string | null, source: Source | null) {
     setDiags,
     status,
     play: code ? (timeline: string) => void api.play(code, timeline).catch(() => undefined) : undefined,
+    retry: code ? () => void api.retry(code).catch(() => undefined) : undefined,
   }
 }

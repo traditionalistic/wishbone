@@ -46,7 +46,7 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
   const [tlSel, setTlSel] = useState<TlSel>({ tl: 0 })
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
-  const preview = usePreview(screenId, source)
+  const preview = usePreview(source)
 
   const dirty = useMemo(() => source !== null && JSON.stringify(source) !== saved, [source, saved])
   const srcRef = useRef(source)
