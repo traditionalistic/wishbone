@@ -7,7 +7,8 @@ export const frameKey = (screen: string, device: string) => `${screen}\n${device
 
 function put(next: Map<string, Frame>, prev: Frames, f: Frame): Map<string, Frame> {
   const k = frameKey(f.screen, f.device)
-  const old = prev.get(k)
+  // a `frames` batch lists a device's stored ready before its rendering of the same pair: that ready is the picture to keep
+  const old = next.get(k) ?? prev.get(k)
   next.set(k, f.status === 'rendering' && old?.src ? { ...f, src: old.src, width: old.width, height: old.height, settled: old.settled } : f)
   return next
 }

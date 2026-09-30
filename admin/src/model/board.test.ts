@@ -31,6 +31,14 @@ describe('applyFrame', () => {
     expect(next.get(frameKey('a', 'd1'))?.src).toBe('data:image/jpeg;base64,a')
   })
 
+  it('a frames batch keeps the picture of the ready it carries before a rendering of the same pair', () => {
+    const list: Frame[] = [ready('a', 'd1', 'data:image/jpeg;base64,new'), { screen: 'a', device: 'd1', status: 'rendering' }]
+    const fresh = applyFrame(new Map(), { type: 'frames', list })
+    expect(fresh.get(frameKey('a', 'd1'))?.src).toBe('data:image/jpeg;base64,new')
+    const replaced = applyFrame(frames(ready('a', 'd1', 'data:image/jpeg;base64,old')), { type: 'frames', list })
+    expect(replaced.get(frameKey('a', 'd1'))).toEqual({ screen: 'a', device: 'd1', status: 'rendering', src: 'data:image/jpeg;base64,new', width: 402, height: 874, settled: true })
+  })
+
   it('a board drops frames of screens that left it', () => {
     const next = applyFrame(frames(ready('a', 'd1'), ready('b', 'd1'), ready('b', 'd2')), { type: 'board', board: { focus: 'a', screens: [scr('a')] } })
     expect([...next.keys()]).toEqual([frameKey('a', 'd1')])
