@@ -8,7 +8,7 @@
    {"type": "stack", "id": "formContent", "props": {"spacing": "@space.xl", "width": "fill", "padding": "={h: @space.lg, top: @space.sm, bottom: 220 + env.safeBottom}"}, "children": [
 
     {"type": "stack", "id": "header", "props": {"spacing": "@space.sm", "width": "fill"}, "children": [
-     {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "style": "plain", "size": "small"}, "on": {"tap": "back()"}},
+     {"type": "NavButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "iconSize": 16}, "on": {"tap": "back()"}},
      {"type": "text", "id": "title", "props": {"text": "Подписка", "style": "@type.largeTitle"}, "a11y": {"role": "header"}},
      {"type": "text", "id": "lead", "props": {"text": "Билеты каждую неделю и доступ к закрытым розыгрышам. Отменить можно в любой момент.", "style": "@type.body", "color": "@color.el9"}}
     ]},

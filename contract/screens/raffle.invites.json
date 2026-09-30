@@ -7,7 +7,7 @@
   {"type": "stack", "id": "header", "props": {"axis": "z", "width": "fill", "height": 52, "padding": "={h: @space.sm}"}, "children": [
    {"type": "text", "id": "headerTitle", "props": {"text": "Мои приглашения", "style": "@type.headingSmall", "maxLines": 1}, "a11y": {"role": "header"}},
    {"type": "stack", "id": "headerRow", "props": {"axis": "h", "align": "center", "width": "fill"}, "children": [
-    {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "size": "small", "style": "plain"}, "on": {"tap": "back()"}},
+    {"type": "NavButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "iconSize": 16}, "on": {"tap": "back()"}},
     {"type": "spacer", "id": "headerGap"}
    ]}
   ]},
