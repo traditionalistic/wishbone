@@ -216,6 +216,14 @@
     "iconDisabled": {
       "light": "#525252FF",
       "dark": "#525252FF"
+    },
+    "navGlassStroke": {
+      "light": "#DDDDDD1A",
+      "dark": "#2222221A"
+    },
+    "chatGlassShadow": {
+      "light": "#1010101A",
+      "dark": "#1010101A"
     }
   },
   "type": {
