@@ -51,4 +51,37 @@ class CaptureTest {
         assertEquals(0, s.runningHandlers)
         assertEquals(Value.Num(2.0), s.state("step"))
     }
+
+    @Test
+    fun settleWaitsTheFloorThenTwoQuietPollsAndGivesUpAtTheDeadline() {
+        assertEquals(Settle.Wait(0), settle(0, 0, false))
+        assertEquals(Settle.Wait(0), settle(699, 0, false, quietPolls = 5)) // quiet inside the floor does not count
+        assertEquals(Settle.Wait(1), settle(700, 0, false))
+        assertEquals(Settle.Capture(settled = true), settle(750, 0, false, quietPolls = 1))
+        assertEquals(Settle.Wait(0), settle(750, 1, false, quietPolls = 1)) // an image in flight resets the streak…
+        assertEquals(Settle.Wait(0), settle(750, 0, true, quietPolls = 1)) // …so does a finite timeline
+        assertEquals(Settle.Wait(0), settle(5999, 1, true))
+        assertEquals(Settle.Capture(settled = false), settle(6000, 1, true))
+        assertEquals(Settle.Capture(settled = false), settle(6000, 0, false, quietPolls = 1))
+    }
+
+    /** The poll (50 ms apart, the first at the floor) that captured, and whether it was settled. */
+    private fun captureAt(busy: List<Boolean>): Pair<Int, Boolean>? {
+        var quiet = 0
+        for ((i, b) in busy.withIndex()) {
+            when (val s = settle(SETTLE_FLOOR_MS + i * SETTLE_POLL_MS, if (b) 1 else 0, false, quiet)) {
+                is Settle.Wait -> quiet = s.quietPolls
+                is Settle.Capture -> return i to s.settled
+            }
+        }
+        return null
+    }
+
+    @Test
+    fun aBusyPollRestartsTheQuietStreak() {
+        assertEquals(1 to true, captureAt(listOf(false, false, false)))
+        assertEquals(3 to true, captureAt(listOf(false, true, false, false, false)))
+        assertEquals(null, captureAt(listOf(true, false, true)))
+        assertEquals(106 to false, captureAt(List(200) { true })) // 700 + 106 × 50 = 6000
+    }
 }
