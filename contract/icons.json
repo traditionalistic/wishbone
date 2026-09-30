@@ -1,6 +1,6 @@
 {
   "close": { "ios": "xmark", "android": "wb_ic_close" },
-  "back": { "ios": "chevron.left", "android": "wb_ic_back" },
+  "back": { "ios": "arrow.left", "android": "wb_ic_back" },
   "chevronRight": { "ios": "chevron.right", "android": "wb_ic_chevron_right" },
   "chevronDown": { "ios": "chevron.down", "android": "wb_ic_chevron_down" },
   "info": { "ios": "info.circle", "android": "wb_ic_info" },
