@@ -15,7 +15,6 @@ enum Shot: Equatable {
     case image(jpeg: Data, size: CGSize, settled: Bool)
     case error(String)
 
-    /// Wire form (§3).
     func message(job: Int) -> [String: Any] {
         switch self {
         case let .image(jpeg, size, settled):
@@ -40,7 +39,6 @@ struct Settle {
         case capture(settled: Bool)
     }
 
-    /// Quiet polls in a row so far.
     private(set) var quiet = 0
 
     mutating func poll(elapsed: Double, imagesInFlight: Int, finiteTimelineRunning: Bool) -> Verdict {
