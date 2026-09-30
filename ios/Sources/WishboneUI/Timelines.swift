@@ -96,6 +96,9 @@ final class Timelines {
         byTarget[id]?.contains { running.contains($0) } ?? false
     }
 
+    /// A finite timeline is playing (a shot waits for it, spec 2026-09-30 §2.2); infinite ones (spinners) don't count.
+    var finiteRunning: Bool { running.contains { timelines[$0]?.repeatCount != -1 } }
+
     /// Composed values of every started timeline targeting `id`, for instance `index` at `date`: only this target's
     /// tracks are sampled (per frame).
     func sample(_ id: String, index: Int, at date: Date) -> TimelineSample {
