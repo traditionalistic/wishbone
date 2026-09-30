@@ -117,7 +117,7 @@
    {"type": "shape", "id": "barBg", "props": {"fill": "@color.bg1Elevated", "width": "fill", "height": "fill", "shadow": "={color: @color.shadow, radius: 12}",
     "opacity": "=interpolate(y, [heroH - 140, heroH - 70], [0, 1])"}},
    {"type": "stack", "id": "barRow", "props": {"axis": "h", "align": "center", "spacing": "@space.sm", "width": "fill", "height": "fill", "padding": "={h: @space.sm, top: env.safeTop}"}, "children": [
-    {"type": "IconButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "size": "small"}, "on": {"tap": "back()"}},
+    {"type": "NavButton", "id": "backBtn", "props": {"icon": "@icon.back", "label": "Назад", "iconSize": 16}, "on": {"tap": "back()"}},
     {"type": "text", "id": "barTitle", "props": {"text": "Промо недели", "style": "@type.headingSmall",
      "opacity": "=interpolate(y, [heroH - 100, heroH - 50], [0, 1])", "offsetY": "=interpolate(y, [heroH - 100, heroH - 50], [10, 0])"}},
     {"type": "spacer", "id": "barGap"},

@@ -7,7 +7,8 @@ import WishboneCore
 @MainActor @Observable
 final class Clock {
     private(set) var now = Date().timeIntervalSince1970 * 1000
-    @ObservationIgnored private var users = 0
+    /// Screens on stage (a `RouteView` retains on appear, releases on disappear).
+    @ObservationIgnored private(set) var users = 0
     @ObservationIgnored private var ticker: Task<Void, Never>?
 
     func retain() {

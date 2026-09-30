@@ -51,6 +51,9 @@ enum ImageLoader {
     /// away (a waiter's cancellation doesn't stop it); count waiters and cancel if bandwidth matters.
     private static let loading = Mutex<[URL: Task<PlatformImage?, Error>]>([:])
 
+    /// Downloads in flight (a shot waits for them, spec 2026-09-30 §2.2).
+    static var inFlight: Int { loading.withLock { $0.count } }
+
     /// Throws when offline; nil when the response is not an image. `fetch` — the download (tests pass a fake).
     @concurrent static func load(_ url: URL, fetch: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 })
         async throws -> PlatformImage? {

@@ -13,6 +13,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WishboneLottie.install()
         WishboneRive.install(this)
-        setContent { Playground(intent.getStringExtra("route"), intent.getStringExtra("brand"), intent.getStringExtra("scheme")) }
+        setContent { Playground(intent.getStringExtra("route"), intent.getStringExtra("brand"), intent.getStringExtra("scheme"), intent.getStringExtra("baseUrl")) }
     }
 }

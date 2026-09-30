@@ -2,7 +2,7 @@
 enum Icons {
     static let symbols: [String: String] = [
         "close": "xmark",
-        "back": "chevron.left",
+        "back": "arrow.left",
         "chevronRight": "chevron.right",
         "chevronDown": "chevron.down",
         "info": "info.circle",

@@ -9,12 +9,16 @@ import { Ctx, type EditorCtx } from './ctx'
 import { dslOptions } from './dsl'
 import { Inspector } from './Inspector'
 import { JsonPanel } from './JsonPanel'
+import { Preview, type Picks } from './Preview'
+import { Storyboard } from './Storyboard'
 import { TimelinePanel, type TlSel } from './TimelinePanel'
 import { TopBar } from './TopBar'
 import { TreePanel } from './TreePanel'
 import { usePreview } from './usePreview'
 
-type Tab = 'script' | 'timeline' | 'json'
+type Tab = 'script' | 'timeline' | 'json' | 'board'
+
+const PREVIEW_KEY = 'wishbone.admin.previewColumn'
 
 function normalize(s: ScreenDetail): Source {
   const d: Partial<Source> = s.draft ?? {}
@@ -46,7 +50,23 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
   const [tlSel, setTlSel] = useState<TlSel>({ tl: 0 })
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
-  const preview = usePreview(screenId, source)
+  const preview = usePreview(source)
+  const [picks, setPicks] = useState<Picks>({})
+  const [showPreview, setShowPreview] = useState(() => {
+    try {
+      return localStorage.getItem(PREVIEW_KEY) !== 'hidden'
+    } catch {
+      return true
+    }
+  })
+  const togglePreview = () => {
+    setShowPreview(!showPreview)
+    try {
+      localStorage.setItem(PREVIEW_KEY, showPreview ? 'hidden' : 'shown')
+    } catch {
+      /* storage blocked: the choice lasts until reload */
+    }
+  }
 
   const dirty = useMemo(() => source !== null && JSON.stringify(source) !== saved, [source, saved])
   const srcRef = useRef(source)
@@ -257,6 +277,8 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
           problems={diags.length}
           code={preview.code}
           devices={preview.devices}
+          showPreview={showPreview}
+          onTogglePreview={togglePreview}
           dirty={dirty}
           busy={busy}
           notice={notice}
@@ -294,7 +316,7 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
             </aside>
             <main className="center">
               <div className="tabs">
-                {(['script', 'timeline', 'json'] as Tab[]).map((t) => {
+                {(['script', 'timeline', 'json', 'board'] as Tab[]).map((t) => {
                   const n = diags.filter((d) => (t === 'script' ? d.path === 'script' : t === 'timeline' ? d.path.startsWith('timelines/') : false)).length
                   return (
                     <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
@@ -331,7 +353,34 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
                   <JsonPanel source={source} onChange={setSource} />
                 </div>
               )}
+              {tab === 'board' && (
+                <div className="tab-body">
+                  <Storyboard
+                    board={preview.board}
+                    devices={preview.devices}
+                    picks={picks}
+                    frame={preview.frame}
+                    code={preview.code}
+                    stale={preview.status === 'error'}
+                    onRetry={preview.retry}
+                    onOpen={(id) => (id === screenId ? setTab('script') : open(id))}
+                    canOpen={(id) => screens.some((s) => s.id === id)}
+                  />
+                </div>
+              )}
             </main>
+            {showPreview && (
+              <Preview
+                screen={source.id}
+                devices={preview.devices}
+                picks={picks}
+                onPick={(platform, device) => setPicks((p) => ({ ...p, [platform]: device }))}
+                frame={preview.frame}
+                code={preview.code}
+                stale={preview.status === 'error'}
+                onRetry={preview.retry}
+              />
+            )}
             <aside className="right">
               <Inspector
                 key={`${screenId}:${selPath.join('.')}`}

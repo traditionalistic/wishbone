@@ -88,6 +88,9 @@ func TestPreviewSession(t *testing.T) {
 	if get(doc, "data", "me", "value", "avatar") != e.url+"/assets/avatar.png" {
 		t.Fatalf("asset URLs use the host the device connected through: %v", get(doc, "data", "me"))
 	}
+	if m := recv(t, admin); m["type"] != "board" || m["focus"] != "t.prev" || get(m, "screens", 0, "title") != "Превью" {
+		t.Fatalf("the admin gets the board: %v", m)
+	}
 
 	late := e.ws("/v1/preview/ws?session=" + session)
 	say(t, late, `{"type":"hello","platform":"ios","device":"iPhone","runtime":"1.0.0"}`)
@@ -109,6 +112,9 @@ func TestPreviewSession(t *testing.T) {
 	}
 	if m := recv(t, dev); m["type"] != "play" || m["timeline"] != "intro" {
 		t.Fatalf("play (and no document for the failed push): %v", m)
+	}
+	if code, b := e.admin("POST", "/preview/"+session+"/retry", nil); code != 204 {
+		t.Fatalf("retry: %d %s", code, b)
 	}
 
 	say(t, dev, `{"type":"log","level":"error","message":"boom"}`)
@@ -140,6 +146,8 @@ func TestPreviewUnknownSession(t *testing.T) {
 	wantErr(t, code, b, 404, "NOT_FOUND")
 	code, b = e.admin("POST", "/preview/ZZZZ/play", map[string]string{"timeline": "intro"})
 	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, b = e.admin("POST", "/preview/ZZZZ/retry", nil)
+	wantErr(t, code, b, 404, "NOT_FOUND")
 	for _, p := range []string{"/v1/preview/ws?session=ZZZZ", "/admin/api/preview/ZZZZ/ws?token=" + password} {
 		if _, resp, err := websocket.Dial(context.Background(), "ws"+strings.TrimPrefix(e.url, "http")+p, nil); err == nil || resp.StatusCode != 404 {
 			t.Fatalf("%s: %v", p, err)
@@ -165,6 +173,8 @@ func TestPreviewDisabled(t *testing.T) {
 	code, b = e.admin("POST", "/preview/ZZZZ/document", map[string]any{"source": json.RawMessage(previewSrc)})
 	wantErr(t, code, b, 404, "NOT_FOUND")
 	code, b = e.admin("POST", "/preview/ZZZZ/play", map[string]string{"timeline": "intro"})
+	wantErr(t, code, b, 404, "NOT_FOUND")
+	code, b = e.admin("POST", "/preview/ZZZZ/retry", nil)
 	wantErr(t, code, b, 404, "NOT_FOUND")
 	code, b = e.admin("GET", "/preview/ZZZZ/ws", nil)
 	wantErr(t, code, b, 404, "NOT_FOUND")

@@ -110,11 +110,15 @@ struct StoreEffects: EffectSink {
 }
 
 extension Store {
+    /// Effects a shot's store drops (spec 2026-09-30 §2.1): they would leave the device or move the live screen.
+    static let outward: Set<String> = ["navigate", "back", "present", "dismiss", "open", "haptic", "track", "host"]
+
     func perform(effect: String, args: [Value], awaited: Bool) async {
         func str(_ i: Int) -> String? { if i < args.count, case let .string(s) = args[i] { s } else { nil } }
         func rec(_ i: Int) -> [String: Value] { if i < args.count, case let .record(r) = args[i] { r } else { [:] } }
         let host = wishbone.host
         guard !Task.isCancelled else { return } // the screen is gone: no more effects
+        if capture, Self.outward.contains(effect) { return }
         switch effect {
         case "navigate":
             guard let id = str(0) else { return }
@@ -151,9 +155,7 @@ extension Store {
             timelines.play(name)
             guard awaited, !wishbone.env.reduceMotion else { return } // reduce motion: already at the end
             guard timelines.timelines[name]?.repeatCount != -1 else {
-                // Contract: never resumes — until the screen (and with it this run) is discarded.
-                while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
-                return
+                return await pendUntilCancelled() // contract: never resumes — until the screen (and this run) is discarded
             }
             try? await Task.sleep(for: .milliseconds(Int(min(timelines.duration(name), 86_400_000))))
         case "stop":

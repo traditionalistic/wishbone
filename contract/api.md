@@ -33,7 +33,19 @@
 Документы, пришедшие по превью, несут `revision: 0`: `/v1/call` и `/v1/data` с `revision: 0` адресуются к последнему документу живой превью-сессии этого экрана (операции и источники берутся из него).
 
 - `GET /v1/preview/sessions` → `[{"code": "K7Q2", "screen": "showcase.promo", "title": "Промо", "devices": 1, "updatedAt": "RFC3339"}]` (только живые сессии: последняя активность < 2 ч).
-- `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.1.0"}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`.
+- `GET /v1/preview/ws?session=K7Q2` — WebSocket. Устройство первым шлёт `{"type": "hello", "platform": "ios", "device": "iPhone 17 Pro", "runtime": "1.1.0", "render": true}`; сервер сразу отвечает последним документом сессии, если он есть. Сервер → устройство: `{"type": "document", "screen": "id", "document": {…}, "data": {…}}` (формы как в `/v1/screens`), `{"type": "play", "timeline": "intro"}`, `{"type": "render", "job": 17, "screen": "raffle.tickets", "document": {…}, "data": {…}}`. Устройство → сервер: `{"type": "log", "level": "info"|"warn"|"error", "message": "…"}`, `{"type": "shot", "job": 17, "image": "<base64 JPEG>", "width": 402, "height": 874, "settled": true}` или `{"type": "shot", "job": 17, "error": "app is in the background"}`.
+
+#### Снимки для админки
+
+Устройство с `render: true` снимает экраны доски админки (спека превью §1, §2): на задание `render` отвечает ровно одним `shot`. Плейграунд без `render: true` получает живое превью, но не задания.
+
+- Задания раздаются, только пока сессию смотрит хотя бы одна админка. У устройства одно задание в работе; следующее сервер шлёт после ответа. Порядок — экраны доски (фокус первым), у которых нет снимка этого устройства для текущего содержимого (`sha256(document, data)`); неизменившийся экран повторно не снимается.
+- `document` и `data` в `render` — в тех же формах, что в `document`; параметры экрана — дефолты документа. Снимок не ходит в сеть: `call`/`refresh` не уходят, навигация и прочие эффекты не выполняются.
+- `shot`: `image` — base64 JPEG (начинается с `FF D8 FF`) не больше 1 МиБ после декодирования; `width`/`height` — размер в pt/dp, `1…2000` (дробные админка получает округлёнными); `settled: false` — снято, не дождавшись покоя. `error` обрезается до 200 символов. Иначе снимок считается проваленным с `error: "invalid shot"`.
+- Нет ответа 15 с — снимок проваливается с `error: "timeout"`. Проваленный снимок считается сделанным до `retry` или нового содержимого экрана.
+- `shot` не на задание в работе (по `job`) отбрасывается.
+- Лимит сообщения устройства — 4 МиБ; больше — сервер закрывает сокет.
+- Уход устройства удаляет его снимки.
 
 ## Admin API
 
@@ -53,9 +65,28 @@
 | `GET /admin/api/catalog` | (`templates[].params[].default` — в формате значения исходника §3.1: JSON-литерал, `@token` или `=выражение`) → `{"primitives": <primitives.json>, "stdlib": <stdlib.json>, "templates": [{"name", "params": [{"name", "type", "default"?}], "events": ["tap"], "slot": bool}], "tokens": {"color": [..], "type": [..], "space": [..], "radius": [..], "motion": [..]}, "icons": [..], "ops": [{"id", "kind", "args", "result"}], "brands": ["korpu", "kz"]}` |
 | `GET /admin/api/templates/{name}` | → исходник шаблона (только чтение) |
 | `POST /admin/api/preview` | `{"screen": "id"?}` → `{"code": "K7Q2"}` |
-| `POST /admin/api/preview/{code}/document` | `{"source": <исходник>}` → `{"ok", "diags": [Diag]}`; при `ok` документ (с данными) рассылается устройствам сессии |
+| `POST /admin/api/preview/{code}/document` | `{"source": <исходник>}` → `{"ok", "diags": [Diag]}`; при `ok` документ (с данными) рассылается устройствам сессии, а админкам — доска этого экрана (ниже); сессия переходит на `screen` документа |
 | `POST /admin/api/preview/{code}/play` | `{"timeline": "intro"}` → 204 |
-| `GET /admin/api/preview/{code}/ws?token=` | WebSocket, сервер → админка: `{"type": "devices", "list": [{"id", "platform", "device"}]}` при каждом изменении, `{"type": "log", "device", "level", "message"}` |
+| `POST /admin/api/preview/{code}/retry` | → 204 — сбрасывает проваленные снимки сессии, их экраны рендерятся заново |
+| `GET /admin/api/preview/{code}/ws?token=` | WebSocket, сервер → админка: `devices` при каждом изменении, `log`, `board`, `frame`, `frames` (ниже) |
+
+**WebSocket админки.** Сообщения сервера:
+
+```jsonc
+{"type": "devices", "list": [{"id": "d1", "platform": "ios", "device": "iPhone 17 Pro", "render": true}]}
+{"type": "log", "device": "d1", "level": "warn", "message": "…"}
+{"type": "board", "focus": "raffle.main", "screens": [
+  {"id": "raffle.main", "title": "Розыгрыш", "links": [{"to": "raffle.tickets", "kind": "navigate", "via": "node:progress"}]},
+  {"id": "raffle.gone", "title": "", "links": [], "error": "screen not found"}]}
+{"type": "frame", "screen": "raffle.main", "device": "d1", "status": "rendering"}
+{"type": "frame", "screen": "raffle.main", "device": "d1", "status": "ready", "src": "data:image/jpeg;base64,…", "width": 402, "height": 874, "settled": true}
+{"type": "frame", "screen": "raffle.main", "device": "d2", "status": "failed", "error": "timeout"}
+{"type": "frames", "list": [ /* объекты frame без "type" */ ]}
+```
+
+- `board` — открытый экран (`focus`, первым в `screens`, скомпилирован из присланного исходника) и сохранённые черновики экранов, связанных с ним через `navigate`/`present` с литералом-целью, в обе стороны: компонента связности, обход в ширину от фокуса, не больше 16 экранов. `links` — переходы экрана без дублей, по `(to, kind, via)`; `via` — `node:<id>` или `handler:<name>`. Экран с `error` не рендерится: цели нет среди экранов (`"screen not found"`) или черновик не компилируется (`"draft does not compile: <первая диагностика>"`, `links: []`). Доска приходит, когда меняется её состав, заголовки или ссылки.
+- `frame` — снимок экрана `screen` с устройства `device`: `rendering` (задание выдано; прежний снимок, если был, остаётся актуальным до ответа), `ready` (`src` — только `data:image/jpeg;base64,…`, `width`/`height` в pt/dp, `settled`) или `failed` (`error`).
+- При подключении админки сервер шлёт `devices`, затем, если доска есть, `board` и одним сообщением `frames` все хранимые снимки (`ready`/`failed`) и задания в работе (`rendering`, после снимка того же экрана и устройства).
 
 `Diag` = `{"path": "root/children/2/props/text" | "script" | "timelines/0/tracks/1", "line": 1, "col": 5, "message": "…"}` — `line`/`col` относительно DSL-фрагмента по `path` (1-based), `0` если к фрагменту не относится. Сегменты `path` — ключи исходного JSON (§3.1 спеки): `root/children/<i>/props/<prop>`, `…/on/<event>`, `…/when`, `…/repeat/over`, `…/repeat/key`, `…/animate/<prop>`, `…/transition/in`, `…/matchId`, `…/drag`, `…/a11y/label`, `…/id`, `script`, `timelines/<i>`, `timelines/<i>/tracks/<j>/keys/<k>`; узел целиком — путь самого узла (`root/children/2`).
 

@@ -70,11 +70,15 @@ final class Store {
     /// `previous` — the store of the same screen before a document reload: state keys that still
     /// exist keep their values.
     let tasks: TaskBag
+    /// A shot's store (spec 2026-09-30 §2.1): nothing leaves the device — outward effects are dropped, `call` and
+    /// `refresh` never reach the network and stay pending until the layer cancels `tasks`.
+    let capture: Bool
 
     init(document: Document, params: [String: Value], data results: [String: Value], wishbone: Wishbone,
-         navigator: Navigator? = nil, previous: Store? = nil, tasks: TaskBag = TaskBag()) {
+         navigator: Navigator? = nil, previous: Store? = nil, tasks: TaskBag = TaskBag(), capture: Bool = false) {
         self.document = document
         self.tasks = tasks
+        self.capture = capture
         self.wishbone = wishbone
         self.navigator = navigator
         geometry = navigator?.geometry ?? ScreenGeometry()
@@ -212,10 +216,19 @@ final class Store {
     func call(op: String, args: Value, awaited: Bool) async -> Value {
         guard !Task.isCancelled else { return API.callFailure(WishboneError.network("cancelled")) }
         guard awaited else {
-            Task { _ = await self.sendCall(op: op, args: args) }
+            if !capture { Task { _ = await self.sendCall(op: op, args: args) } }
             return .null
         }
+        guard !capture else {
+            await pendUntilCancelled()
+            return API.callFailure(WishboneError.network("cancelled"))
+        }
         return await sendCall(op: op, args: args)
+    }
+
+    /// Suspends until the run is cancelled with its store (an `await play` of an infinite timeline, a shot's `call`).
+    func pendUntilCancelled() async {
+        while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
     }
 
     private func sendCall(op: String, args: Value) async -> Value {
@@ -231,6 +244,7 @@ final class Store {
     }
 
     func refresh(_ name: String) async {
+        if capture { return await pendUntilCancelled() }
         let req = API.data(await wishbone.requestInfo(), screen: document.screen, revision: document.revision,
                            params: params, sources: [name])
         do {

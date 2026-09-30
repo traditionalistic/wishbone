@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"wishbone/backend/internal/compile"
-	"wishbone/backend/internal/preview"
 	"wishbone/backend/internal/store"
 )
 
@@ -240,7 +239,7 @@ func (s *Server) createPreview(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]string{"code": s.Hub.Create(req.Screen, title)})
 }
 
-// previewDocument compiles a source (not stored), resolves its data and sends it to the session's devices.
+// previewDocument compiles a source (not stored), resolves its data and shows it in the session with its board.
 func (s *Server) previewDocument(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
 	if !s.Hub.Exists(code) {
@@ -253,26 +252,20 @@ func (s *Server) previewDocument(w http.ResponseWriter, r *http.Request) {
 	if !s.decode(w, r, &req) {
 		return
 	}
-	doc, m, diags := compile.Screen(s.Contract, req.Source, 0)
-	if len(diags) == 0 {
-		var head struct{ ID, Title string }
-		_ = json.Unmarshal(req.Source, &head)
-		meta := newMeta(doc, m)
-		// devices see their own host in place of preview.Base
-		data, _ := s.resolve(r.Context(), "anon", preview.Base, meta.Data, meta.Params, nil)
-		msg, _ := encode(struct {
-			Type     string          `json:"type"`
-			Screen   string          `json:"screen"`
-			Document json.RawMessage `json:"document"`
-			Data     any             `json:"data"`
-		}{"document", head.ID, doc, data})
-		metaJSON, _ := json.Marshal(meta)
-		if !s.Hub.SetDocument(code, head.ID, head.Title, msg, metaJSON) {
-			s.fail(w, "NOT_FOUND", "preview session not found")
-			return
-		}
+	focus, diags := s.previewScreen(r.Context(), req.Source)
+	if len(diags) == 0 && !s.Hub.Push(code, s.board(r.Context(), focus)) {
+		s.fail(w, "NOT_FOUND", "preview session not found")
+		return
 	}
 	writeJSON(w, 200, map[string]any{"ok": len(diags) == 0, "diags": nonNil(diags)})
+}
+
+func (s *Server) previewRetry(w http.ResponseWriter, r *http.Request) {
+	if !s.Hub.Retry(r.PathValue("code")) {
+		s.fail(w, "NOT_FOUND", "preview session not found")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) previewPlay(w http.ResponseWriter, r *http.Request) {

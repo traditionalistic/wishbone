@@ -2,6 +2,7 @@ package compile
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -29,6 +30,14 @@ type Meta struct {
 	RuntimeMin string
 	Ops        []string // operations used by `call` (the /v1/call allowlist)
 	Data       []DataDecl
+	Links      []Link // without duplicates, sorted by (To, Kind, Via)
+}
+
+// Link is a screen transition: `navigate`/`present` with a literal target (["v", id]); dynamic targets are skipped.
+type Link struct {
+	To   string `json:"to"`
+	Kind string `json:"kind"` // "navigate" | "present"
+	Via  string `json:"via"`  // "node:<id>" | "handler:<name>"
 }
 
 // Document is the wire document (spec §3.8).
@@ -288,39 +297,50 @@ func count(n *Node, depth int) (nodes, maxd int) {
 
 func meta(doc *Document) Meta {
 	ops := map[string]bool{}
-	var walk func(ss []any)
-	walk = func(ss []any) {
+	links := map[Link]bool{}
+	var walk func(ss []any, via string)
+	walk = func(ss []any, via string) {
 		for _, s := range ss {
 			a, _ := s.([]any)
 			switch {
 			case len(a) > 1 && a[0] == "call":
 				ops[a[1].(string)] = true
+			case len(a) > 2 && a[0] == "do" && (a[1] == "navigate" || a[1] == "present"):
+				if to := asList(asList(a[2])[0]); to[0] == "v" {
+					links[Link{To: to[1].(string), Kind: a[1].(string), Via: via}] = true
+				}
 			case len(a) > 3 && a[0] == "if":
-				walk(asList(a[2]))
-				walk(asList(a[3]))
+				walk(asList(a[2]), via)
+				walk(asList(a[3]), via)
 			case len(a) > 2 && a[0] == "anim":
-				walk(asList(a[2]))
+				walk(asList(a[2]), via)
 			}
 		}
 	}
-	for _, h := range doc.Handlers {
-		walk(asList(decode(h.Body)))
+	for name, h := range doc.Handlers {
+		walk(asList(decode(h.Body)), "handler:"+name)
 	}
 	var nodes func(n *Node)
 	nodes = func(n *Node) {
 		for _, body := range n.On {
-			walk(asList(decode(body)))
+			walk(asList(decode(body)), "node:"+n.ID)
 		}
 		for _, c := range n.C {
 			nodes(c)
 		}
 	}
 	nodes(doc.Root)
-	m := Meta{RuntimeMin: doc.RuntimeMin, Ops: []string{}, Data: doc.Data}
+	m := Meta{RuntimeMin: doc.RuntimeMin, Ops: []string{}, Data: doc.Data, Links: []Link{}}
 	for op := range ops {
 		m.Ops = append(m.Ops, op)
 	}
 	sort.Strings(m.Ops)
+	for l := range links {
+		m.Links = append(m.Links, l)
+	}
+	slices.SortFunc(m.Links, func(a, b Link) int {
+		return cmp.Or(strings.Compare(a.To, b.To), strings.Compare(a.Kind, b.Kind), strings.Compare(a.Via, b.Via))
+	})
 	return m
 }
 

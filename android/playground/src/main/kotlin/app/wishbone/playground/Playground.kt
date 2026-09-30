@@ -67,10 +67,10 @@ data class Route(val value: String, val route: WishboneRoute? = null, val key: S
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Playground(start: String? = null, startBrand: String? = null, startScheme: String? = null) {
+fun Playground(start: String? = null, startBrand: String? = null, startScheme: String? = null, startUrl: String? = null) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("playground", Context.MODE_PRIVATE) }
-    var baseUrl by remember { mutableStateOf(prefs.getString("baseUrl", DEFAULT_URL)!!) }
+    var baseUrl by remember { mutableStateOf(startUrl ?: prefs.getString("baseUrl", DEFAULT_URL)!!) }
     var brand by remember { mutableStateOf(startBrand ?: prefs.getString("brand", "korpu")!!) }
     var scheme by remember { mutableStateOf(startScheme ?: prefs.getString("scheme", "system")!!) }
     // The playground's own back stack; a launch route goes on top of home, like a push.

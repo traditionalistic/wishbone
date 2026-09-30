@@ -217,4 +217,44 @@ final class Changes: Sendable {
         #expect(nav.path.map(\.screen) == ["next"] && nav.path[0].fade && nav.path[0].params == ["id": .string("1")])
         #expect(nav.sheet?.screen == "sheet")
     }
+
+    /// A shot's store (spec 2026-09-30 §2.1): state writes land, outward effects go nowhere, an awaited `call` never
+    /// reaches the network and holds the run until the layer cancels the store's tasks.
+    @Test func captureModeKeepsStateAndDropsOutwardEffects() async throws {
+        let doc = try document(#"""
+        {"format": 1, "screen": "s", "state": [["n", ["v", 0]], ["after", ["v", false]]],
+         "root": {"t": "stack", "id": "root", "on": {"tap": [
+            ["set", "s", "n", [], ["v", 1]],
+            ["do", "navigate", [["v", "next"]], false],
+            ["do", "present", [["v", "sheet"]], false],
+            ["do", "open", [["v", "https://example.com"]], false],
+            ["do", "track", [["v", "seen"]], false],
+            ["do", "host", [["v", "share"]], true],
+            ["call", "demo.op", ["v", {}], "r", true],
+            ["set", "s", "after", [], ["v", true]]]}}}
+        """#)
+        let host = RecordingHost()
+        let wb = Wishbone(baseURL: URL(string: "http://localhost:1")!, brand: "korpu", host: host, cache: DiskCache(dir: tempDir()))
+        let nav = Navigator()
+        let store = Store(document: doc, params: [:], data: [:], wishbone: wb, navigator: nav, capture: true)
+        let ctx = RenderContext(store: store)
+        let run = store.fire(doc.root.on["tap"]!, ctx: ctx, event: .record([:]))
+        for _ in 0..<100 where ctx.state("n") != .number(1) { await Task.yield() }
+        try await Task.sleep(for: .milliseconds(100)) // a call that went to localhost:1 would have failed by now
+        #expect(ctx.state("n") == .number(1))
+        #expect(ctx.state("after") == .bool(false)) // pending on the call
+        #expect(nav.path.isEmpty && nav.sheet == nil && host.events.isEmpty)
+        #expect(store.tasks.count == 1)
+        store.tasks.cancelAll()
+        await run.value
+        #expect(store.tasks.count == 0)
+    }
+}
+
+@MainActor
+final class RecordingHost: WishboneHost {
+    var events: [String] = []
+    func open(url: URL) { events.append("open") }
+    func track(event: String, params: [String: Any]) { events.append("track:\(event)") }
+    func action(name: String, args: [String: Any]) async { events.append("host") }
 }

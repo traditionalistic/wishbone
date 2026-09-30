@@ -11,10 +11,13 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -49,16 +52,33 @@ internal fun TextView(p: Map<String, Value>, ctx: RenderContext, modifier: Modif
     BasicText(p["text"]?.let { Format.str(it) } ?: "", modifier, style, overflow = TextOverflow.Ellipsis, maxLines = maxLines)
 }
 
+/** Image loads in flight, counted per image node; a node that leaves the composition mid-load leaves the count. */
+internal class ImageLoads {
+    private val loading = HashSet<Any>()
+    val inFlight: Int get() = loading.size
+    fun start(node: Any) { loading += node }
+    fun end(node: Any) { loading -= node }
+}
+
+/** Set only inside a capture layer (spec 2026-09-30 §2.2); null on a live screen, whose loads are not counted. */
+internal val LocalImageLoads = staticCompositionLocalOf<ImageLoads?> { null }
+
 @Composable
 internal fun ImageView(p: Map<String, Value>, ctx: RenderContext, modifier: Modifier) {
     val placeholder = ColorPainter(ctx.ink(p["placeholder"] ?: Value.rec("\$color" to Value.Str("bg2"))))
     val url = p.str("url")
+    val loads = LocalImageLoads.current
+    val node = remember { Any() }
+    if (loads != null) DisposableEffect(loads, node) { onDispose { loads.end(node) } }
     AsyncImage(
         model = url?.let { LocalWishbone.current?.resolve(it) ?: it },
         contentDescription = null,
         modifier = modifier.clipToBounds(),
         placeholder = placeholder,
         error = placeholder,
+        onLoading = loads?.let { l -> { l.start(node) } },
+        onSuccess = loads?.let { l -> { l.end(node) } },
+        onError = loads?.let { l -> { l.end(node) } },
         contentScale = if (p.str("fit") == "fit") ContentScale.Fit else ContentScale.Crop,
     )
 }

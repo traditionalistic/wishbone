@@ -48,7 +48,9 @@ public struct WishboneScreen: View {
     }
 }
 
-/// Live preview of an admin session: renders every document the session pushes, in place.
+/// Live preview of an admin session: renders every document the session pushes, in place. A render job (spec
+/// 2026-09-30 §2) is drawn in a capture layer underneath — same window, size, safe area and scheme — that the user never
+/// sees or touches; an opaque cover keeps it hidden under a live root without a background.
 public struct WishbonePreviewScreen: View {
     let wishbone: Wishbone
     let root: Route
@@ -59,8 +61,21 @@ public struct WishbonePreviewScreen: View {
     }
 
     public var body: some View {
-        StackHost(wishbone: wishbone, root: root, presenter: nil)
-            .id(ObjectIdentifier(root.preview!))
+        let preview = root.preview!
+        ZStack {
+            #if canImport(UIKit)
+            if let job = preview.job {
+                CaptureLayer(wishbone: wishbone, job: job) { preview.finish(job.id, $0) }
+                    .id(job.id)
+                    .ignoresSafeArea() // the full window, as the live screen: UIKit then hands it the same safe area
+            }
+            #endif
+            Rectangle().fill(.background).ignoresSafeArea()
+            // Another screen is a fresh stack (no path, sheet or lifecycle of the previous one); edits of the same screen keep it.
+            StackHost(wishbone: wishbone, root: root, presenter: nil)
+                .id(preview.screen)
+        }
+        .id(ObjectIdentifier(preview))
     }
 }
 

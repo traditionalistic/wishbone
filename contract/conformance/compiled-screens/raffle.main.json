@@ -1521,6 +1521,48 @@
          "minWidth": [
           "v",
           44
+         ],
+         "opacity": [
+          "if",
+          [
+           "self",
+           "pressed"
+          ],
+          [
+           "v",
+           0.9
+          ],
+          [
+           "v",
+           1
+          ]
+         ],
+         "scale": [
+          "if",
+          [
+           "op",
+           "&&",
+           [
+            "self",
+            "pressed"
+           ],
+           [
+            "un",
+            "!",
+            [
+             "e",
+             "reduceMotion"
+            ]
+           ]
+          ],
+          [
+           "v",
+           0.96
+          ],
+          [
+           "v",
+           1
+          ]
          ]
         },
         "c": [
@@ -1532,135 +1574,18 @@
             "v",
             "z"
            ],
-           "background": [
-            "if",
-            [
-             "op",
-             "==",
-             [
-              "v",
-              "plain"
-             ],
-             [
-              "v",
-              "solid"
-             ]
-            ],
-            [
-             "t",
-             "color",
-             "solidChromeSurface"
-            ],
-            [
-             "f",
-             "alpha",
-             [
-              [
-               "t",
-               "color",
-               "solidChromeSurface"
-              ],
-              [
-               "v",
-               0
-              ]
-             ]
-            ]
-           ],
-           "border": [
-            "rec",
-            {
-             "color": [
-              "if",
-              [
-               "op",
-               "==",
-               [
-                "v",
-                "plain"
-               ],
-               [
-                "v",
-                "outline"
-               ]
-              ],
-              [
-               "t",
-               "color",
-               "el3"
-              ],
-              [
-               "f",
-               "alpha",
-               [
-                [
-                 "t",
-                 "color",
-                 "el3"
-                ],
-                [
-                 "v",
-                 0
-                ]
-               ]
-              ]
-             ],
-             "width": [
-              "v",
-              1
-             ]
-            }
-           ],
            "corner": [
             "t",
             "radius",
             "pill"
            ],
            "height": [
-            "if",
-            [
-             "op",
-             "==",
-             [
-              "v",
-              "small"
-             ],
-             [
-              "v",
-              "small"
-             ]
-            ],
-            [
-             "v",
-             40
-            ],
-            [
-             "v",
-             44
-            ]
+            "v",
+            44
            ],
            "width": [
-            "if",
-            [
-             "op",
-             "==",
-             [
-              "v",
-              "small"
-             ],
-             [
-              "v",
-              "small"
-             ]
-            ],
-            [
-             "v",
-             40
-            ],
-            [
-             "v",
-             44
-            ]
+            "v",
+            44
            ]
           },
           "c": [
@@ -1669,9 +1594,33 @@
             "id": "backBtn/glass",
             "p": {
              "background": [
-              "t",
-              "color",
-              "glassButtonBackground"
+              "f",
+              "alpha",
+              [
+               [
+                "t",
+                "color",
+                "bg1Elevated"
+               ],
+               [
+                "v",
+                0.77
+               ]
+              ]
+             ],
+             "border": [
+              "rec",
+              {
+               "color": [
+                "t",
+                "color",
+                "navGlassStroke"
+               ],
+               "width": [
+                "v",
+                1
+               ]
+              }
              ],
              "corner": [
               "t",
@@ -1684,7 +1633,25 @@
              ],
              "material": [
               "v",
-              "regular"
+              "thin"
+             ],
+             "shadow": [
+              "rec",
+              {
+               "color": [
+                "t",
+                "color",
+                "chatGlassShadow"
+               ],
+               "radius": [
+                "v",
+                18
+               ],
+               "y": [
+                "v",
+                4
+               ]
+              }
              ],
              "width": [
               "v",
@@ -1696,7 +1663,7 @@
              "==",
              [
               "v",
-              "plain"
+              "glass"
              ],
              [
               "v",
@@ -1709,21 +1676,9 @@
             "id": "backBtn/icon",
             "p": {
              "color": [
-              "if",
-              [
-               "v",
-               true
-              ],
-              [
-               "t",
-               "color",
-               "el16"
-              ],
-              [
-               "t",
-               "color",
-               "iconDisabled"
-              ]
+              "t",
+              "color",
+              "el16"
              ],
              "name": [
               "t",
@@ -1731,26 +1686,23 @@
               "back"
              ],
              "size": [
-              "if",
+              "op",
+              "/",
               [
                "op",
-               "==",
+               "*",
                [
                 "v",
-                "small"
+                16
                ],
                [
                 "v",
-                "small"
+                6
                ]
               ],
               [
                "v",
-               20
-              ],
-              [
-               "v",
-               22
+               5
               ]
              ]
             }
@@ -1761,21 +1713,34 @@
         "on": {
          "tap": [
           [
-           "if",
-           [
-            "v",
-            true
-           ],
+           "do",
+           "haptic",
            [
             [
-             "do",
-             "back",
-             [],
-             false
+             "v",
+             "selection"
             ]
            ],
-           []
+           false
+          ],
+          [
+           "do",
+           "back",
+           [],
+           false
           ]
+         ]
+        },
+        "anim": {
+         "opacity": [
+          "t",
+          "motion",
+          "press"
+         ],
+         "scale": [
+          "t",
+          "motion",
+          "press"
          ]
         },
         "a11y": {

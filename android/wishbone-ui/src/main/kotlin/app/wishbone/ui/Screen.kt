@@ -40,6 +40,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -115,20 +116,32 @@ fun WishboneDocument(wishbone: Wishbone, document: JsonObject, data: JsonObject 
     WishboneRoot(wishbone, (document["screen"] as? JsonPrimitive)?.content ?: "inline", emptyMap(), inline, modifier)
 }
 
-/** Live preview session [code]: renders every document the admin pushes, sends runtime errors back as logs. */
+/**
+ * Live preview session [code]: renders every document the admin pushes (a document of another screen starts a fresh
+ * tree, spec 2026-09-30 §1.1: [WishboneRoot] is keyed on the screen id), sends runtime errors back as logs, and
+ * answers each `render` job with one `shot` from a [CaptureLayer] under the live screen (one job at a time; the
+ * layer goes once its shot is sent).
+ */
 @Composable
 fun WishbonePreview(wishbone: Wishbone, code: String, modifier: Modifier = Modifier) {
     val inline = remember(wishbone, code) { InlineDocument() }
-    DisposableEffect(wishbone, code) {
-        val client = PreviewClient(wishbone, code) { m ->
+    var job by remember(wishbone, code) { mutableStateOf<RenderJob?>(null) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val client = remember(wishbone, code) {
+        PreviewClient(wishbone, code) { m ->
             when (m) {
                 is PreviewMessage.Doc -> {
                     inline.data = m.data
                     inline.document = m.document
                 }
                 is PreviewMessage.Play -> inline.holder?.store?.play(m.timeline)
+                // a stopped window gets no frames: the layer could not compose, so the job is answered here and now
+                is PreviewMessage.Render ->
+                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) job = m.job else send(PreviewClient.shotError(m.job.job, "app is in the background"))
             }
         }
+    }
+    DisposableEffect(client) {
         wishbone.previewLog = client::log
         client.connect()
         onDispose {
@@ -137,10 +150,20 @@ fun WishbonePreview(wishbone: Wishbone, code: String, modifier: Modifier = Modif
         }
     }
     val doc = inline.document
-    if (doc == null) {
-        Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("$code · ${stringResource(R.string.wb_waiting)}") }
-    } else {
-        WishboneRoot(wishbone, (doc["screen"] as? JsonPrimitive)?.content ?: code, emptyMap(), inline, modifier)
+    Box(modifier.fillMaxSize()) {
+        job?.let { j ->
+            key(j.job) {
+                CaptureLayer(wishbone, j) { reply ->
+                    client.send(reply)
+                    if (job == j) job = null
+                }
+            }
+        }
+        if (doc == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("$code · ${stringResource(R.string.wb_waiting)}") }
+        } else {
+            WishboneRoot(wishbone, (doc["screen"] as? JsonPrimitive)?.content ?: code, emptyMap(), inline, Modifier)
+        }
     }
 }
 
@@ -160,7 +183,9 @@ private fun WishboneRoot(
     modifier: Modifier,
     onExit: () -> Unit = {},
     onNavigate: ((WishboneRoute) -> Unit)? = null,
-) {
+) = key(rootId, rootParams) {
+    // Another root screen is a fresh tree: its own navigator, holders, saved state and lifecycle (the root entry's key is 0
+    // in every navigator, so without this the previous screen's composition, and its `appear`, would be reused).
     val navigator = remember(wishbone, rootId, rootParams) { Navigator(rootId, rootParams) }
     val exit by rememberUpdatedState(onExit)
     navigator.exit = { exit() }
@@ -264,7 +289,7 @@ private class SavedRoot(private var pending: StoreSnapshot?) {
     }
 }
 
-private fun JsonObject.revision() = (this["revision"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
+internal fun JsonObject.revision() = (this["revision"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
 
 /**
  * The root's own scope ([RenderContext.scoped]), or null when its `when` is false: then nothing of it renders, its
@@ -295,7 +320,7 @@ private fun navTransition(from: Entry, to: Entry): ContentTransform {
  * behind the system bars (like a SwiftUI ShapeStyle background). `env.safeTop/safeBottom` report the insets.
  */
 @Composable
-private fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: Theme, safeArea: Boolean) {
+internal fun ScreenContent(holder: ScreenHolder, env: Map<String, Value>, theme: Theme, safeArea: Boolean) {
     holder.env = env
     holder.view = LocalView.current
     when (val s = holder.state) {

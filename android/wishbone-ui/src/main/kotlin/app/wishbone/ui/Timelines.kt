@@ -110,9 +110,14 @@ internal class TimelineRegistry(private val timelines: Map<String, Timeline>, no
      * An infinite one counts only while one of its targets is composed: off screen (another tab, a lazy row scrolled
      * away) it would redraw nothing, every frame.
      */
-    fun running(now: Long, reduceMotion: Boolean = false): Boolean = !reduceMotion && active.any { (name, start) ->
+    fun running(now: Long, reduceMotion: Boolean = false): Boolean = finiteRunning(now, reduceMotion) || !reduceMotion && active.any { (name, _) ->
         val t = timelines.getValue(name)
-        if (t.repeat == -1) t.tracks.any { live[it.target]?.isNotEmpty() == true } else (now - start) / 1e6 < duration(name)
+        t.repeat == -1 && t.tracks.any { live[it.target]?.isNotEmpty() == true }
+    }
+
+    /** A finite active timeline still short of its end at [now]: what a capture waits for (spec 2026-09-30 §2.2); spinners never end. */
+    fun finiteRunning(now: Long, reduceMotion: Boolean): Boolean = !reduceMotion && active.any { (name, start) ->
+        timelines.getValue(name).repeat != -1 && (now - start) / 1e6 < duration(name)
     }
 
     fun transform(id: String, index: Int, now: Long, reduceMotion: Boolean): LayerTransform {
