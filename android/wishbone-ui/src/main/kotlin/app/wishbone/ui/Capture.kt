@@ -83,8 +83,6 @@ internal fun CaptureLayer(wishbone: Wishbone, job: RenderJob, onShot: (JsonObjec
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(holder) {
         if (holder.state == LoadState.Failed) return@LaunchedEffect onShot(PreviewClient.shotError(job.job, "bad document"))
-        // no frames come while the window isn't shown, so the layer would stay blank
-        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return@LaunchedEffect onShot(PreviewClient.shotError(job.job, "app is in the background"))
         val start = System.nanoTime()
         var quiet = 0
         while (true) {
@@ -93,6 +91,7 @@ internal fun CaptureLayer(wishbone: Wishbone, job: RenderJob, onShot: (JsonObjec
             val now = System.nanoTime()
             when (val s = settle((now - start) / 1_000_000, loads.inFlight, store != null && store.timelines.finiteRunning(now, store.reduceMotion), quiet)) {
                 is Settle.Wait -> quiet = s.quietPolls
+                // stopped meanwhile: no frames since, so the layer holds whatever was recorded before, if anything
                 is Settle.Capture -> return@LaunchedEffect onShot(
                     if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) PreviewClient.shotError(job.job, "app is in the background")
                     else layer.shot(job.job, density, s.settled),

@@ -43,15 +43,18 @@ sealed interface PreviewMessage {
 /**
  * Device side of the preview protocol (spec §5.4, 2026-09-30 §3): `hello` (with `render: true`) on connect,
  * `document`/`play`/`render` in, `log`/`shot` out; reconnects with exponential backoff (0.5 s … 10 s) until
- * [close]. Callbacks on main.
+ * [close]. Callbacks on main, with the client as receiver so a message can be answered from inside ([send]).
  */
 class PreviewClient(
     private val wishbone: Wishbone,
     private val code: String,
-    private val onMessage: (PreviewMessage) -> Unit,
+    private val onMessage: PreviewClient.(PreviewMessage) -> Unit,
 ) {
     private val main = Handler(Looper.getMainLooper())
     private var socket: WebSocket? = null
+
+    /** The socket once its `hello` is out; a reply queued on a connecting socket would otherwise go out before it. */
+    @Volatile private var open: WebSocket? = null
     private var closed = false
     private var attempt = 0
 
@@ -62,6 +65,7 @@ class PreviewClient(
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 main.post { attempt = 0 }
                 webSocket.send(hello("${Build.MANUFACTURER} ${Build.MODEL}"))
+                open = webSocket
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -69,14 +73,17 @@ class PreviewClient(
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                open = null
                 webSocket.close(1000, null)
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                open = null
                 retry()
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                open = null
                 retry()
             }
         })
@@ -92,7 +99,7 @@ class PreviewClient(
 
     /** A [shot] or [shotError] reply; dropped while disconnected (the server times the job out and re-issues it). */
     fun send(message: JsonObject) {
-        socket?.send(message.toString())
+        open?.send(message.toString())
     }
 
     fun close() {

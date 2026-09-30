@@ -126,6 +126,7 @@ fun WishboneDocument(wishbone: Wishbone, document: JsonObject, data: JsonObject 
 fun WishbonePreview(wishbone: Wishbone, code: String, modifier: Modifier = Modifier) {
     val inline = remember(wishbone, code) { InlineDocument() }
     var job by remember(wishbone, code) { mutableStateOf<RenderJob?>(null) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val client = remember(wishbone, code) {
         PreviewClient(wishbone, code) { m ->
             when (m) {
@@ -134,7 +135,9 @@ fun WishbonePreview(wishbone: Wishbone, code: String, modifier: Modifier = Modif
                     inline.document = m.document
                 }
                 is PreviewMessage.Play -> inline.holder?.store?.play(m.timeline)
-                is PreviewMessage.Render -> job = m.job
+                // a stopped window gets no frames: the layer could not compose, so the job is answered here and now
+                is PreviewMessage.Render ->
+                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) job = m.job else send(PreviewClient.shotError(m.job.job, "app is in the background"))
             }
         }
     }
