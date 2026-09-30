@@ -9,12 +9,15 @@ import { Ctx, type EditorCtx } from './ctx'
 import { dslOptions } from './dsl'
 import { Inspector } from './Inspector'
 import { JsonPanel } from './JsonPanel'
+import { Preview, type Picks } from './Preview'
 import { TimelinePanel, type TlSel } from './TimelinePanel'
 import { TopBar } from './TopBar'
 import { TreePanel } from './TreePanel'
 import { usePreview } from './usePreview'
 
 type Tab = 'script' | 'timeline' | 'json'
+
+const PREVIEW_KEY = 'wishbone.admin.previewColumn'
 
 function normalize(s: ScreenDetail): Source {
   const d: Partial<Source> = s.draft ?? {}
@@ -47,6 +50,22 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const preview = usePreview(source)
+  const [picks, setPicks] = useState<Picks>({})
+  const [showPreview, setShowPreview] = useState(() => {
+    try {
+      return localStorage.getItem(PREVIEW_KEY) !== 'hidden'
+    } catch {
+      return true
+    }
+  })
+  const togglePreview = () => {
+    setShowPreview(!showPreview)
+    try {
+      localStorage.setItem(PREVIEW_KEY, showPreview ? 'hidden' : 'shown')
+    } catch {
+      /* storage blocked: the choice lasts until reload */
+    }
+  }
 
   const dirty = useMemo(() => source !== null && JSON.stringify(source) !== saved, [source, saved])
   const srcRef = useRef(source)
@@ -257,6 +276,8 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
           problems={diags.length}
           code={preview.code}
           devices={preview.devices}
+          preview={showPreview}
+          onTogglePreview={togglePreview}
           dirty={dirty}
           busy={busy}
           notice={notice}
@@ -332,6 +353,18 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
                 </div>
               )}
             </main>
+            {showPreview && (
+              <Preview
+                screen={source.id}
+                devices={preview.devices}
+                picks={picks}
+                onPick={(platform, device) => setPicks((p) => ({ ...p, [platform]: device }))}
+                frame={preview.frame}
+                code={preview.code}
+                stale={preview.status === 'error'}
+                onRetry={preview.retry}
+              />
+            )}
             <aside className="right">
               <Inspector
                 key={`${screenId}:${selPath.join('.')}`}
