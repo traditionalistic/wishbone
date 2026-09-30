@@ -115,7 +115,6 @@ private fun Modifier.untouchable() = pointerInput(Unit) {
     }
 }
 
-/** The recorded layer as a `shot`: [SHOT_SCALE] px per dp, JPEG [SHOT_JPEG_QUALITY]; an error when nothing was recorded. */
 private suspend fun GraphicsLayer.shot(job: Int, density: Float, settled: Boolean): JsonObject {
     val width = (size.width / density).roundToInt()
     val height = (size.height / density).roundToInt()
