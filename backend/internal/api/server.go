@@ -160,6 +160,7 @@ func (s *Server) Handler() http.Handler {
 	admin("POST /admin/api/preview", pv(s.createPreview))
 	admin("POST /admin/api/preview/{code}/document", pv(s.previewDocument))
 	admin("POST /admin/api/preview/{code}/play", pv(s.previewPlay))
+	admin("POST /admin/api/preview/{code}/retry", pv(s.previewRetry))
 	admin("GET /admin/api/preview/{code}/ws", pv(func(w http.ResponseWriter, r *http.Request) {
 		if !s.Hub.ServeAdmin(w, r, r.PathValue("code")) {
 			s.fail(w, "NOT_FOUND", "preview session not found")
