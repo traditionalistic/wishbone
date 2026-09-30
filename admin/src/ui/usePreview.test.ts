@@ -37,6 +37,30 @@ describe('pushSource', () => {
     expect(c.calls).toEqual(['push:K7Q2', 'compile'])
   })
 
+  it('sends one push at a time; while one is in flight only the newest waiting source follows it', async () => {
+    const log: string[] = []
+    let finishA!: () => void
+    const c = {
+      pushDocument: async (_code: string, s: Source) => {
+        log.push(`start:${s.id}`)
+        if (s.id === 'A') await new Promise<void>((r) => (finishA = r))
+        log.push(`end:${s.id}`)
+        return ok
+      },
+      compile: async () => compiled,
+    }
+    const a = pushSource('K7Q2', { ...src, id: 'A' }, c)
+    const b = pushSource('K7Q2', { ...src, id: 'B' }, c)
+    const d = pushSource('K7Q2', { ...src, id: 'C' }, c)
+    await Promise.resolve()
+    expect(log).toEqual(['start:A']) // B and C wait for A: the hub applies pushes in arrival order
+    finishA()
+    await expect(a).resolves.toEqual({ result: ok, lost: false })
+    await expect(b).resolves.toBeNull() // superseded by C while waiting
+    await expect(d).resolves.toEqual({ result: ok, lost: false })
+    expect(log).toEqual(['start:A', 'end:A', 'start:C', 'end:C'])
+  })
+
   it('other failures propagate', async () => {
     const c = client(async () => {
       throw new ApiError(500, 'INTERNAL', 'boom')

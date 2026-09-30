@@ -1,8 +1,8 @@
 // The tab's preview session: open it once (the code survives reloads in sessionStorage while the server
 // still lists it), follow its devices, logs, board and frames over WS, and push every source change
-// (debounced 300 ms); opening another screen is just a push of its source. The push response's
-// diagnostics drive the editor. A lost session (404 on push, or a dropped socket whose code is no longer
-// listed) is recreated; until then pushes go through /compile so diagnostics keep updating.
+// (debounced 300 ms, one push in flight at a time); opening another screen is just a push of its source. The
+// push response's diagnostics drive the editor. A lost session (404 on push, or a dropped socket whose code
+// is no longer listed) is recreated; until then pushes go through /compile so diagnostics keep updating.
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, api, type Board, type CompileResult, type Device } from '../api'
 import { applyFrame, frameKey, type Frames } from '../model/board'
@@ -14,12 +14,33 @@ export type CompileStatus = 'pending' | 'ok' | 'error' | 'offline'
 const RETRY_MS = 3000
 const SESSION_KEY = 'wishbone.admin.preview'
 
-/** Push to the session, or compile when there is none / it is gone (`lost`). Other errors propagate. */
-export async function pushSource(
-  code: string | null,
-  source: Source,
-  client: { pushDocument: (code: string, s: Source) => Promise<CompileResult>; compile: (s: Source) => Promise<CompileResult> } = api,
-): Promise<{ result: CompileResult; lost: boolean }> {
+type PushClient = { pushDocument: (code: string, s: Source) => Promise<CompileResult>; compile: (s: Source) => Promise<CompileResult> }
+
+let inflight: Promise<void> | null = null
+let latest = 0
+
+/**
+ * Push to the session, or compile when there is none / it is gone (`lost`). Other errors propagate. Pushes go out one
+ * at a time: the hub makes whichever push arrives last the current screen, so a slow one must not land after a newer
+ * one. A push made while another is in flight waits, and only the newest waiting one is sent; those it superseded
+ * resolve to null.
+ */
+export function pushSource(code: string | null, source: Source, client: PushClient = api): Promise<{ result: CompileResult; lost: boolean } | null> {
+  const n = ++latest
+  const start = () => {
+    const p = send(code, source, client)
+    inflight = p.then(
+      () => undefined,
+      () => undefined,
+    ).then(() => {
+      inflight = null
+    })
+    return p
+  }
+  return inflight ? inflight.then(() => (n === latest ? start() : null)) : start()
+}
+
+async function send(code: string | null, source: Source, client: PushClient): Promise<{ result: CompileResult; lost: boolean }> {
   if (code) {
     try {
       return { result: await client.pushDocument(code, source), lost: false }
@@ -105,7 +126,9 @@ export function usePreview(source: Source | null) {
     setStatus('pending')
     const h = setTimeout(async () => {
       try {
-        const { result, lost } = await pushSource(code, source)
+        const pushed = await pushSource(code, source)
+        if (!pushed) return
+        const { result, lost } = pushed
         if (lost) setEpoch((e) => e + 1)
         if (n !== seq.current) return
         setDiags(result.diags ?? [])
