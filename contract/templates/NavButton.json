@@ -1,0 +1,21 @@
+{
+ "id": "NavButton",
+ "title": "NavButton",
+ "script": "// Visuals come from surface / iconSize; instance background, corner, border, shadow and clip land on the 44pt hit-area\n// root and do not restyle the circle.\n// NavButton (Stratoapp DesignSystem NavGlassButton): a 44pt circle (layoutMetrics.minimumTouchTarget) around a template-tinted\n// icon in textPrimary (= el16). back = NavGlassButton.back: @icon.back (NavigationBarBackIndicator = SF arrow.left) at\n// NavGlassMetrics.backIconSide 16; other icons NavGlassMetrics.iconSide 20. surface glass = navGlassSurface(Circle()):\n// FrostGlassBackground(blurStyle .thin, tintOpacity 0, shadow .chatGlass = chatGlassShadow r18 y4) under a 1pt (hairlineWidth)\n// navGlassStroke ring; plain = no surface. Press: scale 0.96 + opacity 0.9 (PressScaleButtonStyle, not under Reduce Motion) and\n// the selection haptic. `label` is the a11y label (the button has no text).\n// The icon primitive insets the glyph 1/12 per side (Android drawables carry that padding, SF Symbols don't) while the native\n// frames it edge to edge, so the icon node is iconSize × 6/5.\n// ponytail: the native surface is glassEffect(.regular) on iOS 26 (.ultraThinMaterial before) and the primitives have no\n// Liquid Glass or ultra-thin material, so the layer is `material: thin` under a bg1Elevated veil at 0.77 — measured against\n// the native button on bg1 (iPhone 17 Pro, iOS 26.5): light 252 = 252, dark 33 vs 25 (the native dark circle is the backdrop\n// plus a specular rim). Android draws a translucent bg1 fill under the same veil.\nparam icon: icon\nparam label: string = \"\"\nparam iconSize: number = 20\nparam surface: \"glass\" | \"plain\" = \"glass\"\nevent tap",
+ "root": {"type": "stack", "id": "root", "props": {"axis": "z", "minWidth": 44, "minHeight": 44,
+   "scale": "=self.pressed && !env.reduceMotion ? 0.96 : 1", "opacity": "=self.pressed ? 0.9 : 1"},
+  "animate": {"scale": "@motion.press", "opacity": "@motion.press"},
+  "on": {"tap": "haptic(\"selection\")\nemit tap"},
+  "a11y": {"label": "label", "role": "button"},
+  "children": [
+   {"type": "stack", "id": "circle", "props": {"axis": "z", "width": 44, "height": 44, "corner": "@radius.pill"},
+    "children": [
+     {"type": "stack", "id": "glass", "when": "surface == \"glass\"",
+      "props": {"width": "fill", "height": "fill", "corner": "@radius.pill", "material": "thin",
+       "background": "=alpha(@color.bg1Elevated, 0.77)",
+       "border": "={color: @color.navGlassStroke, width: 1}",
+       "shadow": "={color: @color.chatGlassShadow, radius: 18, y: 4}"}},
+     {"type": "icon", "id": "icon", "props": {"name": "=icon", "size": "=iconSize * 6 / 5", "color": "@color.el16"}}
+    ]}
+  ]}
+}
