@@ -28,6 +28,8 @@ public final class PreviewClient {
     public private(set) var status: Status = .connecting
     /// The last document pushed by the session (with its data).
     private(set) var latest: ScreenResponse?
+    /// Its screen id: the live tree's identity (spec 2026-09-30 §1.1 — another screen starts fresh).
+    private(set) var screen: String?
     private(set) var revision = 0
     /// Last `play` request: (timeline, sequence number) — consumed by motion (phase b).
     public private(set) var play: (timeline: String, seq: Int)?
@@ -118,8 +120,9 @@ public final class PreviewClient {
         guard let obj = try? API.object(message) else { return }
         switch obj["type"] as? String {
         case "document":
-            guard let screen = Self.screen(obj) else { return wishbone.log("warn", "preview: malformed document message") }
-            latest = screen
+            guard let r = Self.screen(obj) else { return wishbone.log("warn", "preview: malformed document message") }
+            latest = r
+            screen = obj["screen"] as? String
             revision += 1
         case "render":
             guard let id = obj["job"] as? Int else { return wishbone.log("warn", "preview: render without a job") }

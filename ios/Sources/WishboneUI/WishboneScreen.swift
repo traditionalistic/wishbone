@@ -71,7 +71,9 @@ public struct WishbonePreviewScreen: View {
             }
             #endif
             Rectangle().fill(.background).ignoresSafeArea()
+            // Another screen is a fresh stack (no path, sheet or lifecycle of the previous one); edits of the same screen keep it.
             StackHost(wishbone: wishbone, root: root, presenter: nil)
+                .id(preview.screen)
         }
         .id(ObjectIdentifier(preview))
     }
@@ -333,11 +335,8 @@ final class ScreenModel {
     /// screen itself goes away (deinit). `caching` — the answer is the next revalidation's base.
     private func show(_ screen: LoadedScreen, caching: Bool = true) {
         if caching { cached = screen }
-        // Values carry over by name between revisions of the same screen only: a preview session that switched screens
-        // (spec 2026-09-30 §1.1) starts the new one fresh.
-        let previous = store?.document.screen == screen.document.screen ? store : nil
         phase = .ready(Store(document: screen.document, params: route.params, data: screen.response.data, wishbone: wishbone,
-                             navigator: navigator, previous: previous, tasks: tasks))
+                             navigator: navigator, previous: store, tasks: tasks))
     }
 
     private func fail(_ error: Error) {

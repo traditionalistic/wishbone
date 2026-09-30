@@ -255,6 +255,6 @@ final class Changes: Sendable {
 final class RecordingHost: WishboneHost {
     var events: [String] = []
     func open(url: URL) { events.append("open") }
-    func track(event: String, params: [String: Any]) { events.append("track") }
+    func track(event: String, params: [String: Any]) { events.append("track:\(event)") }
     func action(name: String, args: [String: Any]) async { events.append("host") }
 }

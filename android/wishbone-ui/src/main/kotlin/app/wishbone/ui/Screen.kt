@@ -118,7 +118,7 @@ fun WishboneDocument(wishbone: Wishbone, document: JsonObject, data: JsonObject 
 
 /**
  * Live preview session [code]: renders every document the admin pushes (a document of another screen starts a fresh
- * store, spec 2026-09-30 §1.1: the navigator is keyed on the screen id), sends runtime errors back as logs, and
+ * tree, spec 2026-09-30 §1.1: [WishboneRoot] is keyed on the screen id), sends runtime errors back as logs, and
  * answers each `render` job with one `shot` from a [CaptureLayer] under the live screen (one job at a time; the
  * layer goes once its shot is sent).
  */
@@ -183,7 +183,9 @@ private fun WishboneRoot(
     modifier: Modifier,
     onExit: () -> Unit = {},
     onNavigate: ((WishboneRoute) -> Unit)? = null,
-) {
+) = key(rootId, rootParams) {
+    // Another root screen is a fresh tree: its own navigator, holders, saved state and lifecycle (the root entry's key is 0
+    // in every navigator, so without this the previous screen's composition, and its `appear`, would be reused).
     val navigator = remember(wishbone, rootId, rootParams) { Navigator(rootId, rootParams) }
     val exit by rememberUpdatedState(onExit)
     navigator.exit = { exit() }
