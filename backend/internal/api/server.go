@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"wishbone/backend/internal/compile"
@@ -43,6 +44,9 @@ type Server struct {
 	themes    map[string]theme
 	templates map[string][]byte // template sources for GET /admin/api/templates/{name}
 	catalog   []byte
+
+	draftMu    sync.Mutex
+	draftCache map[string]draft // storyboard drafts by screen id
 }
 
 type errInfo struct {
@@ -61,7 +65,7 @@ var usedCodes = []string{"SCREEN_NOT_FOUND", "UNSUPPORTED_RUNTIME", "DATA_REQUIR
 	"IDEMPOTENCY_MISMATCH", "CALL_IN_FLIGHT", "UNAUTHENTICATED", "INTERNAL", "NOT_FOUND", "CONFLICT"}
 
 func New(cfg Config) (*Server, error) {
-	s := &Server{Config: cfg, themes: map[string]theme{}, templates: map[string][]byte{}}
+	s := &Server{Config: cfg, themes: map[string]theme{}, templates: map[string][]byte{}, draftCache: map[string]draft{}}
 	var errFile struct {
 		Codes map[string]struct {
 			HTTP      int

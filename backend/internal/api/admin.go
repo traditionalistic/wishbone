@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"wishbone/backend/internal/compile"
-	"wishbone/backend/internal/preview"
 	"wishbone/backend/internal/store"
 )
 
@@ -254,7 +253,7 @@ func (s *Server) previewDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	focus, diags := s.previewScreen(r.Context(), req.Source)
-	if len(diags) == 0 && !s.Hub.Push(code, preview.Board{Focus: focus.ID, Screens: []preview.Screen{focus}}) {
+	if len(diags) == 0 && !s.Hub.Push(code, s.board(r.Context(), focus)) {
 		s.fail(w, "NOT_FOUND", "preview session not found")
 		return
 	}
