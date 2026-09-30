@@ -320,8 +320,11 @@ final class ScreenModel {
     /// screen itself goes away (deinit). `caching` — the answer is the next revalidation's base.
     private func show(_ screen: LoadedScreen, caching: Bool = true) {
         if caching { cached = screen }
+        // Values carry over by name between revisions of the same screen only: a preview session that switched screens
+        // (spec 2026-09-30 §1.1) starts the new one fresh.
+        let previous = store?.document.screen == screen.document.screen ? store : nil
         phase = .ready(Store(document: screen.document, params: route.params, data: screen.response.data, wishbone: wishbone,
-                             navigator: navigator, previous: store, tasks: tasks))
+                             navigator: navigator, previous: previous, tasks: tasks))
     }
 
     private func fail(_ error: Error) {
