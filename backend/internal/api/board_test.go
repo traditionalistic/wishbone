@@ -121,7 +121,7 @@ func TestBoardGhostsAndCap(t *testing.T) {
 
 // Linked drafts resolve their data once per saved version.
 func TestBoardCachesDrafts(t *testing.T) {
-	var calls atomic.Int32 // raffle.main and raffle.rules read raffle.overview
+	var calls atomic.Int32
 	e := seeded(t, map[string]ops.Handler{"raffle.overview": func(context.Context, ops.Req) (ops.Result, error) {
 		calls.Add(1)
 		return ops.Fail("UPSTREAM_FAILED", "offline"), nil

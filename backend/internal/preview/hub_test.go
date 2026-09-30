@@ -214,7 +214,6 @@ func shot(t *testing.T, dev *websocket.Conn, job any) {
 	send(t, dev, fmt.Sprintf(`{"type":"shot","job":%v,"image":"%s","width":402,"height":874,"settled":true}`, job, jpeg(600<<10)))
 }
 
-// renderJob reads the device's next message, which must be a render job of screen; it returns the job id.
 func renderJob(t *testing.T, dev *websocket.Conn, screen string) any {
 	t.Helper()
 	m := obj(t, dev)

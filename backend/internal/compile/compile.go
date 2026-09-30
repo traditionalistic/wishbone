@@ -306,12 +306,8 @@ func meta(doc *Document) Meta {
 			case len(a) > 1 && a[0] == "call":
 				ops[a[1].(string)] = true
 			case len(a) > 2 && a[0] == "do" && (a[1] == "navigate" || a[1] == "present"):
-				if args := asList(a[2]); len(args) > 0 {
-					if to := asList(args[0]); len(to) == 2 && to[0] == "v" {
-						if id, ok := to[1].(string); ok {
-							links[Link{To: id, Kind: a[1].(string), Via: via}] = true
-						}
-					}
+				if to := asList(asList(a[2])[0]); to[0] == "v" {
+					links[Link{To: to[1].(string), Kind: a[1].(string), Via: via}] = true
 				}
 			case len(a) > 3 && a[0] == "if":
 				walk(asList(a[2]), via)
