@@ -42,6 +42,23 @@ import Testing
         #expect(!tl.finiteRunning)
     }
 
+    /// A `render` is parsed into the job at the client boundary; `finish` answers the current job once and drops a stale
+    /// one; a malformed job is answered, never held.
+    @MainActor @Test func renderJobsAreParsedAndFinishedOnce() {
+        let client = PreviewClient(testWishbone(), code: "TEST")
+        client.handle(Data(#"""
+        {"type": "render", "job": 17, "screen": "s", "document": {"format": 1, "screen": "s", "revision": 3, "root": {"t": "stack", "id": "root"}},
+         "data": {"me": {"ok": true, "value": "Ann"}}}
+        """#.utf8))
+        #expect(client.job?.id == 17 && client.job?.document.revision == 3 && client.job?.data["me"] != nil)
+        client.finish(16, .error("stale"))
+        #expect(client.job?.id == 17)
+        client.finish(17, .image(jpeg: Data(), size: CGSize(width: 402, height: 874), settled: true))
+        #expect(client.job == nil)
+        client.handle(Data(#"{"type": "render", "job": 18, "document": {"format": 1}}"#.utf8))
+        #expect(client.job == nil)
+    }
+
     @Test func shotWireForm() {
         let image = Shot.image(jpeg: Data([0xFF, 0xD8, 0xFF]), size: CGSize(width: 402, height: 874), settled: true).message(job: 17)
         #expect(image["type"] as? String == "shot" && image["job"] as? Int == 17 && image["image"] as? String == "/9j/")

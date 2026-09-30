@@ -15,8 +15,9 @@ public struct PreviewSession: Identifiable, Decodable, Sendable, Equatable {
     public var id: String { code }
 }
 
-/// Device side of the preview protocol (spec §5.4): `hello` on connect, `document` → render in
-/// place, `play` → start a timeline, runtime errors → `log`. Reconnects with backoff.
+/// Device side of the preview protocol (spec §5.4, 2026-09-30 §3): `hello` on connect, `document` → render in
+/// place, `play` → start a timeline, `render` → a shot from the capture layer, runtime errors → `log`. Reconnects
+/// with backoff.
 @MainActor @Observable
 public final class PreviewClient {
     public enum Status: Equatable, Sendable {
@@ -30,6 +31,15 @@ public final class PreviewClient {
     private(set) var revision = 0
     /// Last `play` request: (timeline, sequence number) — consumed by motion (phase b).
     public private(set) var play: (timeline: String, seq: Int)?
+    /// The render job in progress (spec 2026-09-30 §2): `WishbonePreviewScreen` draws it in its capture layer and answers
+    /// through `finish`. A newer job replaces it unanswered — the hub waits for the latest only.
+    private(set) var job: RenderJob?
+    /// The platform can draw shots (§2.3): told in `hello`, so the hub sends jobs only where a capture layer exists.
+    #if canImport(UIKit)
+    static let renders = true
+    #else
+    static let renders = false
+    #endif
 
     public let code: String
     @ObservationIgnored let wishbone: Wishbone
@@ -59,7 +69,8 @@ public final class PreviewClient {
     public func connect() {
         guard loop == nil else { return }
         wishbone.previewLog = { [weak self] level, message in self?.send(["type": "log", "level": level, "message": message]) }
-        let hello = Self.json(["type": "hello", "platform": "ios", "device": Self.deviceName, "runtime": WishboneCoreVersion.runtime])
+        let hello = Self.json(["type": "hello", "platform": "ios", "device": Self.deviceName, "runtime": WishboneCoreVersion.runtime,
+                               "render": Self.renders])
         // Holds self weakly across awaits so a dropped client stops reconnecting.
         loop = Task { [weak self] in
             var delay = 1.0
@@ -107,13 +118,18 @@ public final class PreviewClient {
         guard let obj = try? API.object(message) else { return }
         switch obj["type"] as? String {
         case "document":
-            guard let doc = obj["document"] as? [String: Any],
-                  let docData = try? JSONSerialization.data(withJSONObject: doc),
-                  let rawData = try? JSONSerialization.data(withJSONObject: obj["data"] as? [String: Any] ?? [:]),
-                  let data = try? API.parseData(rawData)
-            else { return wishbone.log("warn", "preview: malformed document message") }
-            latest = ScreenResponse(etag: "", revision: doc["revision"] as? Int ?? 0, document: docData, data: data, rawData: rawData)
+            guard let screen = Self.screen(obj) else { return wishbone.log("warn", "preview: malformed document message") }
+            latest = screen
             revision += 1
+        case "render":
+            guard let id = obj["job"] as? Int else { return wishbone.log("warn", "preview: render without a job") }
+            // SwiftUI mounts no layer while the app is in the background: answered here at once (§2.3).
+            guard !Self.inBackground else { return send(Shot.error("app is in the background").message(job: id)) }
+            guard let r = Self.screen(obj), let json = r.document, let document = try? Document(json: json) else {
+                wishbone.log("warn", "preview: malformed render message")
+                return send(Shot.error("malformed render message").message(job: id))
+            }
+            job = RenderJob(id: id, document: document, data: r.data)
         case "play":
             if let name = obj["timeline"] as? String { play = (name, (play?.seq ?? 0) + 1) }
         default:
@@ -121,13 +137,39 @@ public final class PreviewClient {
         }
     }
 
-    private func send(_ obj: [String: String]) {
+    /// The shot of job `id`, sent once; the job goes with it (and its capture layer). A stale id — the job was replaced
+    /// meanwhile — is dropped.
+    func finish(_ id: Int, _ shot: Shot) {
+        guard job?.id == id else { return }
+        job = nil
+        send(shot.message(job: id))
+    }
+
+    /// The screen of a `document`/`render` message (nil: malformed).
+    private static func screen(_ obj: [String: Any]) -> ScreenResponse? {
+        guard let doc = obj["document"] as? [String: Any],
+              let docData = try? JSONSerialization.data(withJSONObject: doc),
+              let rawData = try? JSONSerialization.data(withJSONObject: obj["data"] as? [String: Any] ?? [:]),
+              let data = try? API.parseData(rawData)
+        else { return nil }
+        return ScreenResponse(etag: "", revision: doc["revision"] as? Int ?? 0, document: docData, data: data, rawData: rawData)
+    }
+
+    private func send(_ obj: [String: Any]) {
         guard let socket, status == .connected else { return }
         socket.send(.string(Self.json(obj))) { _ in }
     }
 
-    private static func json(_ obj: [String: String]) -> String {
+    private static func json(_ obj: [String: Any]) -> String {
         String(decoding: (try? JSONSerialization.data(withJSONObject: obj)) ?? Data(), as: UTF8.self)
+    }
+
+    private static var inBackground: Bool {
+        #if canImport(UIKit)
+        UIApplication.shared.applicationState == .background
+        #else
+        false
+        #endif
     }
 
     private static var deviceName: String {
