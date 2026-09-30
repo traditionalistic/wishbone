@@ -63,7 +63,7 @@ export function usePreview(screenId: string | null, source: Source | null) {
         },
       )
     }
-    api.createPreview(screenId).then(
+    api.createPreview().then(
       ({ code: c }) => {
         if (dead) return
         setCode(c)
