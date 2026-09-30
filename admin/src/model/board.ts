@@ -67,7 +67,6 @@ const edge = (from: string, to: string) => `${from}\n${to}`
 export function layoutBoard(board: Board): Layout {
   const ids = board.screens.map((s) => s.id)
   const on = new Set(ids)
-  /** outgoing edges per screen, one per (target, kind) */
   const out = new Map(board.screens.map((s) => [s.id, [] as { to: string; kind: Link['kind'] }[]]))
   const entered = new Set<string>()
   for (const s of board.screens)

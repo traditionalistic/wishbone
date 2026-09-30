@@ -31,7 +31,6 @@ export async function pushSource(
   return { result: await client.compile(source), lost: false }
 }
 
-/** The stored code while the server lists it, else a new session. */
 export async function openSession(
   stored: string | null,
   client: { previewSessions: () => Promise<{ code: string }[]>; createPreview: () => Promise<{ code: string }> } = api,
@@ -122,7 +121,6 @@ export function usePreview(source: Source | null) {
     code,
     devices,
     board,
-    frames,
     frame: (screen: string, device: string) => frames.get(frameKey(screen, device)),
     logs,
     clearLogs: () => setLogs([]),

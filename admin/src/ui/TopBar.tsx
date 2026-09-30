@@ -12,8 +12,7 @@ interface Props {
   problems: number
   code: string | null
   devices: Device[]
-  /** the Preview column is shown */
-  preview: boolean
+  showPreview: boolean
   onTogglePreview: () => void
   dirty: boolean
   busy: boolean
@@ -62,7 +61,7 @@ export function TopBar(p: Props) {
           <span className="devices" title={p.devices.map((d) => `${d.device} (${d.platform})`).join('\n') || 'No devices connected'}>
             {p.devices.length ? p.devices.map((d) => <span key={d.id} className={`dev ${d.platform}`}>{d.device}</span>) : <span className="dim">no devices</span>}
           </span>
-          <button className={p.preview ? 'on' : ''} aria-pressed={p.preview} onClick={p.onTogglePreview} title="Show or hide the device preview column">
+          <button className={p.showPreview ? 'on' : ''} aria-pressed={p.showPreview} onClick={p.onTogglePreview} title="Show or hide the device preview column">
             Preview
           </button>
         </>

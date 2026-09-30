@@ -13,7 +13,6 @@ export const PLATFORMS = [
 
 export type Platform = (typeof PLATFORMS)[number]
 
-/** The picked device of the platform, else its first that renders, else its first. */
 export function slotDevice(devices: Device[], platform: string, picks: Picks): Device | undefined {
   const own = devices.filter((d) => d.platform === platform)
   return own.find((d) => d.id === picks[platform]) ?? own.find((d) => d.render) ?? own[0]
