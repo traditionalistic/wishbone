@@ -10,12 +10,13 @@ import { dslOptions } from './dsl'
 import { Inspector } from './Inspector'
 import { JsonPanel } from './JsonPanel'
 import { Preview, type Picks } from './Preview'
+import { Storyboard } from './Storyboard'
 import { TimelinePanel, type TlSel } from './TimelinePanel'
 import { TopBar } from './TopBar'
 import { TreePanel } from './TreePanel'
 import { usePreview } from './usePreview'
 
-type Tab = 'script' | 'timeline' | 'json'
+type Tab = 'script' | 'timeline' | 'json' | 'board'
 
 const PREVIEW_KEY = 'wishbone.admin.previewColumn'
 
@@ -315,7 +316,7 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
             </aside>
             <main className="center">
               <div className="tabs">
-                {(['script', 'timeline', 'json'] as Tab[]).map((t) => {
+                {(['script', 'timeline', 'json', 'board'] as Tab[]).map((t) => {
                   const n = diags.filter((d) => (t === 'script' ? d.path === 'script' : t === 'timeline' ? d.path.startsWith('timelines/') : false)).length
                   return (
                     <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
@@ -350,6 +351,21 @@ export function Workspace({ onLogout }: { onLogout: () => void }) {
               {tab === 'json' && (
                 <div className="tab-body">
                   <JsonPanel source={source} onChange={setSource} />
+                </div>
+              )}
+              {tab === 'board' && (
+                <div className="tab-body">
+                  <Storyboard
+                    board={preview.board}
+                    devices={preview.devices}
+                    picks={picks}
+                    frame={preview.frame}
+                    code={preview.code}
+                    stale={preview.status === 'error'}
+                    onRetry={preview.retry}
+                    onOpen={(id) => (id === screenId ? setTab('script') : open(id))}
+                    canOpen={(id) => screens.some((s) => s.id === id)}
+                  />
                 </div>
               )}
             </main>

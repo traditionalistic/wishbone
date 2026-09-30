@@ -102,6 +102,30 @@ button.icon:hover:not(:disabled) { color: var(--fg); }
 .phone.note { border-style: dashed; background: none; display: grid; place-items: center; }
 .shot-note { margin: 0; padding: 8px; text-align: center; font-size: 12px; color: var(--fg-dim); }
 .shot-note .code { font: 700 14px var(--mono); letter-spacing: 0.12em; color: var(--fg); }
+/* board */
+.board { flex: 1; min-height: 0; overflow: auto; }
+.board-bar { position: sticky; top: 0; left: 0; z-index: 2; display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--bg); color: var(--fg-dim); font-size: 12px; }
+.legend { display: inline-flex; align-items: center; gap: 6px; }
+.board-hint { color: var(--warn); }
+.board-canvas { position: relative; }
+.board-arrows { position: absolute; inset: 0; pointer-events: none; }
+.arrow { fill: none; stroke: var(--fg-dim); stroke-width: 1.5; }
+.arrow.present { stroke-dasharray: 6 4; }
+.board-arrows marker path { fill: var(--fg-dim); }
+.card { position: absolute; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.card:hover { border-color: #464a55; }
+.card.focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.ghost { border-style: dashed; background: var(--bg); }
+.card:has(.card-head:disabled) { cursor: default; }
+.card-head { display: flex; flex-direction: column; align-items: flex-start; height: auto; padding: 0 2px; background: none; border: none; text-align: left; min-width: 0; }
+.card-head b, .card-head span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-head span { color: var(--fg-dim); font: 11px var(--mono); }
+.card-head:disabled { opacity: 1; }
+.card-shots { flex: 1; min-height: 0; display: flex; gap: 8px; }
+.card-shots .shot-box { min-width: 0; }
+.card .shot-note, .card .shot-fail, .card .skeleton { font-size: 10.5px; padding: 4px; }
+.ghost-error { margin: 0; padding: 2px; color: var(--error); font-size: 12px; }
+
 @keyframes shimmer { to { background-position: -200% 0; } }
 @keyframes spin { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) { .skeleton, .spinner { animation: none; } }
