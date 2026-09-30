@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,7 +32,14 @@ internal sealed interface LoadState {
  * `If-None-Match` fetch), the [Store] (rebuilt on a new document, keeping state), and the effects
  * sink. Lives as long as the entry is on the stack, so state survives pushes on top of it.
  */
-internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, val entry: Entry, private val slot: Boolean = false) {
+internal class ScreenHolder(
+    val wishbone: Wishbone,
+    val navigator: Navigator,
+    val entry: Entry,
+    private val slot: Boolean = false,
+    /** A capture layer's screen (spec 2026-09-30 §2.1): handlers run, but nothing leaves the screen ([CaptureEffects]). */
+    capture: Boolean = false,
+) {
     /** Main thread + the UI frame clock (transactions and `await play` count frames); a throwing host call is logged, not fatal. */
     val scope = CoroutineScope(
         SupervisorJob() + AndroidUiDispatcher.Main + CoroutineExceptionHandler { _, e -> wishbone.log("error", "screen ${entry.screen}: ${e.message ?: e}") },
@@ -39,7 +47,7 @@ internal class ScreenHolder(val wishbone: Wishbone, val navigator: Navigator, va
     var state: LoadState by mutableStateOf(LoadState.Loading)
     var env: Map<String, Value> = emptyMap()
     var view: View? = null
-    private val effects = ScreenEffects(this)
+    private val effects: EffectSink = if (capture) CaptureEffects { wishbone.log("error", "${entry.screen}: $it") } else ScreenEffects(this)
     private val loader = ScreenLoader(wishbone.cache, entry.screen, entry.params, wishbone.cacheScope, wishbone.slotMemo.takeIf { slot })
 
     val store: Store? get() = (state as? LoadState.Ready)?.store
@@ -144,4 +152,19 @@ private class ScreenEffects(private val holder: ScreenHolder) : EffectSink {
         "success" -> HapticFeedbackConstants.CONFIRM
         else -> HapticFeedbackConstants.REJECT // warning, error
     }
+}
+
+/**
+ * Capture mode (spec 2026-09-30 §2.1): `navigate`, `back`, `present`, `dismiss`, `open`, `haptic`, `track` and
+ * `host` do nothing; `call` and `refresh` never reach the network and stay suspended until the layer's scope is
+ * cancelled, so a handler behind them never runs on. State, computed, timelines and `wait` are the store's own.
+ */
+internal class CaptureEffects(private val onError: (String) -> Unit) : EffectSink {
+    override suspend fun call(op: String, args: Value, awaited: Boolean): Value = awaitCancellation()
+
+    override suspend fun perform(effect: String, args: List<Value>, await: Boolean) {
+        if (effect == "refresh") awaitCancellation()
+    }
+
+    override fun error(message: String) = onError(message)
 }
